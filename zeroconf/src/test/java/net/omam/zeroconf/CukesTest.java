@@ -30,6 +30,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package net.omam.zeroconf;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.logging.LogManager;
+
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 
 import cucumber.api.CucumberOptions;
@@ -41,5 +46,19 @@ import cucumber.api.junit.Cucumber;
 @RunWith(Cucumber.class)
 @CucumberOptions(monochrome = true, dryRun = false, strict = true, tags = {}, plugin = {}, features = {})
 public final class CukesTest {
-    // empty.
+
+    /**
+     * Reads 'logging.properties' and configures all Loggers.
+     *
+     * @throws SecurityException if a security manager exists and if the caller does not have
+     *             LoggingPermission("control")
+     * @throws IOException if there are problems reading from the stream
+     */
+    @BeforeClass
+    public static void before() throws SecurityException, IOException {
+        try (final InputStream ins = ClassLoader.getSystemResourceAsStream("logging.properties")) {
+            LogManager.getLogManager().readConfiguration(ins);
+        }
+    }
+
 }
