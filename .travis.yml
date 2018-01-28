@@ -4,11 +4,15 @@ matrix:
     include:
         - os: linux
           jdk: openjdk8
+          env: COVERAGE='true'
         - os: linux
           jdk: oraclejdk8
+          env: COVERAGE='false'
         - os: linux
           jdk: oraclejdk9
+          env: COVERAGE='false'
         - os: osx
+          env: COVERAGE='false'
 
 script:
   - ./gradlew -version
@@ -26,7 +30,7 @@ cache:
     - $HOME/.gradle/wrapper/
  
  # Generate JaCoCo report and upload to codecov   
- after_success:
-  - ./gradlew jacocoTestReport --stacktrace
-  - bash <(curl -s https://codecov.io/bash)
+after_success:
+  - test "$COVERAGE" = "true" && ./gradlew jacocoTestReport --stacktrace || true
+  - test "$COVERAGE" = "true" && bash <(curl -s https://codecov.io/bash) || true
     
