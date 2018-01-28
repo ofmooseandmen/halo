@@ -16,7 +16,7 @@ matrix:
 
 script:
   - ./gradlew -version
-  - ./gradlew build --stacktrace
+  - ./gradlew build codeCoverageReport --stacktrace
 
 # Do not store unnecessary files from Gradle dependency cache
 before_cache:
@@ -29,8 +29,7 @@ cache:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
  
- # Generate JaCoCo report and upload to codecov   
+ # Upload JaCoCo report to codecov   
 after_success:
-  - test "$COVERAGE" = "true" && ./gradlew jacocoTestReport --stacktrace || true
   - test "$COVERAGE" = "true" && bash <(curl -s https://codecov.io/bash) || true
     
