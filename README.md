@@ -1,6 +1,7 @@
 # Localcast
 
 [![travis build status](https://img.shields.io/travis/ofmooseandmen/localcast/master.svg?label=travis+build)](https://travis-ci.org/ofmooseandmen/localcast)
+[![codecov.io](https://codecov.io/github/ofmooseandmen/localcast/branches/master/graphs/badge.svg)](https://codecov.io/github/ofmooseandmen/localcast)
 [![license](https://img.shields.io/badge/license-BSD3-lightgray.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
 Java FX application to stream music from local folders via Google Chromecast.
