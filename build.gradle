@@ -1,0 +1,53 @@
+apply plugin: 'base'
+apply plugin: 'eclipse'
+apply from: 'libraries.gradle'
+apply from: 'resources/eclipse-prefs/eclipse.gradle'
+
+allprojects {
+    apply plugin: 'jacoco'
+    jacoco { toolVersion = '0.8.0' }
+}
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'eclipse'
+
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+
+    repositories {
+        mavenCentral()
+    }
+
+    jar {
+        /* include source */
+        from (sourceSets.main.allSource.getSrcDirTrees())
+
+        /* include resources */
+        into('resources') {
+            from 'resources'
+        }
+    }
+
+    javadoc {
+       options.memberLevel = JavadocMemberLevel.PUBLIC
+    }
+
+    /* remove all transitive dependencies for compilation. */
+    [configurations.compile, configurations.compileClasspath, configurations.compileOnly]*.transitive = false
+
+    /* Modify the Eclipse project settings. */
+    eclipse { jdt { file { withProperties eclipsePrefs } } }
+
+    task ('copyEclipsePrefs', type: Copy) {
+        from rootProject.file('resources/eclipse-prefs/org.eclipse.jdt.ui.prefs')
+        into "${projectDir}/.settings"
+    }
+    tasks.eclipse.finalizedBy copyEclipsePrefs
+}
+
+task wrapper(type: Wrapper) {
+	description = 'Generates gradlew and gradlew.bat scripts'
+	gradleVersion = '4.5'
+	distributionType = Wrapper.DistributionType.BIN
+}

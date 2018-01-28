@@ -1,0 +1,5 @@
+dependencies {
+    testCompile libraries.junit
+    testCompile libraries.cucumber
+    testCompile libraries.jmdns
+}

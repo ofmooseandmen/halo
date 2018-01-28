@@ -1,0 +1,18 @@
+ext.libraries = [
+
+    cucumber: [
+        'io.cucumber:cucumber-java:2.3.1',
+        'io.cucumber:cucumber-junit:2.3.1',
+        'io.cucumber:cucumber-picocontainer:2.3.1'
+    ],
+
+    junit: [
+        'junit:junit:4.12'
+    ],
+    
+    // JmDNS is used only to test Zerconf
+    jmdns: [
+        'org.jmdns:jmdns:3.5.3',
+        'org.slf4j:slf4j-jdk14:1.7.16'
+    ]
+]
