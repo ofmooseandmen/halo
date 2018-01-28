@@ -24,3 +24,9 @@ cache:
   directories:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
+ 
+ # Generate JaCoCo report and upload to codecov   
+ after_success:
+  - ./gradlew jacocoTestReport --stacktrace
+  - bash <(curl -s https://codecov.io/bash)
+    
