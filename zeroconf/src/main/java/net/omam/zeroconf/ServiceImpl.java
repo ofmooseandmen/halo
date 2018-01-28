@@ -309,7 +309,7 @@ final class ServiceImpl implements Service, ResponseListener {
 
     private Queue<Duration> delays(final Duration timeout) {
         final Queue<Duration> q = new ArrayDeque<>();
-        if (timeout.compareTo(INIT_REQ_DELAY) < 0) {
+        if (timeout.compareTo(INIT_REQ_DELAY) <= 0) {
             return q;
         }
         int factor = 1;
@@ -320,7 +320,7 @@ final class ServiceImpl implements Service, ResponseListener {
             total = total.plus(delay);
             factor = factor * 2;
             delay = INIT_REQ_DELAY.multipliedBy(factor);
-        } while (total.compareTo(timeout) < 0);
+        } while (total.plus(delay).compareTo(timeout) <= 0);
         delay = timeout.minus(total);
         if (!delay.isZero()) {
             q.add(delay);

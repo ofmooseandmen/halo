@@ -111,7 +111,8 @@ public interface Zeroconf extends Closeable {
      * Registers the given service on the <strong>local</strong> domain with a TTL of 1 hour.
      * <p>
      * The {@link Service#instanceName() instance name} of the service will be changed to be unique if possible.
-     *
+     * 
+     * @see #register(Service, Duration, boolean)
      * @param service service to register
      * @return the service that was successfully registered (instance name may have been changed)
      * @throws IOException if the service cannot be registered for any reason
@@ -126,6 +127,7 @@ public interface Zeroconf extends Closeable {
      * If {@code allowNameChange} is {@code true} the {@link Service#instanceName() instance name} of the service
      * will be changed to be unique if possible.
      *
+     * @see #register(Service, Duration, boolean)
      * @param service service to register
      * @param allowNameChange {@code true} if {@link Service#instanceName() instance name} can be changed to be
      *            made unique
@@ -155,15 +157,16 @@ public interface Zeroconf extends Closeable {
      * Resolves a service of the <strong>local</strong> domain by its instance name and registration type to a
      * target host, port and text record if it exits.
      * <p>
-     * Resolution will timeout after 3 seconds.
+     * Resolution will timeout after 6 seconds.
      *
+     * @see #resolve(String, String, Duration)
      * @param instanceName the service instance name, a human-readable string, e.g. {@code Living Room Printer}
      * @param registrationType service type (IANA) and transport protocol (udp or tcp), e.g. {@code _ftp._tcp.} or
      *            {@code _http._udp.}
      * @return the resolved service unless the timeout expired
      */
     default Optional<Service> resolve(final String instanceName, final String registrationType) {
-        return resolve(instanceName, registrationType, Duration.ofSeconds(3));
+        return resolve(instanceName, registrationType, Duration.ofSeconds(6));
     }
 
     /**

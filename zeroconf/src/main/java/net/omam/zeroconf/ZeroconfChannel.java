@@ -51,12 +51,14 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.DatagramChannel;
+import java.nio.channels.MulticastChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -110,7 +112,6 @@ final class ZeroconfChannel implements Closeable {
                             listener.accept(msg);
                         }
                     }
-                    selected.clear();
                 } catch (final IOException e) {
                     LOGGER.log(Level.WARNING, "I/O error while receiving DNS message", e);
                 }
@@ -146,12 +147,8 @@ final class ZeroconfChannel implements Closeable {
                     buf.clear();
                     buf.put(packet);
                     buf.flip();
-                    if (ipv4.isPresent()) {
-                        send(ipv4.get(), buf, IPV4_SOA);
-                    }
-                    if (ipv6.isPresent()) {
-                        send(ipv6.get(), buf, IPV6_SOA);
-                    }
+                    ipv4.forEach(ni -> send(ni, buf, IPV4_SOA));
+                    ipv6.forEach(ni -> send(ni, buf, IPV6_SOA));
                 } catch (final InterruptedException e) {
                     LOGGER.log(Level.FINE, "Interrupted while waiting to DNS message", e);
                     Thread.currentThread().interrupt();
@@ -167,11 +164,14 @@ final class ZeroconfChannel implements Closeable {
          * @param target the address to which the datagram is to be sent
          */
         private void send(final SelectionKey key, final ByteBuffer src, final InetSocketAddress target) {
+            final int position = src.position();
             try {
                 ((DatagramChannel) key.channel()).send(src, target);
                 LOGGER.fine(() -> "Sent DNS message to " + target);
             } catch (final IOException e) {
                 LOGGER.log(Level.WARNING, e, () -> "I/O error while sending DNS message to " + target);
+            } finally {
+                src.position(position);
             }
         }
 
@@ -186,11 +186,11 @@ final class ZeroconfChannel implements Closeable {
     /** executor service to send/receive messages. */
     private final ExecutorService es;
 
-    /** IPV4 channel if available. */
-    private final Optional<SelectionKey> ipv4;
+    /** IPV4 channel(s). */
+    private final List<SelectionKey> ipv4;
 
-    /** IPV6 channel if available. */
-    private final Optional<SelectionKey> ipv6;
+    /** IPV6 channel(s). */
+    private final List<SelectionKey> ipv6;
 
     /** listener to be invoked whenever a new message is received. */
     private final Consumer<DnsMessage> listener;
@@ -223,46 +223,26 @@ final class ZeroconfChannel implements Closeable {
         selector = Selector.open();
         sq = new LinkedBlockingQueue<>();
 
-        Optional<DatagramChannel> ipv4Channel = openChannel(StandardProtocolFamily.INET);
-        Optional<DatagramChannel> ipv6Channel = openChannel(StandardProtocolFamily.INET6);
-
-        if (!ipv4Channel.isPresent() && !ipv6Channel.isPresent()) {
-            throw new IOException("Machine supports neither IPV4 or IPV6");
-        }
-
-        boolean ipv4Addr = false;
-        boolean ipv6Addr = false;
-        // final NetworkInterface ni = NetworkInterface.getByInetAddress(InetAddress.getLocalHost());
-        // ipv4Addr |= ipv4Channel.map(c -> addNetworkInterface(c, ni, true, true)).orElse(false);
-        // ipv6Addr |= ipv6Channel.map(c -> addNetworkInterface(c, ni, false, true)).orElse(false);
+        ipv4 = new ArrayList<>();
+        ipv6 = new ArrayList<>();
 
         for (final NetworkInterface ni : nis) {
-            ipv4Addr |= ipv4Channel.map(c -> addNetworkInterface(c, ni, true, false)).orElse(false);
-            ipv6Addr |= ipv6Channel.map(c -> addNetworkInterface(c, ni, false, false)).orElse(false);
+            openChannel(ni, StandardProtocolFamily.INET, false).map(this::register).ifPresent(ipv4::add);
+            openChannel(ni, StandardProtocolFamily.INET6, false).map(this::register).ifPresent(ipv6::add);
         }
 
-        if (!ipv4Addr && !ipv6Addr) {
-            LOGGER.info(() -> "No Network Interface found, adding Loopback interface");
-            ipv4Addr |= ipv4Channel.map(c -> addLoopbackInterface(c, nis, true)).orElse(false);
-            ipv6Addr |= ipv6Channel.map(c -> addLoopbackInterface(c, nis, false)).orElse(false);
+        if (ipv4.isEmpty() && ipv6.isEmpty()) {
+            for (final NetworkInterface ni : nis) {
+                LOGGER.info(() -> "No Network Interface found, adding Loopback interface");
+                openChannel(ni, StandardProtocolFamily.INET, true).map(this::register).ifPresent(ipv4::add);
+                openChannel(ni, StandardProtocolFamily.INET6, true).map(this::register).ifPresent(ipv6::add);
+            }
         }
 
-        if (!ipv4Addr && !ipv6Addr) {
-            throw new IOException("No IPV4 or IPV6 address found");
+        if (ipv4.isEmpty() && ipv6.isEmpty()) {
+            throw new IOException("No network interface suitable for multicast");
         }
 
-        if (!ipv4Addr && ipv4Channel.isPresent()) {
-            ipv4Channel.get().close();
-            ipv4Channel = Optional.empty();
-        }
-
-        if (!ipv6Addr && ipv6Channel.isPresent()) {
-            ipv6Channel.get().close();
-            ipv6Channel = Optional.empty();
-        }
-
-        ipv4 = register(ipv4Channel);
-        ipv6 = register(ipv6Channel);
     }
 
     /**
@@ -326,14 +306,14 @@ final class ZeroconfChannel implements Closeable {
      * @return {@code true} iff IPV4 is supported by this machine.
      */
     final boolean ipv4Supported() {
-        return ipv4.isPresent();
+        return !ipv4.isEmpty();
     }
 
     /**
      * @return {@code true} iff IPV6 is supported by this machine.
      */
     final boolean ipv6Supported() {
-        return ipv6.isPresent();
+        return !ipv6.isEmpty();
     }
 
     /**
@@ -346,63 +326,22 @@ final class ZeroconfChannel implements Closeable {
     }
 
     /**
-     * Adds the {@link NetworkInterface#isLoopback() loopback interface} to the given channel.
+     * Closes the given {@link SelectionKey}(s).
      *
-     * @param channel channel
-     * @param nis all network interface
-     * @param ipv4Protocol {@code true} if loopback interface shall be added if it supports IPV4, {@code false} for
-     *            IPV6
-     * @return {@code true} if loopback interface was added to the channel
-     */
-    private boolean addLoopbackInterface(final DatagramChannel channel, final Collection<NetworkInterface> nis,
-            final boolean ipv4Protocol) {
-        for (final NetworkInterface ni : nis) {
-            final boolean added = addNetworkInterface(channel, ni, ipv4Protocol, true);
-            if (added) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Adds the given network interface to the given channel.
-     *
-     * @param channel channel
-     * @param ni all network interface
-     * @param ipv4Protocol {@code true} if network interface shall be added if it supports IPV4, {@code false} for
-     *            IPV6
-     * @param loopback {@code true} if given interface must be the loopback, {@code false} if it must not
-     * @return {@code true} if network interface was added to the channel
-     */
-    private boolean addNetworkInterface(final DatagramChannel channel, final NetworkInterface ni,
-            final boolean ipv4Protocol, final boolean loopback) {
-        final InetAddress addr = ipv4Protocol ? IPV4_ADDR : IPV6_ADDR;
-        try {
-            final Class<? extends InetAddress> ipvClass = ipv4Protocol ? Inet4Address.class : Inet6Address.class;
-            if (ni.supportsMulticast() && ni.isUp() && ni.isLoopback() == loopback && hasIpv(ni, ipvClass)) {
-                channel.join(addr, ni);
-                channel.setOption(StandardSocketOptions.IP_MULTICAST_IF, ni);
-                LOGGER.info(() -> "Joined multicast address " + addr + " on " + ni);
-                return true;
-            }
-            LOGGER.fine(() -> "Ignored " + ni + " for " + addr);
-            return false;
-        } catch (final IOException e) {
-            LOGGER.log(Level.WARNING, e, () -> "Ignored " + ni + " for " + addr);
-            return false;
-        }
-    }
-
-    /**
-     * Closes the given {@link SelectionKey} if present.
-     *
-     * @param key selection key
+     * @param keys selection keys
      * @throws IOException in case of I/O error
      */
-    private void close(final Optional<SelectionKey> key) throws IOException {
-        if (key.isPresent()) {
-            key.get().channel().close();
+    private void close(final List<SelectionKey> keys) throws IOException {
+        IOException ex = null;
+        for (final SelectionKey key : keys) {
+            try {
+                key.channel().close();
+            } catch (final IOException e) {
+                ex = e;
+            }
+        }
+        if (ex != null) {
+            throw ex;
         }
     }
 
@@ -435,12 +374,47 @@ final class ZeroconfChannel implements Closeable {
     }
 
     /**
+     * Opens a new {@link MulticastChannel multicast channel} for the the given network interface.
+     * <p>
+     * A new channel is opened iff the given network interface {@link NetworkInterface#supportsMulticast() supports
+     * multicast}, is {@link NetworkInterface#isUp() up} and has at least one address matching the given protocol
+     * family
+     *
+     * @param ni all network interface
+     * @param family IPV4 or IPV5
+     * @param loopback {@code true} if given interface must be the loopback, {@code false} if it must not
+     * @return a new multicast channel or empty if the given network interface is not valid
+     */
+    private Optional<DatagramChannel> openChannel(final NetworkInterface ni, final ProtocolFamily family,
+            final boolean loopback) {
+        final boolean ipv4Protocol = family == StandardProtocolFamily.INET;
+        final InetAddress addr = ipv4Protocol ? IPV4_ADDR : IPV6_ADDR;
+        try {
+            final Class<? extends InetAddress> ipvClass = ipv4Protocol ? Inet4Address.class : Inet6Address.class;
+            if (ni.supportsMulticast() && ni.isUp() && ni.isLoopback() == loopback && hasIpv(ni, ipvClass)) {
+                final Optional<DatagramChannel> channel = openChannel(family);
+                if (channel.isPresent()) {
+                    channel.get().setOption(StandardSocketOptions.IP_MULTICAST_IF, ni);
+                    channel.get().join(addr, ni);
+                    LOGGER.info(() -> "Joined multicast address " + addr + " on " + ni);
+                    return channel;
+                }
+            }
+            LOGGER.fine(() -> "Ignored " + ni + " for " + addr);
+            return Optional.empty();
+        } catch (final IOException e) {
+            LOGGER.log(Level.WARNING, e, () -> "Ignored " + ni + " for " + addr);
+            return Optional.empty();
+        }
+    }
+
+    /**
      * Opens a new {@link DatagramChannel}.
      *
      * @param family the protocol family
      * @return a new datagram channel
      */
-    @SuppressWarnings({ "resource", "unused" })
+    @SuppressWarnings("resource")
     private Optional<DatagramChannel> openChannel(final ProtocolFamily family) {
         try {
             final DatagramChannel channel = DatagramChannel.open(family);
@@ -450,7 +424,8 @@ final class ZeroconfChannel implements Closeable {
             channel.bind(new InetSocketAddress(MDNS_PORT));
             return Optional.of(channel);
         } catch (final UnsupportedOperationException e) {
-            LOGGER.fine(() -> "Protocol Family [" + family.name() + "] not supported on this machine.");
+            LOGGER.log(Level.FINE, e,
+                    () -> "Protocol Family [" + family.name() + "] not supported on this machine.");
             return Optional.empty();
         } catch (final IOException e) {
             LOGGER.log(Level.WARNING, "Fail to create channel", e);
@@ -463,14 +438,14 @@ final class ZeroconfChannel implements Closeable {
      *
      * @param channel channel
      * @return selection key
-     * @throws ClosedChannelException if the channel is closed
      */
-    private Optional<SelectionKey> register(final Optional<DatagramChannel> channel)
-            throws ClosedChannelException {
-        if (channel.isPresent()) {
-            return Optional.of(channel.get().register(selector, SelectionKey.OP_READ));
+    private SelectionKey register(final DatagramChannel channel) {
+        try {
+            return channel.register(selector, SelectionKey.OP_READ);
+        } catch (final ClosedChannelException e) {
+            LOGGER.severe(() -> "Could not register channel with selector");
+            throw new IllegalStateException(e);
         }
-        return Optional.empty();
     }
 
 }
