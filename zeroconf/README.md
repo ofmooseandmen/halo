@@ -7,26 +7,44 @@ Supports service resolution, registration and browsing.
 
 ## Building from Source
 
-You need [JDK-8](http://openjdk.java.net/projects/jdk8/) or higher to build Localcast.
-All modules can be built with Gradle using the following command.
+You need [JDK-8](http://openjdk.java.net/projects/jdk8/) or higher to build Zeroconf.
+Zeroconf can be built with Gradle using the following command.
 
 ```
-gradlew clean build
+./gradlew clean build
 ```
 
 ## Usage
 
-### Resolution
+### Service Resolution
 
 ```java
 try (final Zeroconf zc = Zeroconf.allNetworkInterfaces(Clock.systemDefaultZone())) {
     // using a timeout of 6 seconds.
     Optional<Service> service = zc.resolve("Foo Bar", "_http._udp.");
-    // Optional contains the service if it could be resolved, empty otherwise
+    // Optional contains the service if it could be resolved, empty otherwise.
     System.err.println(service);
     
-    // using custom timeout
-    Optional<Service> service = zc.resolve("Foo Bar", "_http._udp.", Duration.ofSeconds(1));
+    // using custom timeout.
+    service = zc.resolve("Foo Bar", "_http._udp.", Duration.ofSeconds(1));
     System.err.println(service);
+}
+```
+
+### Service Registration
+
+```java
+try (final Zeroconf zc = Zeroconf.allNetworkInterfaces(Clock.systemDefaultZone())) {
+    // allowing service instance name to be changed and with a TTL of 1 hour.
+    Service service = zc.register(Service.create("Foo Bar", "_http._udp.", (short) 8009).get());
+    // registered service is returned.
+    System.err.println(service);
+
+    // registering again will return a service with an instance name of "Foo Bar (2)".
+    service = zc.register(Service.create("Foo Bar", "_http._udp.", (short) 8009).get());
+    System.err.println(service);
+
+    // not allowing service instance name to be changed will throw an IOException in this case.
+    zc.register(Service.create("Foo Bar", "_http._udp.", (short) 8009).get(), false);
 }
 ```

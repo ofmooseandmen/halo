@@ -12,7 +12,7 @@ You need [JDK-8](http://openjdk.java.net/projects/jdk8/) or higher to build Loca
 All modules can be built with Gradle using the following command.
 
 ```
-gradlew clean build
+./gradlew clean build
 ```
 
 ## Modules
