@@ -31,6 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package net.omam.zeroconf;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -108,7 +109,8 @@ public final class Engines {
 
     final Map<String, String> toJmdns(final String attributes) {
         final Map<String, String> atts = new HashMap<>();
-        atts.put(attributes, null);
+        /* for some reason JmDNS returns true if the attribute has no value. */
+        atts.put(attributes, "true");
         return atts;
     }
 
@@ -122,7 +124,8 @@ public final class Engines {
     }
 
     final Attributes toZc(final String attributes) {
-        return Attributes.create().with(attributes).get();
+        /* for some reason JmDNS returns true if the attribute has no value. */
+        return Attributes.create().with(attributes, "true", StandardCharsets.UTF_8).get();
     }
 
     final Zeroconf zc() {

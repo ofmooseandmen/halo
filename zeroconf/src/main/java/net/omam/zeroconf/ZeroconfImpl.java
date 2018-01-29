@@ -91,7 +91,7 @@ final class ZeroconfImpl extends ZeroconfHelper implements Zeroconf, Consumer<Dn
     private final List<ResponseListener> rls;
 
     /** map of all registered service indexed by {@link Service#instanceName()}. */
-    private final Map<String, ServiceImpl> services;
+    private final Map<String, Service> services;
 
     /** number of services registered by {@link Service#registrationPointerName()}. */
     private final Map<String, Integer> registrationPointerNames;
@@ -180,6 +180,15 @@ final class ZeroconfImpl extends ZeroconfHelper implements Zeroconf, Consumer<Dn
             LOGGER.warning(msg);
             throw new IOException(msg);
         }
+
+        services.put(rservice.serviceName().toLowerCase(), service);
+        final String rpn = rservice.registrationPointerName();
+        if (registrationPointerNames.containsKey(rpn)) {
+            registrationPointerNames.put(rpn, registrationPointerNames.get(rpn) + 1);
+        } else {
+            registrationPointerNames.put(rpn, 1);
+        }
+
         LOGGER.info(() -> "Registered " + rservice + ON_DOMAIN);
         return rservice;
     }
@@ -322,7 +331,7 @@ final class ZeroconfImpl extends ZeroconfHelper implements Zeroconf, Consumer<Dn
                         builder.addAnswer(msg, new PtrRecord(DISCOVERY, CLASS_IN, TTL, now, rpn));
                     }
                 }
-                for (final ServiceImpl s : services.values()) {
+                for (final Service s : services.values()) {
                     if (question.name().equalsIgnoreCase(s.registrationPointerName())) {
                         builder.addAnswer(msg,
                                 new PtrRecord(s.registrationPointerName(), CLASS_IN, TTL, now, s.serviceName()));
@@ -336,7 +345,7 @@ final class ZeroconfImpl extends ZeroconfHelper implements Zeroconf, Consumer<Dn
                     addIpv6Address(msg, question, builder, now);
                 }
 
-                final ServiceImpl s = services.get(question.name().toLowerCase());
+                final Service s = services.get(question.name().toLowerCase());
                 if (s != null) {
                     final short clazz = (short) (CLASS_IN | CLASS_UNIQUE);
                     if (question.type() == TYPE_SRV || question.type() == TYPE_ANY) {

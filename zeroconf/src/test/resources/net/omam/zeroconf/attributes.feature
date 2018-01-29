@@ -10,7 +10,7 @@ Feature: Service attributes
   - Duplicated keys: only first key is considered, others are ignored
   - Empty keys are ignored
 
-  Scenario: attributes encoding
+  Scenario: Attributes encoding
     Given attributes are created with the following key/value pairs:
       | key  | value   |
       | some | thing   |
@@ -24,14 +24,14 @@ Feature: Service attributes
       | 0x69 | 0x6E | 0x67 | 0x7  | 0x66 | 0x6F | 0x6F | 0x3D |
       | 0x62 | 0x61 | 0x72 | 0x4  | 0x66 | 0x61 | 0x6B | 0x65 |
 
-  Scenario: attributes decoding
+  Scenario: Attributes decoding
     Given the following packet has been received:
       | 0xA  | 0x73 | 0x6F | 0x6D | 0x65 | 0x3D | 0x74 | 0x68 |
       | 0x69 | 0x6E | 0x67 | 0x7  | 0x66 | 0x6F | 0x6F | 0x3D |
       | 0x62 | 0x61 | 0x72 | 0x4  | 0x66 | 0x61 | 0x6B | 0x65 |
     When the packet is decoded into attributes
     Then the following attributes shall be returned:
-      | key  | value   |
-      | some | thing   |
-      | foo  | bar     |
-      | fake |         |
+      | key  | value |
+      | some | thing |
+      | foo  | bar   |
+      | fake |       |

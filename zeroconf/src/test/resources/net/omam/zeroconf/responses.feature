@@ -2,7 +2,7 @@ Feature: DNS responses
   
   All packets have been generated using jmdns as a reference
 
-  Scenario: packet from outgoing DNS query with an answer
+  Scenario: Packet from outgoing DNS query with an answer
     Given a DNS response has been created
     And the following answers have been added:
       | serviceName    | recordType | recordClass | ttl   | port | priority | server      | weight |

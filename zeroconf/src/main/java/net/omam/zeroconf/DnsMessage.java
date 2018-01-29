@@ -292,14 +292,12 @@ final class DnsMessage {
         /*
          * next two bytes is size of record specific payload. first write the record, then calculate the size.
          */
-        try (final MessageOutputStream recMos = mos.spawn()) {
-            record.write(recMos);
-            mos.writeShort((short) recMos.size());
-            mos.writeBytes(recMos.toByteArray());
-        } catch (final IOException e) {
-            /* not possible. */
-            throw new IllegalStateException(e);
-        }
+        final int sizePos = mos.position();
+        mos.skip(2);
+        final int startPos = mos.position();
+        record.write(mos);
+        final int endPos = mos.position();
+        mos.writeShort(sizePos, (short) (endPos - startPos));
     }
 
     @Override

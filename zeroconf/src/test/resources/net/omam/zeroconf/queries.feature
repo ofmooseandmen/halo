@@ -2,7 +2,7 @@ Feature: DNS queries
   
   All packets have been generated using jmdns as a reference
 
-  Scenario: packet from outgoing DNS query with a question
+  Scenario: Packet from outgoing DNS query with a question
     Given a DNS query has been created
     And the following questions have been added:
       | serviceName    | recordType | recordClass |
@@ -14,7 +14,7 @@ Feature: DNS queries
       | 0x3  | 0x62 | 0x61 | 0x72 | 0x5  | 0x6c | 0x6f | 0x63 |
       | 0x61 | 0x6c | 0x0  | 0x0  | 0xff | 0x0  | 0x1  |      |
 
-  Scenario: packet from outgoing DNS query with questions and authorities
+  Scenario: Packet from outgoing DNS query with questions and authorities
     Given a DNS query has been created
     And the following questions have been added:
       | serviceName    | recordType | recordClass |

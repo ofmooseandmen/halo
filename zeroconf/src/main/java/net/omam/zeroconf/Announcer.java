@@ -247,7 +247,7 @@ final class Announcer implements Closeable {
             for (int i = 0; i < PROBE_NUM && conflictFree; i++) {
                 final Future<?> probe = ses.schedule(task, PROBE_INTERVAL.toMillis(), TimeUnit.MILLISECONDS);
                 probe.get();
-                conflictFree = listener.await();
+                conflictFree = !listener.await();
             }
             final boolean result = conflictFree;
             LOGGER.fine(() -> "Done probing for " + service + "; found conflicts? " + result);

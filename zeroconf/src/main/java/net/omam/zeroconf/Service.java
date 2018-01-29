@@ -49,6 +49,7 @@ public interface Service {
             si.setPort(port);
             si.setPriority((short) 0);
             si.setWeight((short) 0);
+            si.setAttributes(Attributes.create().with("").get());
             try {
                 final InetAddress local = InetAddress.getLocalHost();
                 si.setHostname(local.getHostName());

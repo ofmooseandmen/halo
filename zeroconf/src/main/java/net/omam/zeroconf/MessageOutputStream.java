@@ -36,8 +36,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * An output stream to write data of a single {@link DnsMessage}. Use {@link #spawn()} if fresh byte array is
- * required during writing in order to keep the name pointers used for compression.
+ * An output stream to write data of a single {@link DnsMessage} that allows to skip bytes and write at selected
+ * position.
  * <p>
  * Data is written into a {@link ByteArrayOutputStream} using big-endian ordering.
  * <p>
@@ -49,18 +49,15 @@ final class MessageOutputStream extends ByteArrayOutputStream {
     private final Map<String, Integer> pointers;
 
     MessageOutputStream() {
-        this(new HashMap<>());
+        pointers = new HashMap<>();
     }
 
-    private MessageOutputStream(final Map<String, Integer> somePointers) {
-        pointers = somePointers;
+    final int position() {
+        return count;
     }
 
-    /**
-     * @return a new {@link MessageOutputStream} that shares the name pointers used for compression.
-     */
-    final MessageOutputStream spawn() {
-        return new MessageOutputStream(pointers);
+    final void skip(final int len) {
+        count += len;
     }
 
     final void writeByte(final int b) {
@@ -107,6 +104,11 @@ final class MessageOutputStream extends ByteArrayOutputStream {
     final void writeShort(final int s) {
         writeByte(s >> 8);
         writeByte(s);
+    }
+
+    final void writeShort(final int index, final short s) {
+        buf[index] = (byte) (s >> 8 & 0xFF);
+        buf[index + 1] = (byte) (s & 0xFF);
     }
 
     final void writeString(final String str) {

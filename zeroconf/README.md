@@ -20,7 +20,7 @@ gradlew clean build
 
 ```java
 try (final Zeroconf zc = Zeroconf.allNetworkInterfaces(Clock.systemDefaultZone())) {
-    // using a timeout of 3 seconds.
+    // using a timeout of 6 seconds.
     Optional<Service> service = zc.resolve("Foo Bar", "_http._udp.");
     // Optional contains the service if it could be resolved, empty otherwise
     System.err.println(service);
