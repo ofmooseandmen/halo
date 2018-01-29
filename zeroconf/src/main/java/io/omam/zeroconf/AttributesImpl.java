@@ -59,28 +59,6 @@ final class AttributesImpl implements Attributes {
     }
 
     @Override
-    public boolean equals(final Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        return map.equals(((AttributesImpl) obj).map);
-    }
-
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + (map == null ? 0 : map.hashCode());
-        return result;
-    }
-
-    @Override
     public final Set<String> keys() {
         return Collections.unmodifiableSet(map.keySet());
     }

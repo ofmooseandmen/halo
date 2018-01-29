@@ -71,28 +71,6 @@ final class AddressRecord extends DnsRecord {
     }
 
     @Override
-    public final boolean equals(final Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (!super.equals(obj)) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        return address.equals(((AddressRecord) obj).address);
-    }
-
-    @Override
-    public final int hashCode() {
-        final int prime = 31;
-        int result = super.hashCode();
-        result = prime * result + address.hashCode();
-        return result;
-    }
-
-    @Override
     public final String toString() {
         return "AddressRecord [name="
             + name()

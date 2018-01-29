@@ -52,30 +52,6 @@ abstract class DnsRecord extends DnsEntry {
         doc = now;
     }
 
-    @Override
-    public boolean equals(final Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (!super.equals(obj)) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final DnsRecord other = (DnsRecord) obj;
-        return doc.equals(other.doc) && ttl.equals(other.ttl);
-    }
-
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = super.hashCode();
-        result = prime * result + doc.hashCode();
-        result = prime * result + ttl.hashCode();
-        return result;
-    }
-
     protected abstract void write(final MessageOutputStream mos);
 
     /*

@@ -54,31 +54,6 @@ abstract class DnsEntry {
         clazz = (short) (aClass & CLASS_MASK);
     }
 
-    @Override
-    public boolean equals(final Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final DnsEntry other = (DnsEntry) obj;
-        return clazz == other.clazz && name.equals(other.name) && type == other.type;
-    }
-
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + clazz;
-        result = prime * result + name.hashCode();
-        result = prime * result + type;
-        return result;
-    }
-
     final short clazz() {
         return clazz;
     }

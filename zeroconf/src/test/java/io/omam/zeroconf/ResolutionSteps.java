@@ -30,6 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.zeroconf;
 
+import static io.omam.zeroconf.ZeroconfAssert.assertAttributesEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -43,7 +44,6 @@ import javax.jmdns.ServiceInfo;
 import cucumber.api.java.After;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
-import io.omam.zeroconf.Service;
 
 /**
  * Steps to tests service resolution.
@@ -93,7 +93,7 @@ public final class ResolutionSteps {
             assertEquals(expected.port(), actual.port());
             assertEquals(expected.priority(), actual.priority());
             assertTrue(actual.attributes().isPresent());
-            assertEquals(engines.toZc(expected.text()), actual.attributes().get());
+            assertAttributesEquals(engines.toZc(expected.text()), actual.attributes().get());
             assertEquals(expected.weight(), actual.weight());
         } else {
             assertTrue(jms.isPresent());

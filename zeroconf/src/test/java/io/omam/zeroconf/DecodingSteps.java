@@ -31,6 +31,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package io.omam.zeroconf;
 
 import static io.omam.zeroconf.MulticastDnsHelper.flagsForName;
+import static io.omam.zeroconf.ZeroconfAssert.assertDnsQuestionsEquals;
+import static io.omam.zeroconf.ZeroconfAssert.assertDnsRecordsEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -41,16 +43,13 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import cucumber.api.DataTable;
 import cucumber.api.java.After;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
-import io.omam.zeroconf.Attributes;
-import io.omam.zeroconf.AttributesCodec;
-import io.omam.zeroconf.DnsMessage;
-import io.omam.zeroconf.MessageInputStream;
 
 /**
  * Steps to tests DNS message decoding.
@@ -99,14 +98,16 @@ public final class DecodingSteps {
 
     @Then("^it contains the following answers:$")
     public final void thenContainsAnswers(final List<Record> records) {
-        records.stream().map(r -> factory.newRecord(r, now)).forEach(
-                r -> assertEquals(1, msg.answers().stream().filter(a -> r.equals(a)).count()));
+        final List<DnsRecord> expecteds =
+                records.stream().map(r -> factory.newRecord(r, now)).collect(Collectors.toList());
+        assertDnsRecordsEquals(expecteds, msg.answers());
     }
 
     @Then("^it contains the following authorities:$")
     public final void thenContainsAuthorities(final List<Record> records) {
-        records.stream().map(r -> factory.newRecord(r, now)).forEach(
-                r -> assertEquals(1, msg.authorities().stream().filter(a -> r.equals(a)).count()));
+        final List<DnsRecord> expecteds =
+                records.stream().map(r -> factory.newRecord(r, now)).collect(Collectors.toList());
+        assertDnsRecordsEquals(expecteds, msg.authorities());
     }
 
     @Then("^it contains no additional$")
@@ -131,8 +132,9 @@ public final class DecodingSteps {
 
     @Then("^it contains the following questions:$")
     public final void thenContainsQuestions(final List<Question> questions) {
-        questions.stream().map(factory::newQuestion).forEach(
-                q -> assertEquals(1, msg.questions().stream().filter(mq -> q.equals(mq)).count()));
+        final List<DnsQuestion> expecteds =
+                questions.stream().map(factory::newQuestion).collect(Collectors.toList());
+        assertDnsQuestionsEquals(expecteds, msg.questions());
     }
 
     @Then("^a DNS (response|query) with \"(.+)\" flags shall be returned$")

@@ -52,28 +52,6 @@ final class PtrRecord extends DnsRecord {
     }
 
     @Override
-    public final boolean equals(final Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (!super.equals(obj)) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        return target.equals(((PtrRecord) obj).target);
-    }
-
-    @Override
-    public final int hashCode() {
-        final int prime = 31;
-        int result = super.hashCode();
-        result = prime * result + target.hashCode();
-        return result;
-    }
-
-    @Override
     public final String toString() {
         return "PtrRecord [name="
             + name()

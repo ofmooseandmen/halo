@@ -61,35 +61,6 @@ final class SrvRecord extends DnsRecord {
     }
 
     @Override
-    public final boolean equals(final Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (!super.equals(obj)) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final SrvRecord other = (SrvRecord) obj;
-        return port == other.port
-            && priority == other.priority
-            && server.equals(other.server)
-            && weight == other.weight;
-    }
-
-    @Override
-    public final int hashCode() {
-        final int prime = 31;
-        int result = super.hashCode();
-        result = prime * result + port;
-        result = prime * result + priority;
-        result = prime * result + server.hashCode();
-        result = prime * result + weight;
-        return result;
-    }
-
-    @Override
     public final String toString() {
         return "SrvRecord [name="
             + name()

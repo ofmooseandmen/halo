@@ -52,28 +52,6 @@ final class TxtRecord extends DnsRecord {
     }
 
     @Override
-    public final boolean equals(final Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (!super.equals(obj)) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        return attributes.equals(((TxtRecord) obj).attributes);
-    }
-
-    @Override
-    public final int hashCode() {
-        final int prime = 31;
-        int result = super.hashCode();
-        result = prime * result + attributes.hashCode();
-        return result;
-    }
-
-    @Override
     public final String toString() {
         return "TxtRecord [name="
             + name()
