@@ -220,7 +220,7 @@ final class Announcer implements Closeable {
      */
     Announcer(final ZeroconfHelper zeroconf) {
         zc = zeroconf;
-        ses = Executors.newSingleThreadScheduledExecutor();
+        ses = Executors.newSingleThreadScheduledExecutor(new ZeroconfThreadFactory("announcer"));
     }
 
     @Override

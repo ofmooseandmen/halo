@@ -218,7 +218,7 @@ final class ZeroconfChannel implements Closeable {
     private ZeroconfChannel(final Consumer<DnsMessage> aListener, final Clock aClock,
             final Collection<NetworkInterface> nis) throws IOException {
         clock = aClock;
-        es = Executors.newFixedThreadPool(2);
+        es = Executors.newFixedThreadPool(2, new ZeroconfThreadFactory("channel"));
         listener = aListener;
         selector = Selector.open();
         sq = new LinkedBlockingQueue<>();
@@ -260,7 +260,7 @@ final class ZeroconfChannel implements Closeable {
         while (nics.hasMoreElements()) {
             c.add(nics.nextElement());
         }
-        return new ZeroconfChannel(listener, clock, c);
+        return networkInterfaces(listener, clock, c);
     }
 
     /**
