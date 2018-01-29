@@ -17,6 +17,8 @@ All modules can be built with Gradle using the following command.
 
 ## Modules
 
+All modules are tested with [cucumber](https://cucumber.io). Feature files can be found in the `src/test/resources` folder of each module.
+
 ### [Zeroconf](zeroconf/README.md)
 
  _[WIP]_ A pure java implementation of the [Zero Configuration Networking protocol](http://www.zeroconf.org).

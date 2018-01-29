@@ -8,7 +8,7 @@ Supports service resolution, registration and browsing.
 ## Building from Source
 
 You need [JDK-8](http://openjdk.java.net/projects/jdk8/) or higher to build Zeroconf.
-Zeroconf can be built with Gradle using the following command.
+Zeroconf can be built with Gradle using the following command:
 
 ```
 ./gradlew clean build
@@ -40,11 +40,11 @@ try (final Zeroconf zc = Zeroconf.allNetworkInterfaces(Clock.systemDefaultZone()
     // registered service is returned.
     System.err.println(service);
 
-    // registering again will return a service with an instance name of "Foo Bar (2)".
-    service = zc.register(Service.create("Foo Bar", "_http._udp.", (short) 8009).get());
+    // registering again the service instance and registration type will return a service with an instance name of "Foo Bar (2)".
+    service = zc.register(Service.create("Foo Bar", "_http._udp.", (short) 8010).get());
     System.err.println(service);
 
-    // not allowing service instance name to be changed will throw an IOException in this case.
-    zc.register(Service.create("Foo Bar", "_http._udp.", (short) 8009).get(), false);
+    // not allowing service instance name to be changed will throw an IOException at this point.
+    zc.register(Service.create("Foo Bar", "_http._udp.", (short) 8011).get(), false);
 }
 ```
