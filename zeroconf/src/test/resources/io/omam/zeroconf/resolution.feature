@@ -9,7 +9,7 @@ Feature: Service resolution
       | instanceName        | registrationType | port | priority | text      | weight |
       | Living Room Speaker | _music._tcp.     | 9009 |        5 | Some Text |      0 |
     When the service "Living Room Speaker._music._tcp." is resolved by "Zeroconf"
-    Then the following service shall be returned
+    Then the following resolved service shall be returned:
       | instanceName        | registrationType | port | priority | text      | weight |
       | Living Room Speaker | _music._tcp.     | 9009 |        5 | Some Text |      0 |
 
@@ -20,11 +20,11 @@ Feature: Service resolution
       | Living Room Speaker | _music._tcp.     | 9009 |        5 | Some Text |      0 |
     And a "Zeroconf" instance has been created
     When the service "Living Room Speaker._music._tcp." is resolved by "Zeroconf"
-    Then the following service shall be returned
+    Then the following resolved service shall be returned:
       | instanceName        | registrationType | port | priority | text      | weight |
       | Living Room Speaker | _music._tcp.     | 9009 |        5 | Some Text |      0 |
 
   Scenario: Unresolved service
     Given a "Zeroconf" instance has been created
     When the service "Living Room Speaker._music._tcp." is resolved by "Zeroconf"
-    Then no service shall be returned
+    Then no resolved service shall be returned

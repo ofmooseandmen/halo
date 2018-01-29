@@ -34,13 +34,13 @@ import static io.omam.zeroconf.MulticastDns.CLASS_ANY;
 import static io.omam.zeroconf.MulticastDns.TYPE_ANY;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -70,7 +70,7 @@ final class Cache {
     final void add(final DnsRecord record) {
         Objects.requireNonNull(record);
         LOGGER.fine(() -> "Adding " + record + " to cache");
-        map.computeIfAbsent(key(record), k -> new ArrayList<>()).add(record);
+        map.computeIfAbsent(key(record), k -> new CopyOnWriteArrayList<>()).add(record);
     }
 
     /**

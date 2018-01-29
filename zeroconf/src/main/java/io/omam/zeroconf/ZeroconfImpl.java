@@ -50,11 +50,11 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
@@ -114,8 +114,8 @@ final class ZeroconfImpl extends ZeroconfHelper implements Zeroconf, Consumer<Dn
         clock = aClock;
         rls = new CopyOnWriteArrayList<>();
 
-        services = new HashMap<>();
-        registrationPointerNames = new HashMap<>();
+        services = new ConcurrentHashMap<>();
+        registrationPointerNames = new ConcurrentHashMap<>();
 
         channel.enable();
     }
@@ -181,7 +181,7 @@ final class ZeroconfImpl extends ZeroconfHelper implements Zeroconf, Consumer<Dn
             throw new IOException(msg);
         }
 
-        services.put(rservice.serviceName().toLowerCase(), service);
+        services.put(rservice.serviceName().toLowerCase(), rservice);
         final String rpn = rservice.registrationPointerName();
         if (registrationPointerNames.containsKey(rpn)) {
             registrationPointerNames.put(rpn, registrationPointerNames.get(rpn) + 1);
@@ -280,6 +280,7 @@ final class ZeroconfImpl extends ZeroconfHelper implements Zeroconf, Consumer<Dn
         boolean collision = false;
         Service result = service;
         do {
+            collision = false;
             final Instant now = now();
             /* check cache. */
             final Optional<SrvRecord> rec = cache
@@ -303,19 +304,20 @@ final class ZeroconfImpl extends ZeroconfHelper implements Zeroconf, Consumer<Dn
             }
 
             /* check own services. */
-            final Service own = services.get(result.instanceName());
-            if (own != null
-                && own.port() != port
-                && !own.hostname().orElseThrow(() -> new IOException("Unknown service hostname")).equals(
-                        hostname)) {
-                collision = true;
-                final String str = "Registered service collision: " + own;
-                if (!allowNameChange) {
-                    throw new IOException(str);
+            final Service own = services.get(result.serviceName().toLowerCase());
+            if (own != null) {
+                final String otherHostname =
+                        own.hostname().orElseThrow(() -> new IOException("Unknown service hostname"));
+                collision = own.port() != port || !otherHostname.equals(hostname);
+                if (collision) {
+                    final String str = "Registered service collision: " + own;
+                    if (!allowNameChange) {
+                        throw new IOException(str);
+                    }
+                    LOGGER.info(str);
+                    final String instanceName = changeInstanceName(result.instanceName());
+                    result = new ServiceImpl(instanceName, result);
                 }
-                LOGGER.info(str);
-                final String instanceName = changeInstanceName(result.instanceName());
-                result = new ServiceImpl(instanceName, result);
             }
         } while (collision);
         return result;

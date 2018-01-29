@@ -45,7 +45,7 @@ import cucumber.api.junit.Cucumber;
  */
 @RunWith(Cucumber.class)
 @CucumberOptions(monochrome = true, dryRun = false, strict = true, tags = {}, plugin = {}, features = {})
-public final class CukesTest {
+public final class ZeroconfTest {
 
     /**
      * Reads 'logging.properties' and configures all Loggers.

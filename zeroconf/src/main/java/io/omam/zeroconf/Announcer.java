@@ -184,16 +184,11 @@ final class Announcer implements Closeable {
         public final Void call() throws Exception {
             final Instant now = zc.now();
             final String hostname = s.hostname().orElseThrow(() -> new IOException("Unknown service hostname"));
-            final Attributes attributes =
-                    s.attributes().orElseThrow(() -> new IOException("Unknown service attributes"));
             final String serviceName = s.serviceName();
-            final Builder b = DnsMessage
-                .query()
-                .addQuestion(new DnsQuestion(hostname, TYPE_ANY, CLASS_IN))
-                .addAuthority(new PtrRecord(s.registrationPointerName(), CLASS_IN, TTL, now, s.instanceName()))
-                .addAuthority(new SrvRecord(serviceName, CLASS_IN, TTL, now, s.port(), s.priority(), hostname,
-                                            s.weight()))
-                .addAuthority(new TxtRecord(serviceName, CLASS_IN, TTL, now, attributes));
+            final Builder b =
+                    DnsMessage.query().addQuestion(new DnsQuestion(serviceName, TYPE_ANY, CLASS_IN)).addAuthority(
+                            new SrvRecord(serviceName, CLASS_IN, TTL, now, s.port(), s.priority(), hostname,
+                                          s.weight()));
 
             s.ipv4Address().ifPresent(a -> b.addAuthority(AddressRecord.ipv4(serviceName, CLASS_IN, TTL, now, a)));
 

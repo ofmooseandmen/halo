@@ -30,44 +30,47 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.zeroconf;
 
-import java.time.Instant;
-import java.util.logging.Logger;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-import cucumber.api.Scenario;
+import java.util.Optional;
+
 import cucumber.api.java.After;
-import cucumber.api.java.Before;
+import cucumber.api.java.en.Then;
 
 /**
- * Steps to log start/end of scenario.
+ * Steps pertaining to testing whether expected {@link Exception} have been thrown.
  */
-public final class ScenarioSteps {
+@SuppressWarnings("javadoc")
+public final class Exceptions {
 
-    /** logger. */
-    private static final Logger LOGGER = Logger.getLogger(ScenarioSteps.class.getName());
+    private Optional<Exception> ex;
 
     /**
-     * Logs end of scenario and the most severe status of the scenario's steps.
-     *
-     * @param scenario scenario
+     * Constructor.
      */
-    @After
-    public final void after(final Scenario scenario) {
-        LOGGER.info(() -> "Scenario '"
-            + scenario.getName()
-            + "' ended @ "
-            + Instant.now()
-            + " with status "
-            + scenario.getStatus());
+    public Exceptions() {
+        ex = Optional.empty();
     }
 
-    /**
-     * Logs start of scenario.
-     *
-     * @param scenario scenario
-     */
-    @Before
-    public final void before(final Scenario scenario) {
-        LOGGER.info(() -> "Scenario '" + scenario.getName() + "' started @ " + Instant.now());
+    @After
+    public final void after() {
+        ex = Optional.empty();
+    }
+
+    @Then("^a \"([^\\\"]*)\" shall be thrown with message containing \"([^\\\"]*)\"$")
+    public final void thenExceptionThrow(final String exceptionClass, final String exceptionMessage) {
+        assertTrue(ex.isPresent());
+        assertEquals(exceptionClass, ex.get().getClass().getName());
+        assertTrue(ex.get().getMessage().contains(exceptionMessage));
+    }
+
+    final void thrown(final Exception exception) {
+        if (ex.isPresent()) {
+            fail("Other exception already thrown: " + ex.get());
+        }
+        ex = Optional.of(exception);
     }
 
 }

@@ -61,6 +61,9 @@ public final class ResolutionSteps {
 
     public ResolutionSteps(final Engines someEngines) {
         engines = someEngines;
+        zcs = Optional.empty();
+        jms = Optional.empty();
+        resolvedBy = null;
     }
 
     @After
@@ -70,7 +73,7 @@ public final class ResolutionSteps {
         resolvedBy = null;
     }
 
-    @Then("^no service shall be returned$")
+    @Then("^no resolved service shall be returned$")
     public final void thenServiceNotResolved() {
         assertNotNull(resolvedBy);
         if (resolvedBy.equals("Zeroconf")) {
@@ -80,7 +83,15 @@ public final class ResolutionSteps {
         }
     }
 
-    @Then("^the following service shall be returned$")
+    @Then("^the service \"([^\"]*)\" shall be resolved by \"JmDNS\"$")
+    public final void thenServiceResolved(final String service) {
+        final int firstDot = service.indexOf('.');
+        final String instanceName = service.substring(0, firstDot);
+        final String registrationType = service.substring(firstDot + 1, service.length());
+        assertNotNull(engines.jmdns().getServiceInfo(registrationType + "local.", instanceName));
+    }
+
+    @Then("^the following resolved service shall be returned:$")
     public final void thenServiceReturned(final List<ServiceDetails> service) {
         assertEquals(1, service.size());
         assertNotNull(resolvedBy);
