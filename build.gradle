@@ -1,5 +1,6 @@
 apply plugin: 'base'
 apply plugin: 'eclipse'
+apply plugin: 'org.sonarqube'
 apply from: 'libraries.gradle'
 apply from: 'resources/eclipse-prefs/eclipse.gradle'
 
@@ -7,10 +8,13 @@ buildscript {
     repositories {
         mavenCentral()
     }
+    
+    dependencies {
+        classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.6.1'
+    }
 }
 
 allprojects {
-
     repositories {
         mavenCentral()
     }
