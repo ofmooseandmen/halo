@@ -40,7 +40,8 @@ try (final Zeroconf zc = Zeroconf.allNetworkInterfaces(Clock.systemDefaultZone()
     // registered service is returned.
     System.err.println(service);
 
-    // registering again the service instance and registration type will return a service with an instance name of "Foo Bar (2)".
+    // registering again the service instance and registration type will return a service
+    // with an instance name of "Foo Bar (2)".
     service = zc.register(Service.create("Foo Bar", "_http._udp.", (short) 8010).get());
     System.err.println(service);
 
