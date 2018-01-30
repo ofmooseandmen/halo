@@ -55,6 +55,9 @@ import java.util.logging.Logger;
 @SuppressWarnings("javadoc")
 final class ServiceImpl implements Service, ResponseListener {
 
+    /** the domain: always local. */
+    private static final String DOMAIN = "local";
+
     private static final Duration INIT_REQ_DELAY = Duration.ofMillis(200);
 
     private static final Logger LOGGER = Logger.getLogger(ServiceImpl.class.getName());
@@ -163,7 +166,7 @@ final class ServiceImpl implements Service, ResponseListener {
 
     @Override
     public final String registrationPointerName() {
-        return registrationType + "local.";
+        return registrationType + DOMAIN + ".";
     }
 
     @Override
@@ -261,7 +264,19 @@ final class ServiceImpl implements Service, ResponseListener {
         attributes = Optional.of(someAttributes);
     }
 
-    final void setHostname(final String aHostname) {
+    /**
+     * Sets the hostname, appending '.local.' if needed.
+     *
+     * @param name the hostname
+     */
+    final void setHostname(final String name) {
+        String aHostname = name;
+        final int index = aHostname.indexOf("." + DOMAIN);
+        if (index > 0) {
+            aHostname = aHostname.substring(0, index);
+        }
+        aHostname = aHostname.replaceAll("[:%\\.]", "-");
+        aHostname += "." + DOMAIN + ".";
         hostname = Optional.of(aHostname);
     }
 

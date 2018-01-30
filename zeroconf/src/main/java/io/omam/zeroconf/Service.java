@@ -42,6 +42,16 @@ public interface Service {
 
     public static final class Builder implements Supplier<Service> {
 
+        /** address of the local host. */
+        private static final InetAddress LOCAL_HOST;
+        static {
+            try {
+                LOCAL_HOST = InetAddress.getLocalHost();
+            } catch (final UnknownHostException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+
         private final ServiceImpl si;
 
         Builder(final String instanceName, final String registrationType, final short port) {
@@ -50,16 +60,11 @@ public interface Service {
             si.setPriority((short) 0);
             si.setWeight((short) 0);
             si.setAttributes(Attributes.create().with("").get());
-            try {
-                final InetAddress local = InetAddress.getLocalHost();
-                si.setHostname(local.getHostName());
-                if (local instanceof Inet4Address) {
-                    si.setIpv4Address((Inet4Address) local);
-                } else if (local instanceof Inet6Address) {
-                    si.setIpv6Address((Inet6Address) local);
-                }
-            } catch (final UnknownHostException e) {
-                throw new IllegalStateException(e);
+            si.setHostname(LOCAL_HOST.getHostName());
+            if (LOCAL_HOST instanceof Inet4Address) {
+                si.setIpv4Address((Inet4Address) LOCAL_HOST);
+            } else if (LOCAL_HOST instanceof Inet6Address) {
+                si.setIpv6Address((Inet6Address) LOCAL_HOST);
             }
         }
 
