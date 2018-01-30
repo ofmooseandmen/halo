@@ -100,10 +100,10 @@ final class Announcer implements Closeable {
                 .addAnswer(new TxtRecord(serviceName, unique, TTL, now, attributes), Optional.empty());
 
             s.ipv4Address().ifPresent(
-                    a -> b.addAnswer(new AddressRecord(serviceName, unique, TTL, now, a), Optional.empty()));
+                    a -> b.addAnswer(new AddressRecord(hostname, unique, TTL, now, a), Optional.empty()));
 
             s.ipv6Address().ifPresent(
-                    a -> b.addAnswer(new AddressRecord(serviceName, unique, TTL, now, a), Optional.empty()));
+                    a -> b.addAnswer(new AddressRecord(hostname, unique, TTL, now, a), Optional.empty()));
 
             zc.sendMessage(b.get());
             return null;
@@ -192,9 +192,8 @@ final class Announcer implements Closeable {
                             new SrvRecord(serviceName, CLASS_IN, TTL, now, s.port(), s.priority(), hostname,
                                           s.weight()));
 
-            s.ipv4Address().ifPresent(a -> b.addAuthority(new AddressRecord(serviceName, CLASS_IN, TTL, now, a)));
-
-            s.ipv6Address().ifPresent(a -> b.addAuthority(new AddressRecord(serviceName, CLASS_IN, TTL, now, a)));
+            s.ipv4Address().ifPresent(a -> b.addAuthority(new AddressRecord(hostname, CLASS_IN, TTL, now, a)));
+            s.ipv6Address().ifPresent(a -> b.addAuthority(new AddressRecord(hostname, CLASS_IN, TTL, now, a)));
 
             zc.sendMessage(b.get());
             return null;
