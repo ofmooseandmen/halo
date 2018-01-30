@@ -99,12 +99,6 @@ final class MulticastDns {
     /** any class. */
     static final short CLASS_ANY = 255;
 
-    /** class mask (unsigned). */
-    static final short CLASS_MASK = 0x7FFF;
-
-    /** unique class (unsigned). */
-    static final short CLASS_UNIQUE = (short) 0x8000;
-
     /** type A (IPV4 address) record. */
     static final short TYPE_A = 1;
 
@@ -123,11 +117,50 @@ final class MulticastDns {
     /** any record. */
     static final short TYPE_ANY = 255;
 
+    /** class mask (unsigned). */
+    private static final short CLASS_MASK = 0x7FFF;
+
+    /** unique class (unsigned). */
+    private static final short CLASS_UNIQUE = (short) 0x8000;
+
     /**
      * Constructor.
      */
     private MulticastDns() {
         // empty.
+    }
+
+    /**
+     * Decodes the given class and returns an array with the class index and whether the class is unique (a value
+     * different from 0 denotes a unique class).
+     *
+     * @param clazz class
+     * @return an array of 2 shorts, first is class index, second whether class is unique
+     */
+    static short[] decodeClass(final short clazz) {
+        return new short[] { (short) (clazz & CLASS_MASK), (short) (clazz & CLASS_UNIQUE) };
+    }
+
+    /**
+     * Encodes the given class index and whether it is unique into a class. This is the reverse operation of
+     * {@link #encodeClass(short, boolean)}.
+     *
+     * @param classIndex class index
+     * @param unique whether the class is unique
+     * @return encoded class
+     */
+    static short encodeClass(final short classIndex, final boolean unique) {
+        return (short) (classIndex | (unique ? CLASS_UNIQUE : 0));
+    }
+
+    /**
+     * Makes the given class unique.
+     *
+     * @param classIndex class index
+     * @return unique class
+     */
+    static short uniqueClass(final short classIndex) {
+        return (short) (classIndex | CLASS_UNIQUE);
     }
 
 }

@@ -31,7 +31,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package io.omam.zeroconf;
 
 import static io.omam.zeroconf.MulticastDns.CLASS_IN;
-import static io.omam.zeroconf.MulticastDns.CLASS_UNIQUE;
 import static io.omam.zeroconf.MulticastDns.DISCOVERY;
 import static io.omam.zeroconf.MulticastDns.FLAGS_AA;
 import static io.omam.zeroconf.MulticastDns.TTL;
@@ -41,6 +40,7 @@ import static io.omam.zeroconf.MulticastDns.TYPE_ANY;
 import static io.omam.zeroconf.MulticastDns.TYPE_PTR;
 import static io.omam.zeroconf.MulticastDns.TYPE_SRV;
 import static io.omam.zeroconf.MulticastDns.TYPE_TXT;
+import static io.omam.zeroconf.MulticastDns.uniqueClass;
 
 import java.io.IOException;
 import java.net.Inet4Address;
@@ -131,13 +131,17 @@ final class ZeroconfImpl extends ZeroconfHelper implements Zeroconf, Consumer<Dn
      */
     private static String changeInstanceName(final String instanceName) {
         final Matcher m = INSTANCE_NAME_PATTERN.matcher(instanceName);
+        final String result;
         if (!m.matches()) {
-            return instanceName + " (2)";
+            result = instanceName + " (2)";
+        } else {
+            final int next = Integer.parseInt(m.group("i")) + 1;
+            final int start = m.start("i");
+            final int end = m.end("i");
+            result = instanceName.substring(0, start) + next + instanceName.substring(end);
         }
-        final int next = Integer.parseInt(m.group("i")) + 1;
-        final int start = m.start("i");
-        final int end = m.end("i");
-        return instanceName.substring(0, start) + next + instanceName.substring(end);
+        LOGGER.fine(() -> "Change service instance name from: [" + instanceName + "] to [" + result + "]");
+        return result;
     }
 
     @Override
@@ -245,10 +249,8 @@ final class ZeroconfImpl extends ZeroconfHelper implements Zeroconf, Consumer<Dn
             .filter(h -> h.ipv4Address().isPresent())
             .forEach(s -> {
                 final Inet4Address addr = s.ipv4Address().get();
-                final short clazz = (short) (CLASS_IN | CLASS_UNIQUE);
-                builder.addAnswer(msg, AddressRecord.ipv4(question.name(), clazz, TTL, now, addr));
+                builder.addAnswer(msg, new AddressRecord(question.name(), uniqueClass(CLASS_IN), TTL, now, addr));
             });
-
     }
 
     private void addIpv6Address(final DnsMessage msg, final DnsQuestion question, final Builder builder,
@@ -260,10 +262,61 @@ final class ZeroconfImpl extends ZeroconfHelper implements Zeroconf, Consumer<Dn
             .filter(h -> h.ipv6Address().isPresent())
             .forEach(s -> {
                 final Inet6Address addr = s.ipv6Address().get();
-                final short clazz = (short) (CLASS_IN | CLASS_UNIQUE);
-                builder.addAnswer(msg, AddressRecord.ipv6(question.name(), clazz, TTL, now, addr));
+                builder.addAnswer(msg, new AddressRecord(question.name(), uniqueClass(CLASS_IN), TTL, now, addr));
             });
+    }
 
+    private DnsMessage buildResponse(final DnsMessage query) {
+        final Builder builder = DnsMessage.response(FLAGS_AA);
+        final Instant now = now();
+        for (final DnsQuestion question : query.questions()) {
+            if (question.type() == TYPE_PTR) {
+                if (question.name().equals(DISCOVERY)) {
+                    for (final String rpn : registrationPointerNames.keySet()) {
+                        builder.addAnswer(query, new PtrRecord(DISCOVERY, CLASS_IN, TTL, now, rpn));
+                    }
+                }
+                for (final Service s : services.values()) {
+                    if (question.name().equalsIgnoreCase(s.registrationPointerName())) {
+                        builder.addAnswer(query,
+                                new PtrRecord(s.registrationPointerName(), CLASS_IN, TTL, now, s.serviceName()));
+                    }
+                }
+            } else {
+                if (question.type() == TYPE_A || question.type() == TYPE_ANY) {
+                    addIpv4Address(query, question, builder, now);
+                }
+                if (question.type() == TYPE_AAAA || question.type() == TYPE_ANY) {
+                    addIpv6Address(query, question, builder, now);
+                }
+
+                final Service s = services.get(question.name().toLowerCase());
+                if (s != null) {
+                    final short unique = uniqueClass(CLASS_IN);
+                    if (question.type() == TYPE_SRV || question.type() == TYPE_ANY) {
+                        s
+                            .hostname()
+                            .ifPresent(h -> builder.addAnswer(query,
+                                    new SrvRecord(question.name(), unique, TTL, now, s.port(), s.priority(), h,
+                                                  s.weight())));
+                    }
+
+                    if (question.type() == TYPE_TXT || question.type() == TYPE_ANY) {
+                        s.attributes().ifPresent(a -> builder.addAnswer(query,
+                                new TxtRecord(question.name(), unique, TTL, now, a)));
+                    }
+
+                    final Optional<String> hostname = s.hostname();
+                    if (question.type() == TYPE_SRV && hostname.isPresent()) {
+                        s.ipv4Address().ifPresent(a -> builder.addAnswer(query,
+                                new AddressRecord(hostname.get(), unique, TTL, now, a)));
+                        s.ipv6Address().ifPresent(a -> builder.addAnswer(query,
+                                new AddressRecord(hostname.get(), unique, TTL, now, a)));
+                    }
+                }
+            }
+        }
+        return builder.get();
     }
 
     /**
@@ -323,61 +376,19 @@ final class ZeroconfImpl extends ZeroconfHelper implements Zeroconf, Consumer<Dn
         return result;
     }
 
-    private void handleQuery(final DnsMessage msg) {
-        final Builder builder = DnsMessage.response(FLAGS_AA);
-        final Instant now = now();
-        for (final DnsQuestion question : msg.questions()) {
-            if (question.type() == TYPE_PTR) {
-                if (question.name().equals(DISCOVERY)) {
-                    for (final String rpn : registrationPointerNames.keySet()) {
-                        builder.addAnswer(msg, new PtrRecord(DISCOVERY, CLASS_IN, TTL, now, rpn));
-                    }
-                }
-                for (final Service s : services.values()) {
-                    if (question.name().equalsIgnoreCase(s.registrationPointerName())) {
-                        builder.addAnswer(msg,
-                                new PtrRecord(s.registrationPointerName(), CLASS_IN, TTL, now, s.serviceName()));
-                    }
-                }
-            } else {
-                if (question.type() == TYPE_A || question.type() == TYPE_ANY) {
-                    addIpv4Address(msg, question, builder, now);
-                }
-                if (question.type() == TYPE_AAAA || question.type() == TYPE_ANY) {
-                    addIpv6Address(msg, question, builder, now);
-                }
-
-                final Service s = services.get(question.name().toLowerCase());
-                if (s != null) {
-                    final short clazz = (short) (CLASS_IN | CLASS_UNIQUE);
-                    if (question.type() == TYPE_SRV || question.type() == TYPE_ANY) {
-                        s.hostname().ifPresent(
-                                h -> builder.addAnswer(msg, new SrvRecord(question.name(), clazz, TTL, now,
-                                                                          s.port(), s.priority(), h, s.weight())));
-                    }
-
-                    if (question.type() == TYPE_TXT || question.type() == TYPE_ANY) {
-                        s.attributes().ifPresent(
-                                a -> builder.addAnswer(msg, new TxtRecord(question.name(), clazz, TTL, now, a)));
-                    }
-
-                    final Optional<String> hostname = s.hostname();
-                    if (question.type() == TYPE_SRV && hostname.isPresent()) {
-                        s.ipv4Address().ifPresent(a -> builder.addAnswer(msg,
-                                AddressRecord.ipv4(hostname.get(), clazz, TTL, now, a)));
-                        s.ipv6Address().ifPresent(a -> builder.addAnswer(msg,
-                                AddressRecord.ipv6(hostname.get(), clazz, TTL, now, a)));
-                    }
-                }
-            }
-        }
-        final DnsMessage response = builder.get();
+    private void handleQuery(final DnsMessage query) {
+        LOGGER.fine(() -> "Trying to respond to " + query);
+        final DnsMessage response = buildResponse(query);
         if (!response.answers().isEmpty()) {
+            LOGGER.fine(() -> "Responding with " + response);
             channel.send(response);
+        } else {
+            LOGGER.fine("Ignoring query");
         }
     }
 
     private void handleResponse(final DnsMessage response) {
+        LOGGER.fine(() -> "Caching response " + response);
         final Instant now = now();
         for (final DnsRecord record : response.answers()) {
             if (cache.entries().contains(record)) {

@@ -67,7 +67,7 @@ final class ZeroconfThreadFactory implements ThreadFactory {
     @Override
     public final Thread newThread(final Runnable r) {
         final Thread t = new Thread(group, r, namePrefix + threadNumber.getAndIncrement(), 0);
-        t.setDaemon(false);
+        t.setDaemon(true);
         t.setPriority(Thread.NORM_PRIORITY);
         return t;
     }

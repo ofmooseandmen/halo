@@ -30,7 +30,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.zeroconf;
 
-import static io.omam.zeroconf.MulticastDns.CLASS_UNIQUE;
 import static io.omam.zeroconf.MulticastDns.FLAGS_QR_MASK;
 import static io.omam.zeroconf.MulticastDns.FLAGS_QR_QUERY;
 import static io.omam.zeroconf.MulticastDns.FLAGS_QR_RESPONSE;
@@ -39,6 +38,7 @@ import static io.omam.zeroconf.MulticastDns.TYPE_AAAA;
 import static io.omam.zeroconf.MulticastDns.TYPE_PTR;
 import static io.omam.zeroconf.MulticastDns.TYPE_SRV;
 import static io.omam.zeroconf.MulticastDns.TYPE_TXT;
+import static io.omam.zeroconf.MulticastDns.encodeClass;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -229,10 +229,10 @@ final class DnsMessage {
         final DnsRecord record;
         switch (type) {
             case TYPE_A:
-                record = AddressRecord.ipv4(name, clazz, ttl, now, InetAddress.getByAddress(is.readBytes(length)));
+                record = new AddressRecord(name, clazz, ttl, now, InetAddress.getByAddress(is.readBytes(length)));
                 break;
             case TYPE_AAAA:
-                record = AddressRecord.ipv6(name, clazz, ttl, now, InetAddress.getByAddress(is.readBytes(length)));
+                record = new AddressRecord(name, clazz, ttl, now, InetAddress.getByAddress(is.readBytes(length)));
                 break;
             case TYPE_PTR:
                 record = new PtrRecord(name, clazz, ttl, now, is.readName());
@@ -252,7 +252,10 @@ final class DnsMessage {
                  * ignore unknown types: skip the payload for the resource record so the next records can be parsed
                  * correctly.
                  */
-                is.skip(length);
+                final long skipped = is.skip(length);
+                if (skipped != length) {
+                    throw new IOException("Failed to skip over ignored record.");
+                }
                 record = null;
                 break;
         }
@@ -271,18 +274,14 @@ final class DnsMessage {
     private static void write(final DnsQuestion question, final MessageOutputStream mos) {
         mos.writeName(question.name());
         mos.writeShort(question.type());
-        mos.writeShort(question.clazz());
+        mos.writeShort(encodeClass(question.clazz(), question.isUnique()));
     }
 
     private static void write(final DnsRecord record, final Optional<Instant> stamp,
             final MessageOutputStream mos) {
         mos.writeName(record.name());
         mos.writeShort(record.type());
-        if (record.isUnique()) {
-            mos.writeShort((short) (record.clazz() | CLASS_UNIQUE));
-        } else {
-            mos.writeShort(record.clazz());
-        }
+        mos.writeShort(encodeClass(record.clazz(), record.isUnique()));
         if (stamp.isPresent()) {
             mos.writeInt((int) record.remainingTtl(stamp.get()).getSeconds());
         } else {

@@ -49,14 +49,6 @@ import java.util.List;
 
 import cucumber.api.java.After;
 import cucumber.api.java.en.Given;
-import io.omam.zeroconf.AddressRecord;
-import io.omam.zeroconf.Attributes;
-import io.omam.zeroconf.DnsMessage;
-import io.omam.zeroconf.DnsQuestion;
-import io.omam.zeroconf.DnsRecord;
-import io.omam.zeroconf.PtrRecord;
-import io.omam.zeroconf.SrvRecord;
-import io.omam.zeroconf.TxtRecord;
 import io.omam.zeroconf.DnsMessage.Builder;
 
 /**
@@ -146,16 +138,16 @@ public final class DnsFactory {
         switch (type) {
             case "A":
                 try {
-                    record = AddressRecord.ipv4(name, clazz, ttlDur, instant,
-                            InetAddress.getByName("192.168.154.0"));
+                    record = new AddressRecord(name, clazz, ttlDur, instant,
+                                               InetAddress.getByName("192.168.154.0"));
                 } catch (final UnknownHostException e) {
                     throw new AssertionError(e);
                 }
                 break;
             case "AAAA":
                 try {
-                    record = AddressRecord.ipv6(name, clazz, ttlDur, instant,
-                            InetAddress.getByName("2001:0db8:85a3:0000:0000:8a2e:0370:7334"));
+                    record = new AddressRecord(name, clazz, ttlDur, instant,
+                                               InetAddress.getByName("2001:0db8:85a3:0000:0000:8a2e:0370:7334"));
                 } catch (final UnknownHostException e) {
                     throw new AssertionError(e);
                 }
@@ -208,11 +200,9 @@ public final class DnsFactory {
             final Duration ttlDur = Duration.parse(rec.ttl());
             switch (typeForName(rec.type())) {
                 case TYPE_A:
-                    return AddressRecord.ipv4(rec.name(), clazz, ttlDur, now,
-                            InetAddress.getByName(rec.address()));
+                    return new AddressRecord(rec.name(), clazz, ttlDur, now, InetAddress.getByName(rec.address()));
                 case TYPE_AAAA:
-                    return AddressRecord.ipv6(rec.name(), clazz, ttlDur, now,
-                            InetAddress.getByName(rec.address()));
+                    return new AddressRecord(rec.name(), clazz, ttlDur, now, InetAddress.getByName(rec.address()));
                 case TYPE_PTR:
                     return new PtrRecord(rec.name(), clazz, ttlDur, now, rec.target());
                 case TYPE_SRV:

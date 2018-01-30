@@ -35,67 +35,54 @@ import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 
 /**
- * A facility to count down from an initial duration.
+ * A duration continuously decreasing until {@link Duration#ZERO}.
+ * <p>
+ * This class is helpful when awaiting for a {@code java.util.concurrent.locks.Condition} to be signaled.
  */
-final class CountDownDuration {
+final class Timeout {
 
     /** remaing duration. */
     private final Duration duration;
 
-    /** when the timer was started, milliseconds from the epoch of 1970-01-01T00:00Z. */
-    private long start;
+    /** when the timeout was created, milliseconds from the epoch of 1970-01-01T00:00Z. */
+    private final long start;
 
     /**
      * Class constructor.
      *
      * @param initialDuration initial duration, not null and not negative
      */
-    private CountDownDuration(final Duration initialDuration) {
+    private Timeout(final Duration initialDuration) {
         duration = initialDuration;
-        start = -1;
+        start = System.nanoTime();
     }
 
     /**
-     * Returns a new {@link CountDownDuration timer} that count downs from the given {@code initialDuration}.
+     * Returns a new {@link Timeout timeout} starting at the given {@code initialDuration}.
      *
      * @param initialDuration initial duration, not null and not negative
-     * @return a new {@link CountDownDuration timer} that count downs from the given {@code initialDuration}
+     * @return a new {@link Timeout timeout}
      */
-    static CountDownDuration of(final Duration initialDuration) {
+    static Timeout of(final Duration initialDuration) {
         Objects.requireNonNull(initialDuration);
         if (initialDuration.isNegative()) {
             throw new IllegalArgumentException("Invalid initial duration: " + initialDuration);
         }
-        return new CountDownDuration(initialDuration);
+        return new Timeout(initialDuration);
     }
 
     /**
-     * Assess and returns the remaining duration or {@link Duration#ZERO} is the initial duration has elapsed.
-     * <p>
-     * This methods throws an {@link IllegalStateException} if the timer has not been {@link #start() started}.
+     * Assess and returns the remaining duration or {@link Duration#ZERO} if the initial duration has elapsed.
      *
      * @return the remaining duration
      */
     final Duration remaining() {
-        if (start == -1) {
-            throw new IllegalStateException("CountDownTimer not started");
-        }
         final long elapsedNs = System.nanoTime() - start;
         Duration remaining = duration.minus(elapsedNs, ChronoUnit.NANOS);
         if (remaining.isNegative()) {
             remaining = Duration.ZERO;
         }
         return remaining;
-    }
-
-    /**
-     * Starts this timer.
-     *
-     * @return this timer
-     */
-    final CountDownDuration start() {
-        start = System.nanoTime();
-        return this;
     }
 
 }

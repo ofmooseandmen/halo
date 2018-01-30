@@ -35,7 +35,6 @@ import static io.omam.zeroconf.MulticastDns.TYPE_A;
 import static io.omam.zeroconf.MulticastDns.TYPE_AAAA;
 
 import java.net.Inet4Address;
-import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.time.Duration;
 import java.time.Instant;
@@ -48,26 +47,20 @@ final class AddressRecord extends DnsRecord {
 
     private final InetAddress address;
 
-    private AddressRecord(final String aName, final short aType, final short aClass, final Duration aTtl,
-            final Instant now, final InetAddress anAddress) {
-        super(aName, aType, aClass, aTtl, now);
+    AddressRecord(final String aName, final short aClass, final Duration aTtl, final Instant now,
+            final InetAddress anAddress) {
+        super(aName, type(anAddress), aClass, aTtl, now);
         address = anAddress;
     }
 
-    static AddressRecord ipv4(final String name, final short clazz, final Duration ttl, final Instant now,
-            final InetAddress address) {
-        if (!(address instanceof Inet4Address)) {
-            throw new IllegalArgumentException("address must be IPV4");
-        }
-        return new AddressRecord(name, TYPE_A, clazz, ttl, now, address);
-    }
-
-    static AddressRecord ipv6(final String name, final short clazz, final Duration ttl, final Instant now,
-            final InetAddress address) {
-        if (!(address instanceof Inet6Address)) {
-            throw new IllegalArgumentException("address must be IPV6");
-        }
-        return new AddressRecord(name, TYPE_AAAA, clazz, ttl, now, address);
+    /**
+     * Returns the record type for the given address.
+     *
+     * @param address address
+     * @return record type
+     */
+    private static short type(final InetAddress address) {
+        return address instanceof Inet4Address ? TYPE_A : TYPE_AAAA;
     }
 
     @Override
@@ -92,14 +85,6 @@ final class AddressRecord extends DnsRecord {
 
     final InetAddress address() {
         return address;
-    }
-
-    final boolean ipv4() {
-        return type() == TYPE_A;
-    }
-
-    final boolean ipv6() {
-        return type() == TYPE_AAAA;
     }
 
 }

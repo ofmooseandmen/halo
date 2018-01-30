@@ -30,8 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.zeroconf;
 
-import static io.omam.zeroconf.MulticastDns.CLASS_MASK;
-import static io.omam.zeroconf.MulticastDns.CLASS_UNIQUE;
+import static io.omam.zeroconf.MulticastDns.decodeClass;
 
 import java.util.Objects;
 
@@ -47,11 +46,15 @@ abstract class DnsEntry {
 
     private final short clazz;
 
+    private final boolean unique;
+
     protected DnsEntry(final String aName, final short aType, final short aClass) {
         Objects.requireNonNull(aName);
         name = aName;
         type = aType;
-        clazz = (short) (aClass & CLASS_MASK);
+        final short[] arr = decodeClass(aClass);
+        clazz = arr[0];
+        unique = arr[1] != 0;
     }
 
     final short clazz() {
@@ -59,7 +62,7 @@ abstract class DnsEntry {
     }
 
     final boolean isUnique() {
-        return (clazz & CLASS_UNIQUE) != 0;
+        return unique;
     }
 
     final String name() {

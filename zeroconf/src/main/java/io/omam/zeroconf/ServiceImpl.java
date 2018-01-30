@@ -290,11 +290,11 @@ final class ServiceImpl implements Service, ResponseListener {
         awaitingResponse = true;
         boolean response = false;
         try {
-            final CountDownDuration cdd = CountDownDuration.of(dur).start();
-            Duration remaining = cdd.remaining();
+            final Timeout timeout = Timeout.of(dur);
+            Duration remaining = timeout.remaining();
             while (awaitingResponse && !remaining.isZero()) {
                 response = responded.await(remaining.toMillis(), TimeUnit.MILLISECONDS);
-                remaining = cdd.remaining();
+                remaining = timeout.remaining();
             }
         } catch (final InterruptedException e) {
             LOGGER.log(Level.WARNING, "Interrupted while waiting for response", e);

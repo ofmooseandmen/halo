@@ -36,6 +36,7 @@ import static io.omam.zeroconf.MulticastDns.PROBE_INTERVAL;
 import static io.omam.zeroconf.MulticastDns.PROBE_NUM;
 import static io.omam.zeroconf.MulticastDns.TTL;
 import static io.omam.zeroconf.MulticastDns.TYPE_ANY;
+import static io.omam.zeroconf.MulticastDns.uniqueClass;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -88,20 +89,21 @@ final class Announcer implements Closeable {
             final Attributes attributes =
                     s.attributes().orElseThrow(() -> new IOException("Unknown service attributes"));
             final String serviceName = s.serviceName();
+            final short unique = uniqueClass(CLASS_IN);
             final Builder b = DnsMessage
                 .response(FLAGS_AA)
                 .addAnswer(new PtrRecord(s.registrationPointerName(), CLASS_IN, TTL, now, s.instanceName()),
                         Optional.empty())
-                .addAnswer(new SrvRecord(serviceName, CLASS_IN, TTL, now, s.port(), s.priority(), hostname,
-                                         s.weight()),
+                .addAnswer(
+                        new SrvRecord(serviceName, unique, TTL, now, s.port(), s.priority(), hostname, s.weight()),
                         Optional.empty())
-                .addAnswer(new TxtRecord(serviceName, CLASS_IN, TTL, now, attributes), Optional.empty());
+                .addAnswer(new TxtRecord(serviceName, unique, TTL, now, attributes), Optional.empty());
 
             s.ipv4Address().ifPresent(
-                    a -> b.addAnswer(AddressRecord.ipv4(serviceName, CLASS_IN, TTL, now, a), Optional.empty()));
+                    a -> b.addAnswer(new AddressRecord(serviceName, unique, TTL, now, a), Optional.empty()));
 
             s.ipv6Address().ifPresent(
-                    a -> b.addAnswer(AddressRecord.ipv6(serviceName, CLASS_IN, TTL, now, a), Optional.empty()));
+                    a -> b.addAnswer(new AddressRecord(serviceName, unique, TTL, now, a), Optional.empty()));
 
             zc.sendMessage(b.get());
             return null;
@@ -144,11 +146,11 @@ final class Announcer implements Closeable {
             lock.lock();
             boolean signalled = false;
             try {
-                final CountDownDuration cdd = CountDownDuration.of(PROBE_INTERVAL).start();
-                Duration remaining = cdd.remaining();
+                final Timeout timeout = Timeout.of(PROBE_INTERVAL);
+                Duration remaining = timeout.remaining();
                 while (!match.get() && !remaining.isZero()) {
                     signalled = cdt.await(remaining.toMillis(), TimeUnit.MILLISECONDS);
-                    remaining = cdd.remaining();
+                    remaining = timeout.remaining();
                 }
             } catch (final InterruptedException e) {
                 LOGGER.log(Level.WARNING, "Interrupted while waiting for match", e);
@@ -190,9 +192,9 @@ final class Announcer implements Closeable {
                             new SrvRecord(serviceName, CLASS_IN, TTL, now, s.port(), s.priority(), hostname,
                                           s.weight()));
 
-            s.ipv4Address().ifPresent(a -> b.addAuthority(AddressRecord.ipv4(serviceName, CLASS_IN, TTL, now, a)));
+            s.ipv4Address().ifPresent(a -> b.addAuthority(new AddressRecord(serviceName, CLASS_IN, TTL, now, a)));
 
-            s.ipv6Address().ifPresent(a -> b.addAuthority(AddressRecord.ipv6(serviceName, CLASS_IN, TTL, now, a)));
+            s.ipv6Address().ifPresent(a -> b.addAuthority(new AddressRecord(serviceName, CLASS_IN, TTL, now, a)));
 
             zc.sendMessage(b.get());
             return null;
@@ -245,7 +247,7 @@ final class Announcer implements Closeable {
                 conflictFree = !listener.await();
             }
             final boolean result = conflictFree;
-            LOGGER.fine(() -> "Done probing for " + service + "; found conflicts? " + result);
+            LOGGER.fine(() -> "Done probing for " + service + "; found conflicts? " + !result);
             if (result) {
                 /* announce */
                 LOGGER.fine(() -> "Announcing " + service);

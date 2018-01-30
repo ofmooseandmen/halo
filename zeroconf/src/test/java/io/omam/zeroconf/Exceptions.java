@@ -31,10 +31,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package io.omam.zeroconf;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
-import java.util.Optional;
+import java.util.ArrayDeque;
+import java.util.Queue;
 
 import cucumber.api.java.After;
 import cucumber.api.java.en.Then;
@@ -45,32 +46,30 @@ import cucumber.api.java.en.Then;
 @SuppressWarnings("javadoc")
 public final class Exceptions {
 
-    private Optional<Exception> ex;
+    private final Queue<Exception> exs;
 
     /**
      * Constructor.
      */
     public Exceptions() {
-        ex = Optional.empty();
+        exs = new ArrayDeque<>();
     }
 
     @After
     public final void after() {
-        ex = Optional.empty();
+        assertTrue("Unasserted exceptions: " + exs, exs.isEmpty());
     }
 
     @Then("^a \"([^\\\"]*)\" shall be thrown with message containing \"([^\\\"]*)\"$")
     public final void thenExceptionThrow(final String exceptionClass, final String exceptionMessage) {
-        assertTrue(ex.isPresent());
-        assertEquals(exceptionClass, ex.get().getClass().getName());
-        assertTrue(ex.get().getMessage().contains(exceptionMessage));
+        final Exception ex = exs.poll();
+        assertNotNull(ex);
+        assertEquals(exceptionClass, ex.getClass().getName());
+        assertTrue(ex.getMessage().contains(exceptionMessage));
     }
 
     final void thrown(final Exception exception) {
-        if (ex.isPresent()) {
-            fail("Other exception already thrown: " + ex.get());
-        }
-        ex = Optional.of(exception);
+        exs.add(exception);
     }
 
 }
