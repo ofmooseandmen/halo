@@ -32,16 +32,20 @@ package io.omam.zeroconf;
 
 import static io.omam.zeroconf.MulticastDns.CLASS_IN;
 import static io.omam.zeroconf.MulticastDns.FLAGS_AA;
-import static io.omam.zeroconf.MulticastDns.PROBE_INTERVAL;
 import static io.omam.zeroconf.MulticastDns.PROBE_NUM;
+import static io.omam.zeroconf.MulticastDns.PROBING_INTERVAL;
+import static io.omam.zeroconf.MulticastDns.PROBING_TIMEOUT;
 import static io.omam.zeroconf.MulticastDns.TTL;
 import static io.omam.zeroconf.MulticastDns.TYPE_ANY;
+import static io.omam.zeroconf.MulticastDns.TYPE_SRV;
 import static io.omam.zeroconf.MulticastDns.uniqueClass;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -110,7 +114,7 @@ final class Announcer implements Closeable {
         }
     }
 
-    private static final class ProbeListener implements ResponseListener {
+    private static final class ProbingListener implements ResponseListener {
 
         private final Condition cdt;
 
@@ -120,25 +124,28 @@ final class Announcer implements Closeable {
 
         private final Service s;
 
-        ProbeListener(final Service service) {
+        ProbingListener(final Service service) {
             s = service;
             match = new AtomicBoolean(false);
             lock = new ReentrantLock();
             cdt = lock.newCondition();
         }
 
+        @SuppressWarnings("synthetic-access")
         @Override
         public final void responseReceived(final DnsMessage response, final ZeroconfHelper zc) {
-            if (response.answers().stream().anyMatch(a -> a.name().equalsIgnoreCase(s.serviceName()))) {
-                match.set(true);
-                lock.lock();
-                try {
+            lock.lock();
+            LOGGER.fine(() -> "Handling " + response);
+            try {
+                if (response.answers().stream().anyMatch(
+                        a -> a.name().equalsIgnoreCase(s.serviceName()) && a.type() == TYPE_SRV)) {
+                    match.set(true);
+                    LOGGER.fine("Received matching response");
                     cdt.signalAll();
-                } finally {
-                    lock.unlock();
                 }
+            } finally {
+                lock.unlock();
             }
-
         }
 
         @SuppressWarnings("synthetic-access")
@@ -146,7 +153,7 @@ final class Announcer implements Closeable {
             lock.lock();
             boolean signalled = false;
             try {
-                final Timeout timeout = Timeout.of(PROBE_INTERVAL);
+                final Timeout timeout = Timeout.of(PROBING_TIMEOUT);
                 Duration remaining = timeout.remaining();
                 while (!match.get() && !remaining.isZero()) {
                     signalled = cdt.await(remaining.toMillis(), TimeUnit.MILLISECONDS);
@@ -159,7 +166,7 @@ final class Announcer implements Closeable {
                 lock.unlock();
             }
             if (!signalled) {
-                LOGGER.fine(() -> "No matching response received within " + PROBE_INTERVAL);
+                LOGGER.fine(() -> "No matching response received within " + PROBING_TIMEOUT);
             }
             return match.get();
         }
@@ -187,10 +194,12 @@ final class Announcer implements Closeable {
             final Instant now = zc.now();
             final String hostname = s.hostname().orElseThrow(() -> new IOException("Unknown service hostname"));
             final String serviceName = s.serviceName();
-            final Builder b =
-                    DnsMessage.query().addQuestion(new DnsQuestion(serviceName, TYPE_ANY, CLASS_IN)).addAuthority(
-                            new SrvRecord(serviceName, CLASS_IN, TTL, now, s.port(), s.priority(), hostname,
-                                          s.weight()));
+            final Builder b = DnsMessage
+                .query()
+                .addQuestion(new DnsQuestion(hostname, TYPE_ANY, CLASS_IN))
+                .addQuestion(new DnsQuestion(serviceName, TYPE_ANY, CLASS_IN))
+                .addAuthority(new SrvRecord(serviceName, CLASS_IN, TTL, now, s.port(), s.priority(), hostname,
+                                            s.weight()));
 
             s.ipv4Address().ifPresent(a -> b.addAuthority(new AddressRecord(hostname, CLASS_IN, TTL, now, a)));
             s.ipv6Address().ifPresent(a -> b.addAuthority(new AddressRecord(hostname, CLASS_IN, TTL, now, a)));
@@ -235,16 +244,17 @@ final class Announcer implements Closeable {
      */
     final boolean announce(final Service service) throws IOException {
         LOGGER.fine(() -> "Start probing for " + service);
-        final ProbeListener listener = new ProbeListener(service);
+        final ProbingListener listener = new ProbingListener(service);
         zc.addResponseListener(listener);
         final ProbingTask task = new ProbingTask(service, zc);
         boolean conflictFree = true;
         try {
+            final List<Future<?>> probes = new ArrayList<>();
             for (int i = 0; i < PROBE_NUM && conflictFree; i++) {
-                final Future<?> probe = ses.schedule(task, PROBE_INTERVAL.toMillis(), TimeUnit.MILLISECONDS);
-                probe.get();
-                conflictFree = !listener.await();
+                probes.add(ses.schedule(task, PROBING_INTERVAL.toMillis(), TimeUnit.MILLISECONDS));
             }
+            conflictFree = !listener.await();
+            probes.forEach(p -> p.cancel(true));
             final boolean result = conflictFree;
             LOGGER.fine(() -> "Done probing for " + service + "; found conflicts? " + !result);
             if (result) {

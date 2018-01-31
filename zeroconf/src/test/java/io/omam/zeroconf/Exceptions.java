@@ -60,12 +60,17 @@ public final class Exceptions {
         assertTrue("Unasserted exceptions: " + exs, exs.isEmpty());
     }
 
-    @Then("^a \"([^\\\"]*)\" shall be thrown with message containing \"([^\\\"]*)\"$")
+    @Then("^a \"([^\\\"]*)\" shall be thrown with message containing \"([^\"]*)\"$")
     public final void thenExceptionThrow(final String exceptionClass, final String exceptionMessage) {
         final Exception ex = exs.poll();
         assertNotNull(ex);
         assertEquals(exceptionClass, ex.getClass().getName());
-        assertTrue(ex.getMessage().contains(exceptionMessage));
+        final String[] sequences = exceptionMessage.split("\\(\\.\\.\\.\\)");
+        for (final String sequence : sequences) {
+            final String s = sequence.trim();
+            assertTrue("Expected message to contain [" + s + "] but was [" + ex.getMessage() + "]",
+                    ex.getMessage().contains(s));
+        }
     }
 
     final void thrown(final Exception exception) {

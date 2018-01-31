@@ -72,10 +72,13 @@ final class MulticastDns {
         }
     }
 
-    /** initial random delay. */
-    static final Duration PROBE_INTERVAL = Duration.ofMillis(250);
+    /** probing interval. */
+    static final Duration PROBING_INTERVAL = Duration.ofMillis(250);
 
-    /** number of probe packets. */
+    /** probing timeout. */
+    static final Duration PROBING_TIMEOUT = Duration.ofSeconds(6);
+
+    /** number of probes before announcing a registered service. */
     static final int PROBE_NUM = 3;
 
     /** time to live: 1 hour. */

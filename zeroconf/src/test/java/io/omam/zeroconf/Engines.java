@@ -30,21 +30,24 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.zeroconf;
 
+import static org.junit.Assert.assertFalse;
+
 import java.io.IOException;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.jmdns.JmDNS;
 import javax.jmdns.ServiceInfo;
 
 import cucumber.api.java.After;
 import cucumber.api.java.en.Given;
-import io.omam.zeroconf.Attributes;
-import io.omam.zeroconf.Service;
-import io.omam.zeroconf.Zeroconf;
 
 /**
  * Steps pertaining to the creation of the JmDNS or Zeroconf engine.
@@ -106,6 +109,7 @@ public final class Engines {
     }
 
     final ServiceInfo toJmdns(final ServiceDetails sd) {
+        assertFalse(sd.hostname().isPresent());
         return ServiceInfo.create(sd.registrationType() + "local.", sd.instanceName(), sd.port(), sd.weight(),
                 sd.priority(), toJmdns(sd.text()));
     }
@@ -117,13 +121,22 @@ public final class Engines {
         return atts;
     }
 
-    final Service toZc(final ServiceDetails sd) {
-        return Service
+    final Service toZc(final ServiceDetails sd) throws UnknownHostException {
+        /*
+         * fake hostname and IP to trigger probing conflict.
+         */
+        final Optional<String> hostname = sd.hostname();
+        final Optional<InetAddress> ip = hostname.isPresent()
+                ? Optional.of(InetAddress.getByName("2001:0db8:85a3:0000:0000:8a2e:0370:7334"))
+                : Optional.empty();
+        final Service.Builder s = Service
             .create(sd.instanceName(), sd.registrationType(), sd.port())
             .priority(sd.priority())
             .attributes(toZc(sd.text()))
-            .weight(sd.weight())
-            .get();
+            .weight(sd.weight());
+        hostname.ifPresent(h -> s.hostname(h));
+        ip.ifPresent(i -> s.ipv6Address((Inet6Address) i));
+        return s.get();
     }
 
     final Attributes toZc(final String attributes) {

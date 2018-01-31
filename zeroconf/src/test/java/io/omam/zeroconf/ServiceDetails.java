@@ -30,6 +30,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.zeroconf;
 
+import java.util.Optional;
+
 @SuppressWarnings("javadoc")
 final class ServiceDetails {
 
@@ -44,6 +46,12 @@ final class ServiceDetails {
     private String text;
 
     private short weight;
+
+    private String hostname;
+
+    final Optional<String> hostname() {
+        return Optional.ofNullable(hostname);
+    }
 
     final String instanceName() {
         return instanceName;

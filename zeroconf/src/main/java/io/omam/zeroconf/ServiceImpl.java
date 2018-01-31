@@ -177,10 +177,14 @@ final class ServiceImpl implements Service, ResponseListener {
     @Override
     public final void responseReceived(final DnsMessage response, final ZeroconfHelper zc) {
         lock.lock();
+        LOGGER.fine(() -> "Handling " + response);
         try {
             response.answers().forEach(a -> updateRecord(zc, a));
-            awaitingResponse = false;
-            responded.signalAll();
+            awaitingResponse = resolved();
+            if (!awaitingResponse) {
+                LOGGER.fine("Received response resolving service");
+                responded.signalAll();
+            }
         } finally {
             lock.unlock();
         }

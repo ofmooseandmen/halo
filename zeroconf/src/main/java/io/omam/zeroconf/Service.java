@@ -93,11 +93,6 @@ public interface Service {
             return this;
         }
 
-        public final Builder port(final short port) {
-            si.setPort(port);
-            return this;
-        }
-
         public final Builder priority(final short priority) {
             si.setPriority(priority);
             return this;

@@ -42,6 +42,7 @@ import java.util.Optional;
 import javax.jmdns.ServiceInfo;
 
 import cucumber.api.java.After;
+import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 
@@ -73,6 +74,12 @@ public final class ResolutionSteps {
         resolvedBy = null;
     }
 
+    @Given("^the service \"([^\"]*)\" has been resolved by \"Zeroconf\"$")
+    public final void givenServiceResolved(final String service) {
+        final String[] split = split(service);
+        assertNotNull(engines.zc().resolve(split[0], split[1]));
+    }
+
     @Then("^no resolved service shall be returned$")
     public final void thenServiceNotResolved() {
         assertNotNull(resolvedBy);
@@ -85,10 +92,8 @@ public final class ResolutionSteps {
 
     @Then("^the service \"([^\"]*)\" shall be resolved by \"JmDNS\"$")
     public final void thenServiceResolved(final String service) {
-        final int firstDot = service.indexOf('.');
-        final String instanceName = service.substring(0, firstDot);
-        final String registrationType = service.substring(firstDot + 1, service.length());
-        assertNotNull(engines.jmdns().getServiceInfo(registrationType + "local.", instanceName));
+        final String[] split = split(service);
+        assertNotNull(engines.jmdns().getServiceInfo(split[1] + "local.", split[0]));
     }
 
     @Then("^the following resolved service shall be returned:$")
@@ -129,6 +134,13 @@ public final class ResolutionSteps {
             jms = Optional.ofNullable(engines.jmdns().getServiceInfo(registrationType + "local.", instanceName));
         }
         resolvedBy = engine;
+    }
+
+    private String[] split(final String service) {
+        final int firstDot = service.indexOf('.');
+        final String instanceName = service.substring(0, firstDot);
+        final String registrationType = service.substring(firstDot + 1, service.length());
+        return new String[] { instanceName, registrationType };
     }
 
 }

@@ -178,19 +178,22 @@ final class ZeroconfImpl extends ZeroconfHelper implements Zeroconf, Consumer<Dn
             throws IOException {
         LOGGER.fine(() -> "Registering " + service + ON_DOMAIN);
         final Service rservice = checkInstanceName(service, allowNameChange);
-        final boolean announced = announcer.announce(rservice);
-        if (!announced) {
-            final String msg = "Found conflicts while announcing " + rservice + " on network";
-            LOGGER.warning(msg);
-            throw new IOException(msg);
-        }
-
-        services.put(rservice.serviceName().toLowerCase(), rservice);
+        final String serviceKey = rservice.serviceName().toLowerCase();
+        services.put(serviceKey, rservice);
         final String rpn = rservice.registrationPointerName();
         if (registrationPointerNames.containsKey(rpn)) {
             registrationPointerNames.put(rpn, registrationPointerNames.get(rpn) + 1);
         } else {
             registrationPointerNames.put(rpn, 1);
+        }
+
+        final boolean announced = announcer.announce(rservice);
+        if (!announced) {
+            final String msg = "Found conflicts while announcing " + rservice + " on network";
+            registrationPointerNames.put(rpn, registrationPointerNames.get(rpn) - 1);
+            services.remove(serviceKey);
+            LOGGER.warning(msg);
+            throw new IOException(msg);
         }
 
         LOGGER.info(() -> "Registered " + rservice + ON_DOMAIN);
@@ -342,8 +345,7 @@ final class ZeroconfImpl extends ZeroconfHelper implements Zeroconf, Consumer<Dn
                 .filter(e -> e instanceof SrvRecord)
                 .filter(e -> !e.isExpired(now))
                 .map(e -> (SrvRecord) e)
-                .filter(e -> e.port() != port)
-                .filter(e -> !e.server().equals(hostname))
+                .filter(e -> e.port() != port || !e.server().equals(hostname))
                 .findFirst();
             if (rec.isPresent()) {
                 collision = true;

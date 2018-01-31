@@ -28,3 +28,13 @@ Feature: Service resolution
     Given a "Zeroconf" instance has been created
     When the service "Living Room Speaker._music._tcp." is resolved by "Zeroconf"
     Then no resolved service shall be returned
+
+  Scenario: Service resolved from registered services
+    Given a "Zeroconf" instance has been created
+    And the following service has been registered with "Zeroconf":
+      | instanceName        | registrationType | port | priority | text      | weight |
+      | Living Room Speaker | _music._tcp.     | 9009 |        5 | Some Text |      0 |
+    When the service "Living Room Speaker._music._tcp." is resolved by "Zeroconf"
+    Then the following resolved service shall be returned:
+      | instanceName        | registrationType | port | priority | text      | weight |
+      | Living Room Speaker | _music._tcp.     | 9009 |        5 | Some Text |      0 |
