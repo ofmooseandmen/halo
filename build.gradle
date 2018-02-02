@@ -83,6 +83,33 @@ codeCoverageReport.dependsOn {
     subprojects*.test
 }
 
+task allJavadocs(type: Javadoc) {
+	group = "Documentation"
+	description = "Generates aggregated Javadocs"
+	title = "Localhost ${version} API"
+
+	setDependsOn subprojects.collect { it.tasks.getByName("jar") }
+
+	options.memberLevel = JavadocMemberLevel.PUBLIC
+	options.use = true
+	options.splitIndex = true
+	options.addStringOption('Xdoclint:none', '-quiet')
+	options.addMultilineStringsOption('tag').setValue(['apiNote:a:API Note:', 'implSpec:a:Implementation Requirements:', 'implNote:a:Implementation Note:'])
+	options.encoding = 'UTF-8'
+	options.jFlags '-Xmx1g'
+	options.links(
+		'https://docs.oracle.com/javase/8/docs/api/',
+	)
+	options
+		.group("Halo", ["io.omam.Halo.*"])
+
+	setSource subprojects.collect { it.sourceSets.main.allJava }
+
+	maxMemory = "1024m"
+	destinationDir = new File(buildDir, "docs/javadoc")
+	classpath = files(subprojects.collect { it.sourceSets.main.compileClasspath })
+}
+
 task wrapper(type: Wrapper) {
 	description = 'Generates gradlew and gradlew.bat scripts'
 	gradleVersion = '4.5'

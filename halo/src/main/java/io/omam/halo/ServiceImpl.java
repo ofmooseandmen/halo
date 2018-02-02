@@ -64,11 +64,11 @@ final class ServiceImpl implements Service, ResponseListener {
 
     private static final String UPDATED_TO = "] updated to ";
 
-    private Optional<Attributes> attributes;
+    private Attributes attributes;
 
     private volatile boolean awaitingResponse;
 
-    private Optional<String> hostname;
+    private String hostname;
 
     private final String instanceName;
 
@@ -80,13 +80,9 @@ final class ServiceImpl implements Service, ResponseListener {
 
     private short port;
 
-    private short priority;
-
     private final String registrationType;
 
     private final Condition responded;
-
-    private short weight;
 
     ServiceImpl(final String anInstanceName, final Service other) {
         instanceName = anInstanceName;
@@ -96,9 +92,7 @@ final class ServiceImpl implements Service, ResponseListener {
         ipv4Address = other.ipv4Address();
         ipv6Address = other.ipv6Address();
         port = other.port();
-        priority = other.priority();
         hostname = other.hostname();
-        weight = other.weight();
 
         awaitingResponse = false;
         lock = new ReentrantLock();
@@ -116,13 +110,11 @@ final class ServiceImpl implements Service, ResponseListener {
         instanceName = anInstanceName;
         registrationType = aRegistrationType;
 
-        attributes = Optional.empty();
+        attributes = null;
         ipv4Address = Optional.empty();
         ipv6Address = Optional.empty();
         port = -1;
-        priority = -1;
-        hostname = Optional.empty();
-        weight = -1;
+        hostname = null;
 
         awaitingResponse = false;
         lock = new ReentrantLock();
@@ -130,12 +122,12 @@ final class ServiceImpl implements Service, ResponseListener {
     }
 
     @Override
-    public final Optional<Attributes> attributes() {
+    public final Attributes attributes() {
         return attributes;
     }
 
     @Override
-    public final Optional<String> hostname() {
+    public final String hostname() {
         return hostname;
     }
 
@@ -157,11 +149,6 @@ final class ServiceImpl implements Service, ResponseListener {
     @Override
     public final short port() {
         return port;
-    }
-
-    @Override
-    public final short priority() {
-        return priority;
     }
 
     @Override
@@ -200,20 +187,18 @@ final class ServiceImpl implements Service, ResponseListener {
         return "Service [instance name=" + instanceName + "; registration type=" + registrationType + "]";
     }
 
-    @Override
-    public final short weight() {
-        return weight;
-    }
-
-    /*
+    /**
      * Returns true if the service could be discovered on the network, and updates this object with details
      * discovered.
+     *
+     * @param halo halo helper
+     * @param timeout resolution timeout
      */
-    final boolean resolve(final HaloImpl halo, final Duration timeout) {
+    final boolean resolve(final HaloHelper halo, final Duration timeout) {
         final Set<Short> recTypes = new HashSet<>();
         recTypes.add(TYPE_SRV);
         recTypes.add(TYPE_TXT);
-        if (hostname.isPresent()) {
+        if (hostname != null) {
             if (halo.ipv4Supported()) {
                 recTypes.add(TYPE_A);
             }
@@ -244,15 +229,14 @@ final class ServiceImpl implements Service, ResponseListener {
                 b.addQuestion(new DnsQuestion(serviceName, TYPE_TXT, CLASS_IN));
                 halo.cachedRecord(serviceName, TYPE_TXT, CLASS_IN).ifPresent(r -> b.addAnswer(r, now));
 
-                if (hostname.isPresent()) {
-                    final String host = hostname.get();
+                if (hostname != null) {
                     if (halo.ipv4Supported()) {
-                        b.addQuestion(new DnsQuestion(host, TYPE_A, CLASS_IN));
-                        halo.cachedRecord(host, TYPE_A, CLASS_IN).ifPresent(r -> b.addAnswer(r, now));
+                        b.addQuestion(new DnsQuestion(hostname, TYPE_A, CLASS_IN));
+                        halo.cachedRecord(hostname, TYPE_A, CLASS_IN).ifPresent(r -> b.addAnswer(r, now));
                     }
                     if (halo.ipv6Supported()) {
-                        b.addQuestion(new DnsQuestion(host, TYPE_AAAA, CLASS_IN));
-                        halo.cachedRecord(host, TYPE_AAAA, CLASS_IN).ifPresent(r -> b.addAnswer(r, now));
+                        b.addQuestion(new DnsQuestion(hostname, TYPE_AAAA, CLASS_IN));
+                        halo.cachedRecord(hostname, TYPE_AAAA, CLASS_IN).ifPresent(r -> b.addAnswer(r, now));
                     }
                 }
                 halo.sendMessage(b.get());
@@ -265,7 +249,7 @@ final class ServiceImpl implements Service, ResponseListener {
     }
 
     final void setAttributes(final Attributes someAttributes) {
-        attributes = Optional.of(someAttributes);
+        attributes = someAttributes;
     }
 
     /**
@@ -281,7 +265,7 @@ final class ServiceImpl implements Service, ResponseListener {
         }
         aHostname = aHostname.replaceAll("[:%\\.]", "-");
         aHostname += "." + DOMAIN + ".";
-        hostname = Optional.of(aHostname);
+        hostname = aHostname;
     }
 
     final void setIpv4Address(final Inet4Address anAddress) {
@@ -294,14 +278,6 @@ final class ServiceImpl implements Service, ResponseListener {
 
     final void setPort(final short aPort) {
         port = aPort;
-    }
-
-    final void setPriority(final short aPriority) {
-        priority = aPriority;
-    }
-
-    final void setWeight(final short aWeight) {
-        weight = aWeight;
     }
 
     private void awaitResponse(final Duration dur) {
@@ -348,41 +324,32 @@ final class ServiceImpl implements Service, ResponseListener {
     }
 
     private boolean resolved() {
-        return hostname.isPresent()
-            && (ipv4Address.isPresent() || ipv6Address.isPresent())
-            && attributes.isPresent();
+        return hostname != null && (ipv4Address.isPresent() || ipv6Address.isPresent()) && attributes != null;
     }
 
     /* Updates service information from a DNS record. */
     private void updateRecord(final HaloHelper halo, final DnsRecord record) {
         if (!record.isExpired(halo.now())) {
             final String serviceName = serviceName();
-            if (record.type() == TYPE_A
-                && halo.ipv4Supported()
-                && hostname.map(s -> s.equals(record.name())).orElse(false)) {
+            final boolean matchesHost = record.name().equals(hostname);
+            if (record.type() == TYPE_A && halo.ipv4Supported() && matchesHost) {
                 ipv4Address = Optional.of((Inet4Address) ((AddressRecord) record).address());
                 LOGGER.fine(() -> "IPV4 address of service [" + serviceName + UPDATED_TO + ipv4Address.get());
-            } else if (record.type() == TYPE_AAAA
-                && halo.ipv6Supported()
-                && hostname.map(s -> s.equals(record.name())).orElse(false)) {
+            } else if (record.type() == TYPE_AAAA && halo.ipv6Supported() && matchesHost) {
                 ipv6Address = Optional.of((Inet6Address) ((AddressRecord) record).address());
                 LOGGER.fine(() -> "Address of service [" + serviceName + UPDATED_TO + ipv6Address.get());
 
             } else if (record.type() == TYPE_SRV && record.name().equalsIgnoreCase(serviceName)) {
                 final SrvRecord srv = (SrvRecord) record;
                 port = srv.port();
-                priority = srv.priority();
-                hostname = Optional.of(srv.server());
-                weight = srv.weight();
+                hostname = srv.server();
                 LOGGER.fine(() -> "Port of service [" + serviceName + UPDATED_TO + port);
-                LOGGER.fine(() -> "Priority of service [" + serviceName + UPDATED_TO + priority);
-                LOGGER.fine(() -> "Server of service [" + serviceName + UPDATED_TO + hostname.get());
-                LOGGER.fine(() -> "Weight of service [" + serviceName + UPDATED_TO + weight);
-                halo.cachedRecord(hostname.get(), TYPE_A, CLASS_IN).ifPresent(r -> updateRecord(halo, r));
-                halo.cachedRecord(hostname.get(), TYPE_AAAA, CLASS_IN).ifPresent(r -> updateRecord(halo, r));
+                LOGGER.fine(() -> "Server of service [" + serviceName + UPDATED_TO + hostname);
+                halo.cachedRecord(hostname, TYPE_A, CLASS_IN).ifPresent(r -> updateRecord(halo, r));
+                halo.cachedRecord(hostname, TYPE_AAAA, CLASS_IN).ifPresent(r -> updateRecord(halo, r));
             } else if (record.type() == TYPE_TXT && record.name().equalsIgnoreCase(serviceName)) {
-                attributes = Optional.of(((TxtRecord) record).attributes());
-                LOGGER.fine(() -> "Attributes of service [" + serviceName + UPDATED_TO + attributes.get());
+                attributes = ((TxtRecord) record).attributes();
+                LOGGER.fine(() -> "Attributes of service [" + serviceName + UPDATED_TO + attributes);
             } else {
                 LOGGER.fine(() -> "Ignored irrelevant answer of type " + record.type() + " for " + record.name());
             }

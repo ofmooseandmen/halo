@@ -67,7 +67,6 @@ import io.omam.halo.DnsMessage.Builder;
  * <p>
  * Announcing a service first requires to probe the network for the hostname and port of {@link Service service}s.
  */
-@SuppressWarnings("javadoc")
 final class Announcer implements Closeable {
 
     /**
@@ -75,12 +74,18 @@ final class Announcer implements Closeable {
      */
     private static final class AnnouncingTask implements Callable<Void> {
 
-        /** the service being probed. */
+        /** the service to announce. */
         private final Service s;
 
         /** halo helper. */
         private final HaloHelper halo;
 
+        /**
+         * Constructor.
+         *
+         * @param service service to announce
+         * @param haloHelper halo helper
+         */
         AnnouncingTask(final Service service, final HaloHelper haloHelper) {
             s = service;
             halo = haloHelper;
@@ -89,18 +94,15 @@ final class Announcer implements Closeable {
         @Override
         public final Void call() throws Exception {
             final Instant now = halo.now();
-            final String hostname = s.hostname().orElseThrow(() -> new IOException("Unknown service hostname"));
-            final Attributes attributes =
-                    s.attributes().orElseThrow(() -> new IOException("Unknown service attributes"));
+            final String hostname = s.hostname();
+            final Attributes attributes = s.attributes();
             final String serviceName = s.serviceName();
             final short unique = uniqueClass(CLASS_IN);
             final Builder b = DnsMessage
                 .response(FLAGS_AA)
                 .addAnswer(new PtrRecord(s.registrationPointerName(), CLASS_IN, TTL, now, s.instanceName()),
                         Optional.empty())
-                .addAnswer(
-                        new SrvRecord(serviceName, unique, TTL, now, s.port(), s.priority(), hostname, s.weight()),
-                        Optional.empty())
+                .addAnswer(new SrvRecord(serviceName, unique, TTL, now, s.port(), hostname), Optional.empty())
                 .addAnswer(new TxtRecord(serviceName, unique, TTL, now, attributes), Optional.empty());
 
             s.ipv4Address().ifPresent(
@@ -114,16 +116,28 @@ final class Announcer implements Closeable {
         }
     }
 
+    /**
+     * Listener for response during probe.
+     */
     private static final class ProbingListener implements ResponseListener {
 
+        /** condition to signal if matching response is received. */
         private final Condition cdt;
 
+        /** lock. */
         private final Lock lock;
 
+        /** whether a response matching the probe query was received. */
         private final AtomicBoolean match;
 
+        /** the service being probed. */
         private final Service s;
 
+        /**
+         * Constructor.
+         *
+         * @param service the service being probed
+         */
         ProbingListener(final Service service) {
             s = service;
             match = new AtomicBoolean(false);
@@ -148,6 +162,15 @@ final class Announcer implements Closeable {
             }
         }
 
+        /**
+         * Awaits for a response matching the probe query.
+         * <p>
+         * A response matches the probe query iff it relates to the {@link Service#serviceName() service} being
+         * probed and it contains a {@link SrvRecord SRV record}.
+         *
+         * @return {@code true} iff a response matching the probe query has been received before the
+         *         {@link MulticastDns#PROBING_TIMEOUT probing timeout} has elapsed
+         */
         @SuppressWarnings("synthetic-access")
         final boolean await() {
             lock.lock();
@@ -184,6 +207,12 @@ final class Announcer implements Closeable {
         /** halo helper. */
         private final HaloHelper halo;
 
+        /**
+         * Constructor.
+         *
+         * @param service the service being probed
+         * @param haloHelper halo helper
+         */
         ProbingTask(final Service service, final HaloHelper haloHelper) {
             s = service;
             halo = haloHelper;
@@ -192,14 +221,13 @@ final class Announcer implements Closeable {
         @Override
         public final Void call() throws Exception {
             final Instant now = halo.now();
-            final String hostname = s.hostname().orElseThrow(() -> new IOException("Unknown service hostname"));
+            final String hostname = s.hostname();
             final String serviceName = s.serviceName();
             final Builder b = DnsMessage
                 .query()
                 .addQuestion(new DnsQuestion(hostname, TYPE_ANY, CLASS_IN))
                 .addQuestion(new DnsQuestion(serviceName, TYPE_ANY, CLASS_IN))
-                .addAuthority(new SrvRecord(serviceName, CLASS_IN, TTL, now, s.port(), s.priority(), hostname,
-                                            s.weight()));
+                .addAuthority(new SrvRecord(serviceName, CLASS_IN, TTL, now, s.port(), hostname));
 
             s.ipv4Address().ifPresent(a -> b.addAuthority(new AddressRecord(hostname, CLASS_IN, TTL, now, a)));
             s.ipv6Address().ifPresent(a -> b.addAuthority(new AddressRecord(hostname, CLASS_IN, TTL, now, a)));
@@ -209,6 +237,7 @@ final class Announcer implements Closeable {
         }
     }
 
+    /** logger. */
     private static final Logger LOGGER = Logger.getLogger(Announcer.class.getName());
 
     /** halo helper. */
@@ -240,7 +269,7 @@ final class Announcer implements Closeable {
      * @param service service
      * @return {@code true} iff no conflicts have been discovered while probing and the service was successfully
      *         announced on the network
-     * @throws IOException
+     * @throws IOException if an exception occurs while probing
      */
     final boolean announce(final Service service) throws IOException {
         LOGGER.fine(() -> "Start probing for " + service);

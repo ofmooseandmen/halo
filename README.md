@@ -21,7 +21,7 @@ All modules are tested with [cucumber](https://cucumber.io). Feature files can b
 
 ### [Halo](halo/README.md)
 
- _[WIP]_ A pure java implementation of the [Zero Configuration Networking protocol](http://www.zeroconf.org).
+ _[WIP]_ Multicast DNS Service Discovery.
 
 ### Chromecast
 

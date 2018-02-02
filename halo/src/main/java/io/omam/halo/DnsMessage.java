@@ -54,8 +54,6 @@ import java.util.stream.Collectors;
 
 /**
  * A DNS message.
- *
- * see https://www.ietf.org/rfc/rfc1035.txt
  */
 @SuppressWarnings("javadoc")
 final class DnsMessage {
@@ -238,11 +236,13 @@ final class DnsMessage {
                 record = new PtrRecord(name, clazz, ttl, now, is.readName());
                 break;
             case TYPE_SRV:
-                final short priority = (short) is.readShort();
-                final short weight = (short) is.readShort();
+                /* ignore priority. */
+                is.readShort();
+                /* ignore priority. */
+                is.readShort();
                 final short port = (short) is.readShort();
                 final String server = is.readName();
-                record = new SrvRecord(name, clazz, ttl, now, port, priority, server, weight);
+                record = new SrvRecord(name, clazz, ttl, now, port, server);
                 break;
             case TYPE_TXT:
                 record = new TxtRecord(name, clazz, ttl, now, AttributesCodec.decode(is, length));

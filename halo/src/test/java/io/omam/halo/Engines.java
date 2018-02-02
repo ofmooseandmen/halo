@@ -120,11 +120,8 @@ public final class Engines {
         final Optional<InetAddress> ip = hostname.isPresent()
                 ? Optional.of(InetAddress.getByName("2001:0db8:85a3:0000:0000:8a2e:0370:7334"))
                 : Optional.empty();
-        final Service.Builder s = Service
-            .create(sd.instanceName(), sd.registrationType(), sd.port())
-            .priority(sd.priority())
-            .attributes(toHalo(sd.text()))
-            .weight(sd.weight());
+        final Service.Builder s =
+                Service.create(sd.instanceName(), sd.registrationType(), sd.port()).attributes(toHalo(sd.text()));
         hostname.ifPresent(h -> s.hostname(h));
         ip.ifPresent(i -> s.ipv6Address((Inet6Address) i));
         return s.get();
@@ -137,8 +134,8 @@ public final class Engines {
 
     final ServiceInfo toJmdns(final ServiceDetails sd) {
         assertFalse(sd.hostname().isPresent());
-        return ServiceInfo.create(sd.registrationType() + "local.", sd.instanceName(), sd.port(), sd.weight(),
-                sd.priority(), toJmdns(sd.text()));
+        return ServiceInfo.create(sd.registrationType() + "local.", sd.instanceName(), sd.port(), 0, 0,
+                toJmdns(sd.text()));
     }
 
     final Map<String, String> toJmdns(final String attributes) {

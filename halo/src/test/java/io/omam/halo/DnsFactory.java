@@ -164,7 +164,7 @@ public final class DnsFactory {
                 record = new PtrRecord(name, clazz, ttlDur, instant, "");
                 break;
             case "SRV":
-                record = new SrvRecord(name, clazz, ttlDur, instant, (short) 0, (short) 0, "", (short) 0);
+                record = new SrvRecord(name, clazz, ttlDur, instant, (short) 0, "");
                 break;
             case "TXT":
                 record = new TxtRecord(name, clazz, ttlDur, instant, Attributes.create().with("fake").get());
@@ -214,8 +214,7 @@ public final class DnsFactory {
                 case TYPE_PTR:
                     return new PtrRecord(rec.name(), clazz, ttlDur, now, rec.target());
                 case TYPE_SRV:
-                    return new SrvRecord(rec.name(), clazz, ttlDur, now, rec.port(), rec.priority(), rec.server(),
-                                         rec.weight());
+                    return new SrvRecord(rec.name(), clazz, ttlDur, now, rec.port(), rec.server());
                 case TYPE_TXT:
                     return new TxtRecord(rec.name(), clazz, ttlDur, now, engines.toHalo(rec.text()));
                 default:

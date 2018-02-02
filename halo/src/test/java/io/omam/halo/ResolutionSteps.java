@@ -107,19 +107,14 @@ public final class ResolutionSteps {
             assertEquals(expected.instanceName(), actual.instanceName());
             assertEquals(expected.registrationType(), actual.registrationType());
             assertEquals(expected.port(), actual.port());
-            assertEquals(expected.priority(), actual.priority());
-            assertTrue(actual.attributes().isPresent());
-            assertAttributesEquals(engines.toHalo(expected.text()), actual.attributes().get());
-            assertEquals(expected.weight(), actual.weight());
+            assertAttributesEquals(engines.toHalo(expected.text()), actual.attributes());
         } else {
             assertTrue(jms.isPresent());
             final ServiceInfo actual = jms.get();
             assertEquals(expected.instanceName(), actual.getName());
             assertEquals(expected.registrationType() + "local.", actual.getType());
             assertEquals(expected.port(), actual.getPort());
-            assertEquals(expected.priority(), actual.getPriority());
             assertEquals(engines.toJmdns(expected.text()), engines.attributes(actual));
-            assertEquals(expected.weight(), actual.getWeight());
         }
     }
 

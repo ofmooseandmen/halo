@@ -86,10 +86,7 @@ public final class RegistrationSteps {
         assertEquals(expected.instanceName(), actual.instanceName());
         assertEquals(expected.registrationType(), actual.registrationType());
         assertEquals(expected.port(), actual.port());
-        assertEquals(expected.priority(), actual.priority());
-        assertTrue(actual.attributes().isPresent());
-        assertAttributesEquals(engines.toHalo(expected.text()), actual.attributes().get());
-        assertEquals(expected.weight(), actual.weight());
+        assertAttributesEquals(engines.toHalo(expected.text()), actual.attributes());
     }
 
     @When("^the following service is registered with \"Halo\"( not)? allowing instance name change:$")

@@ -248,7 +248,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
         services
             .values()
             .stream()
-            .filter(s -> s.hostname().map(h -> h.equalsIgnoreCase(question.name())).orElse(false))
+            .filter(s -> s.hostname().equalsIgnoreCase(question.name()))
             .filter(h -> h.ipv4Address().isPresent())
             .forEach(s -> {
                 final Inet4Address addr = s.ipv4Address().get();
@@ -261,7 +261,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
         services
             .values()
             .stream()
-            .filter(s -> s.hostname().map(h -> h.equalsIgnoreCase(question.name())).orElse(false))
+            .filter(s -> s.hostname().equalsIgnoreCase(question.name()))
             .filter(h -> h.ipv6Address().isPresent())
             .forEach(s -> {
                 final Inet6Address addr = s.ipv6Address().get();
@@ -296,25 +296,21 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
                 final Service s = services.get(question.name().toLowerCase());
                 if (s != null) {
                     final short unique = uniqueClass(CLASS_IN);
+                    final String hostname = s.hostname();
                     if (question.type() == TYPE_SRV || question.type() == TYPE_ANY) {
-                        s
-                            .hostname()
-                            .ifPresent(h -> builder.addAnswer(query,
-                                    new SrvRecord(question.name(), unique, TTL, now, s.port(), s.priority(), h,
-                                                  s.weight())));
+                        builder.addAnswer(query,
+                                new SrvRecord(question.name(), unique, TTL, now, s.port(), hostname));
                     }
 
                     if (question.type() == TYPE_TXT || question.type() == TYPE_ANY) {
-                        s.attributes().ifPresent(a -> builder.addAnswer(query,
-                                new TxtRecord(question.name(), unique, TTL, now, a)));
+                        builder.addAnswer(query, new TxtRecord(question.name(), unique, TTL, now, s.attributes()));
                     }
 
-                    final Optional<String> hostname = s.hostname();
-                    if (question.type() == TYPE_SRV && hostname.isPresent()) {
-                        s.ipv4Address().ifPresent(a -> builder.addAnswer(query,
-                                new AddressRecord(hostname.get(), unique, TTL, now, a)));
-                        s.ipv6Address().ifPresent(a -> builder.addAnswer(query,
-                                new AddressRecord(hostname.get(), unique, TTL, now, a)));
+                    if (question.type() == TYPE_SRV) {
+                        s.ipv4Address().ifPresent(
+                                a -> builder.addAnswer(query, new AddressRecord(hostname, unique, TTL, now, a)));
+                        s.ipv6Address().ifPresent(
+                                a -> builder.addAnswer(query, new AddressRecord(hostname, unique, TTL, now, a)));
                     }
                 }
             }
@@ -331,7 +327,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
      * @throws if service instance name cannot be made unique
      */
     private Service checkInstanceName(final Service service, final boolean allowNameChange) throws IOException {
-        final String hostname = service.hostname().orElseThrow(() -> new IOException("Unknown service hostname"));
+        final String hostname = service.hostname();
         final int port = service.port();
         boolean collision = false;
         Service result = service;
@@ -361,8 +357,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
             /* check own services. */
             final Service own = services.get(result.serviceName().toLowerCase());
             if (own != null) {
-                final String otherHostname =
-                        own.hostname().orElseThrow(() -> new IOException("Unknown service hostname"));
+                final String otherHostname = own.hostname();
                 collision = own.port() != port || !otherHostname.equals(hostname);
                 if (collision) {
                     final String str = "Registered service collision: " + own;

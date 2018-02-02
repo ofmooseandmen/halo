@@ -2,8 +2,9 @@
 
 [![license](https://img.shields.io/badge/license-BSD3-lightgray.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
-A pure java implementation of the [Zero Configuration Networking protocol](http://www.zeroconf.org).
-Supports service resolution, registration and browsing.
+> __Halo__ [_Javanese_] is __Bonjour__ [_French_] is __Hello__ [_English_]
+
+A pure java implementation of the [Multicast DNS Service Discovery](http://en.wikipedia.org/wiki/Multicast_DNS).
 
 ## Building from Source
 
@@ -16,26 +17,11 @@ Halo can be built with Gradle using the following command:
 
 ## Usage
 
-### Service Resolution
-
-```java
-try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
-    // using a timeout of 6 seconds.
-    Optional<Service> service = halo.resolve("Foo Bar", "_http._udp.");
-    // Optional contains the service if it could be resolved, empty otherwise.
-    System.err.println(service);
-    
-    // using custom timeout.
-    service = halo.resolve("Foo Bar", "_http._udp.", Duration.ofSeconds(1));
-    System.err.println(service);
-}
-```
-
 ### Service Registration
 
 ```java
 try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
-    // allowing service instance name to be changed and with a TTL of 1 hour.
+    // allowing service instance name to be changed and with a default TTL of 1 hour.
     Service service = halo.register(Service.create("Foo Bar", "_http._udp.", (short) 8009).get());
     // registered service is returned.
     System.err.println(service);
@@ -47,5 +33,20 @@ try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
 
     // not allowing service instance name to be changed will throw an IOException at this point.
     halo.register(Service.create("Foo Bar", "_http._udp.", (short) 8011).get(), false);
+}
+```
+
+### Service Resolution
+
+```java
+try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
+    // default timeout of 6 seconds.
+    Optional<Service> service = halo.resolve("Foo Bar", "_http._udp.");
+    // Optional contains the service if it could be resolved, empty otherwise.
+    System.err.println(service);
+    
+    // user defined timeout.
+    service = halo.resolve("Foo Bar", "_http._udp.", Duration.ofSeconds(1));
+    System.err.println(service);
 }
 ```

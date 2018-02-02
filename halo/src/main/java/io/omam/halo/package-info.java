@@ -28,41 +28,15 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+/**
+ * <h1><center>Halo</center></h1> Multicast DNS Service Discovery.
+ *
+ * @see <a href=
+ *      "https://developer.apple.com/library/content/documentation/Cocoa/Conceptual/NetServices/Introduction.html#//apple_ref/doc/uid/TP40002445-SW1">Apple
+ *      Bonjour</a>
+ * @see <a href="https://tools.ietf.org/html/rfc3927">RFC 3927: Dynamic Configuration of IPv4 Link-Local
+ *      Addresses</a>
+ * @see <a href="https://tools.ietf.org/html/rfc6762">RFC 6762: Multicast DNS</a>
+ * @see <a href="https://tools.ietf.org/html/rfc6763">RFC 6763: DNS-Based Service Discovery</a>
+ */
 package io.omam.halo;
-
-import java.util.Optional;
-
-@SuppressWarnings("javadoc")
-final class ServiceDetails {
-
-    private String instanceName;
-
-    private String registrationType;
-
-    private short port;
-
-    private String text;
-
-    private String hostname;
-
-    final Optional<String> hostname() {
-        return Optional.ofNullable(hostname);
-    }
-
-    final String instanceName() {
-        return instanceName;
-    }
-
-    final short port() {
-        return port;
-    }
-
-    final String registrationType() {
-        return registrationType;
-    }
-
-    final String text() {
-        return text;
-    }
-
-}

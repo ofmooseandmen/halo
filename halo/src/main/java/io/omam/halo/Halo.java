@@ -43,15 +43,45 @@ import java.util.Collections;
 import java.util.Optional;
 
 /**
- * Zeroconf Multicast DNS Service Discovery on the <strong>local</strong> domain.
- * <p>
- * Supports service resolution, registration and browsing.
+ * A multicast DNS Service Discovery, supporting {@link Service named service} registration, resolution and
+ * browsing.
+ * <h3>Registration</h3>
  *
- * @see <a href=
- *      "https://developer.apple.com/library/content/documentation/Cocoa/Conceptual/NetServices/Introduction.html#//apple_ref/doc/uid/TP40002445-SW1">Apple
- *      Bonjour</a>
- * @see <a href="https://tools.ietf.org/html/rfc3927">RFC 3927</a>
- * @see <a href="https://tools.ietf.org/html/rfc6763">RFC 6763</a>
+ * <pre>
+ * <code>
+ * try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
+ *     // allowing service instance name to be changed and with a default TTL of 1 hour.
+ *     Service service = halo.register(Service.create("Foo Bar", "_http._udp.", (short) 8009).get());
+ *     // registered service is returned.
+ *     System.err.println(service);
+ *
+ *     // registering again the service instance and registration type will return a service
+ *     // with an instance name of "Foo Bar (2)".
+ *     service = halo.register(Service.create("Foo Bar", "_http._udp.", (short) 8010).get());
+ *     System.err.println(service);
+ *
+ *     // not allowing service instance name to be changed will throw an IOException at this point.
+ *     halo.register(Service.create("Foo Bar", "_http._udp.", (short) 8011).get(), false);
+ * }
+ * </code>
+ * </pre>
+ *
+ * <h3>Resolution</h3>
+ *
+ * <pre>
+ * <code>
+ * try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
+ *     // default timeout of 6 seconds.
+ *     Optional<Service> service = halo.resolve("Foo Bar", "_http._udp.");
+ *     // Optional contains the service if it could be resolved, empty otherwise.
+ *     System.err.println(service);
+ *
+ *     // user defined timeout.
+ *     service = halo.resolve("Foo Bar", "_http._udp.", Duration.ofSeconds(1));
+ *     System.err.println(service);
+ * }
+ * </code>
+ * </pre>
  */
 public interface Halo extends Closeable {
 
@@ -111,7 +141,7 @@ public interface Halo extends Closeable {
      * Registers the given service on the <strong>local</strong> domain with a TTL of 1 hour.
      * <p>
      * The {@link Service#instanceName() instance name} of the service will be changed to be unique if possible.
-     * 
+     *
      * @see #register(Service, Duration, boolean)
      * @param service service to register
      * @return the service that was successfully registered (instance name may have been changed)

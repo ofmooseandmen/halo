@@ -37,27 +37,25 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * DNS service record.
+ * DNS SRV (service) record.
+ * <p>
+ * According to <a href=
+ * "https://developer.apple.com/library/content/documentation/Cocoa/Conceptual/NetServices/Introduction.html#//apple_ref/doc/uid/TP40002445-SW1">Apple
+ * Bonjour</a>, both the priority and weight are always {@code 0}.
  */
 @SuppressWarnings("javadoc")
 final class SrvRecord extends DnsRecord {
 
     private final short port;
 
-    private final short priority;
-
     private final String server;
 
-    private final short weight;
-
     SrvRecord(final String aName, final short aClass, final Duration aTtl, final Instant now, final short aPort,
-            final short aPriority, final String aServer, final short aWeight) {
+            final String aServer) {
         super(aName, TYPE_SRV, aClass, aTtl, now);
         Objects.requireNonNull(aServer);
         port = aPort;
-        priority = aPriority;
         server = aServer;
-        weight = aWeight;
     }
 
     @Override
@@ -74,17 +72,14 @@ final class SrvRecord extends DnsRecord {
             + server
             + ", port="
             + port
-            + ", priority="
-            + priority
-            + ", weight="
-            + weight
             + "]";
     }
 
     @Override
     protected final void write(final MessageOutputStream mos) {
-        mos.writeShort(priority);
-        mos.writeShort(weight);
+        /* priority and weight are always 0. */
+        mos.writeShort(0);
+        mos.writeShort(0);
         mos.writeShort(port);
         mos.writeName(server);
     }
@@ -93,16 +88,8 @@ final class SrvRecord extends DnsRecord {
         return port;
     }
 
-    final short priority() {
-        return priority;
-    }
-
     final String server() {
         return server;
-    }
-
-    final short weight() {
-        return weight;
     }
 
 }

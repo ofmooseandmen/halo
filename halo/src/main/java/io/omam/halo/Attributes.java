@@ -40,10 +40,21 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 /**
- * Arbitrary key/value pairs conveying additional information about a named service.
+ * Arbitrary key/value pairs conveying additional information about a named service, such as {@code paper=a4},
+ * {@code plugins=}, {@code annon allowed}, etc.
  * <p>
  * Note: values are opaque binary data. Often the value for a particular attribute will be US-ASCII or UTF-8 text,
- * but it is legal for a value to be any binary data
+ * but it is legal for a value to be any binary data.
+ *
+ * <pre>
+ * <code>
+ * Attributes.create()
+ *     .with("enabled")
+ *     .with("version", "3.1", StandardCharsets.UTF8)
+ *     .with("plugins", ByteBuffer.wrap(bytes))
+ *     .get();
+ * </code>
+ * </pre>
  */
 public interface Attributes {
 
@@ -109,12 +120,9 @@ public interface Attributes {
          * @return this
          */
         public final Builder with(final String key, final String value, final Charset charset) {
-            if (isValidKey(key)) {
-                final ByteBuffer bb = ByteBuffer.wrap(value.getBytes(charset));
-                bb.order(ByteOrder.BIG_ENDIAN);
-                map.put(key, Optional.of(bb));
-            }
-            return this;
+            final ByteBuffer bb = ByteBuffer.wrap(value.getBytes(charset));
+            bb.order(ByteOrder.BIG_ENDIAN);
+            return with(key, bb);
         }
 
         /**

@@ -115,9 +115,7 @@ final class HaloAssert {
             final SrvRecord srve = (SrvRecord) expected;
             final SrvRecord srva = (SrvRecord) actual;
             assertEquals(srve.port(), srva.port());
-            assertEquals(srve.priority(), srva.priority());
             assertEquals(srve.server(), srva.server());
-            assertEquals(srve.weight(), srva.weight());
         } else if (expected instanceof TxtRecord && actual instanceof TxtRecord) {
             /* TxtRecord */
             assertAttributesEquals(((TxtRecord) expected).attributes(), ((TxtRecord) actual).attributes());
