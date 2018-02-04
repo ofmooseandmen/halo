@@ -10,7 +10,7 @@ ext.libraries = [
         'junit:junit:4.12'
     ],
     
-    // JmDNS is used only to test Zerconf
+    // JmDNS is used only to test Halo
     jmdns: [
         'org.jmdns:jmdns:3.5.3',
         'org.slf4j:slf4j-jdk14:1.7.16'

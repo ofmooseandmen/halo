@@ -188,27 +188,6 @@ final class Cache {
     }
 
     /**
-     * Removes the given DNS record from this cache.
-     *
-     * @param record DNS record to remove
-     */
-    final void remove(final DnsRecord record) {
-        Objects.requireNonNull(record);
-        final int index = indexOf(record);
-        if (index != -1) {
-            LOGGER.fine(() -> "Removing " + record + " from cache");
-            final List<DnsRecord> records = map.get(key(record));
-            if (records.isEmpty()) {
-                map.remove(key(record));
-            } else {
-                records.remove(index);
-            }
-        } else {
-            LOGGER.fine(() -> record + " not cached");
-        }
-    }
-
-    /**
      * Removes all DNS records associated with the given name.
      *
      * @param name service name

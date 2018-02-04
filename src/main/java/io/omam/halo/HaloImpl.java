@@ -454,12 +454,9 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
      */
     private void handleResponse(final DnsMessage response) {
         LOGGER.fine(() -> "Handling response " + response);
-        final Instant now = now();
         for (final DnsRecord record : response.answers()) {
             if (record.ttl().isZero()) {
                 cache.expire(record);
-            } else if (record.isExpired(now)) {
-                cache.remove(record);
             } else {
                 cache.add(record);
             }
