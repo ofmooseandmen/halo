@@ -37,17 +37,27 @@ import java.util.Objects;
 /**
  * DNS entry base class.
  */
-@SuppressWarnings("javadoc")
 abstract class DnsEntry {
 
+    /** entry name. */
     private final String name;
 
+    /** entry type */
     private final short type;
 
+    /** entry class */
     private final short clazz;
 
+    /** whether the entry class is unique. */
     private final boolean unique;
 
+    /**
+     * Constructor.
+     *
+     * @param aName entry name
+     * @param aType entry type
+     * @param aClass entry class
+     */
     protected DnsEntry(final String aName, final short aType, final short aClass) {
         Objects.requireNonNull(aName);
         name = aName;
@@ -57,18 +67,30 @@ abstract class DnsEntry {
         unique = arr[1] != 0;
     }
 
+    /**
+     * @return entry class.
+     */
     final short clazz() {
         return clazz;
     }
 
+    /**
+     * @return {@code true} iff the class of this entry is unique.
+     */
     final boolean isUnique() {
         return unique;
     }
 
+    /**
+     * @return entry name.
+     */
     final String name() {
         return name;
     }
 
+    /**
+     * @return entry type.
+     */
     final short type() {
         return type;
     }

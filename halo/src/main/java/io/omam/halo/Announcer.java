@@ -65,7 +65,8 @@ import io.omam.halo.DnsMessage.Builder;
 /**
  * Announces {@link Service}s on the network.
  * <p>
- * Announcing a service first requires to probe the network for the hostname and port of {@link Service service}s.
+ * Announcing a service first requires to probe the network for the hostname and port of the service and if no
+ * conflict is found announcing the service.
  */
 final class Announcer implements Closeable {
 
@@ -98,18 +99,17 @@ final class Announcer implements Closeable {
             final Attributes attributes = s.attributes();
             final String serviceName = s.serviceName();
             final short unique = uniqueClass(CLASS_IN);
+            /* no stamp when announcing, TTL will be the one given. */
+            final Optional<Instant> stamp = Optional.empty();
             final Builder b = DnsMessage
                 .response(FLAGS_AA)
-                .addAnswer(new PtrRecord(s.registrationPointerName(), CLASS_IN, TTL, now, s.instanceName()),
-                        Optional.empty())
-                .addAnswer(new SrvRecord(serviceName, unique, TTL, now, s.port(), hostname), Optional.empty())
-                .addAnswer(new TxtRecord(serviceName, unique, TTL, now, attributes), Optional.empty());
+                .addAnswer(new PtrRecord(s.registrationPointerName(), CLASS_IN, TTL, now, s.instanceName()), stamp)
+                .addAnswer(new SrvRecord(serviceName, unique, TTL, now, s.port(), hostname), stamp)
+                .addAnswer(new TxtRecord(serviceName, unique, TTL, now, attributes), stamp);
 
-            s.ipv4Address().ifPresent(
-                    a -> b.addAnswer(new AddressRecord(hostname, unique, TTL, now, a), Optional.empty()));
+            s.ipv4Address().ifPresent(a -> b.addAnswer(new AddressRecord(hostname, unique, TTL, now, a), stamp));
 
-            s.ipv6Address().ifPresent(
-                    a -> b.addAnswer(new AddressRecord(hostname, unique, TTL, now, a), Optional.empty()));
+            s.ipv6Address().ifPresent(a -> b.addAnswer(new AddressRecord(hostname, unique, TTL, now, a), stamp));
 
             halo.sendMessage(b.get());
             return null;

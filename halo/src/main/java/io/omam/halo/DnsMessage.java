@@ -55,21 +55,34 @@ import java.util.stream.Collectors;
 /**
  * A DNS message.
  */
-@SuppressWarnings("javadoc")
 final class DnsMessage {
 
+    /**
+     * {@code DnsMessage} builder.
+     */
     static final class Builder implements Supplier<DnsMessage> {
 
+        /** DNS message flags. */
         private final short flags;
 
+        /** list of questions. */
         private final List<DnsQuestion> questions;
 
+        /** list of answers. */
         private final List<DnsAnswer> answers;
 
+        /** list of authorities. */
         private final List<DnsRecord> authorities;
 
+        /** list of additional records. */
         private final List<DnsRecord> additional;
 
+        /**
+         * Constructor.
+         *
+         * @param flag primary flag
+         * @param otherFlags other flags
+         */
         Builder(final short flag, final short[] otherFlags) {
             short f = flag;
             for (final short of : otherFlags) {
@@ -87,35 +100,72 @@ final class DnsMessage {
             return new DnsMessage(flags, questions, answers, authorities, additional);
         }
 
+        /**
+         * Adds the given additional record.
+         *
+         * @param record record
+         * @return this
+         */
         final Builder addAdditional(final DnsRecord record) {
             additional.add(record);
             return this;
         }
 
-        final Builder addAnswer(final DnsMessage msg, final DnsRecord record) {
-            if (msg == null || !record.suppressedBy(msg)) {
-                answers.add(DnsAnswer.unstamped(record));
+        /**
+         * Adds the given answer to the given message.
+         * <p>
+         * Answer is added only if it is not {@link DnsRecord#suppressedBy(DnsMessage) suppressed} by the message
+         * being answered.
+         *
+         * @param msg DNS message which is being answered, can be null
+         * @param answer answer
+         * @return this
+         */
+        final Builder addAnswer(final DnsMessage msg, final DnsRecord answer) {
+            if (msg == null || !answer.suppressedBy(msg)) {
+                answers.add(DnsAnswer.unstamped(answer));
             }
             return this;
         }
 
-        final Builder addAnswer(final DnsRecord record, final Optional<Instant> stamp) {
+        /**
+         * Adds the given answer.
+         * <p>
+         * If a stamp is provided, answer if given only if it is not {@link DnsRecord#isExpired(Instant) expired}.
+         *
+         * @param answer answer
+         * @param stamp answer stamp if any
+         * @return this
+         */
+        final Builder addAnswer(final DnsRecord answer, final Optional<Instant> stamp) {
             if (stamp.isPresent()) {
-                if (!record.isExpired(stamp.get())) {
-                    answers.add(DnsAnswer.stamped(record, stamp.get()));
+                if (!answer.isExpired(stamp.get())) {
+                    answers.add(DnsAnswer.stamped(answer, stamp.get()));
                 }
             } else {
-                answers.add(DnsAnswer.unstamped(record));
+                answers.add(DnsAnswer.unstamped(answer));
             }
             return this;
         }
 
-        final Builder addAuthority(final DnsRecord record) {
-            authorities.add(record);
+        /**
+         * Adds the given authority.
+         *
+         * @param authority authority
+         * @return this
+         */
+        final Builder addAuthority(final DnsRecord authority) {
+            authorities.add(authority);
             return this;
 
         }
 
+        /**
+         * Adds the given question.
+         *
+         * @param question question
+         * @return this
+         */
         final Builder addQuestion(final DnsQuestion question) {
             questions.add(question);
             return this;
@@ -123,21 +173,45 @@ final class DnsMessage {
 
     }
 
+    /**
+     * An answer to a DNS message.
+     */
     static final class DnsAnswer {
 
-        private final Optional<Instant> stamp;
-
+        /** DNS record holding the answer. */
         private final DnsRecord record;
 
+        /** answer stamp, if any. */
+        private final Optional<Instant> stamp;
+
+        /**
+         * Constructor.
+         *
+         * @param aRecord DNS record holding the answer
+         * @param aStamp answer stamp, if any
+         */
         private DnsAnswer(final DnsRecord aRecord, final Optional<Instant> aStamp) {
             stamp = aStamp;
             record = aRecord;
         }
 
+        /**
+         * Builds a stamped answer.
+         *
+         * @param record DNS record holding the answer
+         * @param stamp answer stamp
+         * @return a stamped answer
+         */
         static DnsAnswer stamped(final DnsRecord record, final Instant stamp) {
             return new DnsAnswer(record, Optional.of(stamp));
         }
 
+        /**
+         * Builds an unstamped answer.
+         *
+         * @param record DNS record holding the answer
+         * @return an unstamped answer
+         */
         static DnsAnswer unstamped(final DnsRecord record) {
             return new DnsAnswer(record, Optional.empty());
         }
@@ -147,26 +221,46 @@ final class DnsMessage {
             return record.toString();
         }
 
+        /**
+         * @return DNS record holding the answer.
+         */
         final DnsRecord record() {
             return record;
         }
 
+        /**
+         * @return answer stamp, if any.
+         */
         final Optional<Instant> stamp() {
             return stamp;
         }
 
     }
 
+    /** DNS message flags. */
     private final short flags;
 
+    /** list of questions. */
     private final List<DnsQuestion> questions;
 
+    /** list of answers. */
     private final List<DnsAnswer> answers;
 
+    /** list of authorities. */
     private final List<DnsRecord> authorities;
 
+    /** list of additional records. */
     private final List<DnsRecord> additional;
 
+    /**
+     * Constructor.
+     *
+     * @param someFlags DNS message flags
+     * @param someQuestions list of questions
+     * @param someAnswers list of answers
+     * @param someAuthorities list of authorities
+     * @param someAdditional list of additional records
+     */
     DnsMessage(final short someFlags, final List<DnsQuestion> someQuestions, final List<DnsAnswer> someAnswers,
             final List<DnsRecord> someAuthorities, final List<DnsRecord> someAdditional) {
         flags = someFlags;
@@ -176,6 +270,14 @@ final class DnsMessage {
         additional = someAdditional;
     }
 
+    /**
+     * Decodes the given bytes into a {@code DnsMessage}.
+     *
+     * @param bytes bytes to decode
+     * @param now current instant
+     * @return the decoded {@code DnsMessage}
+     * @throws IOException in case of I/O error during decoding
+     */
     static DnsMessage decode(final byte[] bytes, final Instant now) throws IOException {
         try (final MessageInputStream is = new MessageInputStream(bytes)) {
             /*
@@ -208,14 +310,34 @@ final class DnsMessage {
         }
     }
 
+    /**
+     * Returns a new {@link Builder builder} to build a DNS {@link DnsMessage#isQuery() query}.
+     *
+     * @param flags additional flags (on top of FLAGS_QR_QUERY)
+     * @return a new {@link Builder builder}
+     */
     static Builder query(final short... flags) {
         return new Builder(FLAGS_QR_QUERY, flags);
     }
 
+    /**
+     * Returns a new {@link Builder builder} to build a DNS {@link DnsMessage#isResponse() response}.
+     *
+     * @param flags additional flags (on top of FLAGS_QR_RESPONSE)
+     * @return a new {@link Builder builder}
+     */
     static Builder response(final short... flags) {
         return new Builder(FLAGS_QR_RESPONSE, flags);
     }
 
+    /**
+     * Reads one {@link DnsRecord} from the given stream.
+     *
+     * @param is stream
+     * @param now current instant
+     * @return the read DNS record if any
+     * @throws IOException in case of I/O error
+     */
     private static Optional<DnsRecord> readRecord(final MessageInputStream is, final Instant now)
             throws IOException {
         final String name = is.readName();
@@ -262,6 +384,15 @@ final class DnsMessage {
         return Optional.ofNullable(record);
     }
 
+    /**
+     * Reads all {@link DnsRecord}(s) from the given stream.
+     *
+     * @param is stream
+     * @param size number of record(s) to read
+     * @param now current instant
+     * @return all read DNS record(s)
+     * @throws IOException in case of I/O error
+     */
     private static List<DnsRecord> readRecords(final MessageInputStream is, final int size, final Instant now)
             throws IOException {
         final List<DnsRecord> records = new ArrayList<>();
@@ -271,12 +402,25 @@ final class DnsMessage {
         return records;
     }
 
+    /**
+     * Writes the given question to the given stream.
+     *
+     * @param question question
+     * @param mos stream
+     */
     private static void write(final DnsQuestion question, final MessageOutputStream mos) {
         mos.writeName(question.name());
         mos.writeShort(question.type());
         mos.writeShort(encodeClass(question.clazz(), question.isUnique()));
     }
 
+    /**
+     * Writes the given record to the given stream.
+     *
+     * @param record record
+     * @param stamp record stamp if any
+     * @param mos stream
+     */
     private static void write(final DnsRecord record, final Optional<Instant> stamp,
             final MessageOutputStream mos) {
         mos.writeName(record.name());
@@ -311,18 +455,32 @@ final class DnsMessage {
         return sb.toString();
     }
 
+    /**
+     * @return all additional record(s) of this message.
+     */
     final List<DnsRecord> additional() {
         return Collections.unmodifiableList(additional);
     }
 
+    /**
+     * @return all answer(s) of this message.
+     */
     final List<DnsRecord> answers() {
         return Collections.unmodifiableList(answers.stream().map(DnsAnswer::record).collect(Collectors.toList()));
     }
 
+    /**
+     * @return all authority(s) of this message.
+     */
     final List<DnsRecord> authorities() {
         return Collections.unmodifiableList(authorities);
     }
 
+    /**
+     * Encodes this {@code DnsMessage} in binary format.
+     *
+     * @return bytes
+     */
     final byte[] encode() {
         try (final MessageOutputStream mos = new MessageOutputStream()) {
             mos.writeShort((short) 0);
@@ -345,20 +503,30 @@ final class DnsMessage {
         }
     }
 
+    /**
+     * @return the flags of this DNS message.
+     */
     final short flags() {
         return flags;
     }
 
-    /* Returns true if this is a query. */
+    /**
+     * @return true if this is a query.
+     */
     final boolean isQuery() {
         return (flags & FLAGS_QR_MASK) == FLAGS_QR_QUERY;
     }
 
-    /* Returns true if this is a response. */
+    /**
+     * @return true if this is a response.
+     */
     final boolean isResponse() {
         return (flags & FLAGS_QR_MASK) == FLAGS_QR_RESPONSE;
     }
 
+    /**
+     * @return all question(s) of this message.
+     */
     final List<DnsQuestion> questions() {
         return Collections.unmodifiableList(questions);
     }

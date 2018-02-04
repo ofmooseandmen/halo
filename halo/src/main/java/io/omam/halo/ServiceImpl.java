@@ -41,10 +41,8 @@ import java.net.Inet6Address;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -195,22 +193,19 @@ final class ServiceImpl implements Service, ResponseListener {
      * @param timeout resolution timeout
      */
     final boolean resolve(final HaloHelper halo, final Duration timeout) {
-        final Set<Short> recTypes = new HashSet<>();
-        recTypes.add(TYPE_SRV);
-        recTypes.add(TYPE_TXT);
-        if (hostname != null) {
-            if (halo.ipv4Supported()) {
-                recTypes.add(TYPE_A);
-            }
-            if (halo.ipv6Supported()) {
-                recTypes.add(TYPE_AAAA);
-            }
-        }
-
         final String serviceName = serviceName();
 
-        for (final short recType : recTypes) {
-            halo.cachedRecord(serviceName, recType, CLASS_IN).ifPresent(c -> updateRecord(halo, c));
+        /* look for a cached SRV record. */
+        halo.cachedRecord(serviceName, TYPE_SRV, CLASS_IN).ifPresent(c -> updateRecord(halo, c));
+
+        /* look for a cached TXT record. */
+        halo.cachedRecord(serviceName, TYPE_TXT, CLASS_IN).ifPresent(c -> updateRecord(halo, c));
+
+        if (hostname != null) {
+            /* look for a cached A record. */
+            halo.cachedRecord(hostname, TYPE_A, CLASS_IN).ifPresent(c -> updateRecord(halo, c));
+            /* look for a cached AAAA record. */
+            halo.cachedRecord(hostname, TYPE_AAAA, CLASS_IN).ifPresent(c -> updateRecord(halo, c));
         }
 
         if (resolved()) {
@@ -230,14 +225,10 @@ final class ServiceImpl implements Service, ResponseListener {
                 halo.cachedRecord(serviceName, TYPE_TXT, CLASS_IN).ifPresent(r -> b.addAnswer(r, now));
 
                 if (hostname != null) {
-                    if (halo.ipv4Supported()) {
-                        b.addQuestion(new DnsQuestion(hostname, TYPE_A, CLASS_IN));
-                        halo.cachedRecord(hostname, TYPE_A, CLASS_IN).ifPresent(r -> b.addAnswer(r, now));
-                    }
-                    if (halo.ipv6Supported()) {
-                        b.addQuestion(new DnsQuestion(hostname, TYPE_AAAA, CLASS_IN));
-                        halo.cachedRecord(hostname, TYPE_AAAA, CLASS_IN).ifPresent(r -> b.addAnswer(r, now));
-                    }
+                    b.addQuestion(new DnsQuestion(hostname, TYPE_A, CLASS_IN));
+                    halo.cachedRecord(hostname, TYPE_A, CLASS_IN).ifPresent(r -> b.addAnswer(r, now));
+                    b.addQuestion(new DnsQuestion(hostname, TYPE_AAAA, CLASS_IN));
+                    halo.cachedRecord(hostname, TYPE_AAAA, CLASS_IN).ifPresent(r -> b.addAnswer(r, now));
                 }
                 halo.sendMessage(b.get());
                 awaitResponse(delays.poll());
@@ -332,13 +323,12 @@ final class ServiceImpl implements Service, ResponseListener {
         if (!record.isExpired(halo.now())) {
             final String serviceName = serviceName();
             final boolean matchesHost = record.name().equals(hostname);
-            if (record.type() == TYPE_A && halo.ipv4Supported() && matchesHost) {
+            if (record.type() == TYPE_A && matchesHost) {
                 ipv4Address = Optional.of((Inet4Address) ((AddressRecord) record).address());
                 LOGGER.fine(() -> "IPV4 address of service [" + serviceName + UPDATED_TO + ipv4Address.get());
-            } else if (record.type() == TYPE_AAAA && halo.ipv6Supported() && matchesHost) {
+            } else if (record.type() == TYPE_AAAA && matchesHost) {
                 ipv6Address = Optional.of((Inet6Address) ((AddressRecord) record).address());
                 LOGGER.fine(() -> "Address of service [" + serviceName + UPDATED_TO + ipv6Address.get());
-
             } else if (record.type() == TYPE_SRV && record.name().equalsIgnoreCase(serviceName)) {
                 final SrvRecord srv = (SrvRecord) record;
                 port = srv.port();

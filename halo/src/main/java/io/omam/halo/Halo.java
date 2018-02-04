@@ -124,20 +124,6 @@ public interface Halo extends Closeable {
     }
 
     /**
-     * Whether at least one of the network interface given at creation supports IPV4.
-     *
-     * @return {@code true} iff IPV4 is supported
-     */
-    boolean ipv4Supported();
-
-    /**
-     * Whether at least one of the network interface given at creation supports IPV6.
-     *
-     * @return {@code true} iff IPV6 is supported
-     */
-    boolean ipv6Supported();
-
-    /**
      * Registers the given service on the <strong>local</strong> domain with a TTL of 1 hour.
      * <p>
      * The {@link Service#instanceName() instance name} of the service will be changed to be unique if possible.

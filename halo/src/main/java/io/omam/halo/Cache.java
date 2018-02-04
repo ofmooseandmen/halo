@@ -42,7 +42,6 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 /**
  * A cache of DNS records.
@@ -64,13 +63,23 @@ final class Cache {
 
     /**
      * Adds the given DNS record to this cache.
+     * <p>
+     * If a DNS record matching the given record name (ignoring case), type and class already exists, it is
+     * replaced with the given one.
      *
      * @param record DNS record to add
      */
     final void add(final DnsRecord record) {
         Objects.requireNonNull(record);
-        LOGGER.fine(() -> "Adding " + record + " to cache");
-        map.computeIfAbsent(key(record), k -> new CopyOnWriteArrayList<>()).add(record);
+        final int index = indexOf(record);
+        final String key = key(record);
+        if (index == -1) {
+            LOGGER.fine(() -> "Adding " + record + " to cache");
+            map.computeIfAbsent(key, k -> new CopyOnWriteArrayList<>()).add(record);
+        } else {
+            LOGGER.fine(() -> "Replacing " + map.get(key).get(index) + " with " + record + " in cache");
+            map.get(key).set(index, record);
+        }
     }
 
     /**
@@ -79,13 +88,6 @@ final class Cache {
     final void clear() {
         LOGGER.fine("Clearing cache");
         map.clear();
-    }
-
-    /**
-     * @return all DNS records of this cache.
-     */
-    final Collection<DnsRecord> entries() {
-        return map.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
     }
 
     /**
@@ -99,42 +101,23 @@ final class Cache {
     }
 
     /**
-     * Returns the DNS record matching the given DNS record if it exists.
+     * Returns the DNS record matching the given name, type and class if it exists.
      *
-     * @param record DNS record
+     * @param name record name
+     * @param type record type
+     * @param clazz record class
      * @return an Optional describing the matching DNS record or empty
      */
-    final Optional<DnsRecord> get(final DnsRecord record) {
-        LOGGER.fine(() -> "Searching cache for DNS record matching " + record);
-        final Optional<DnsRecord> result = map
-            .get(key(record))
-            .stream()
-            .filter(r -> r.name().equals(record.name()) && isSameType(r, record) && isSameClass(r, record))
-            .findFirst();
-        logResult(result);
-        return result;
-    }
-
-    /**
-     * Returns the DNS record matching the given service name, record type and class if it exists.
-     *
-     * @param serviceName service name
-     * @param recordType service type
-     * @param recordClass service class
-     * @return an Optional describing the matching DNS record or empty
-     */
-    final Optional<DnsRecord> get(final String serviceName, final short recordType, final short recordClass) {
+    final Optional<DnsRecord> get(final String name, final short type, final short clazz) {
         LOGGER.fine(() -> "Searching cache for DNS record matching [Name="
-            + serviceName
+            + name
             + "; type="
-            + recordType
+            + type
             + "; class="
-            + recordClass
+            + clazz
             + "]");
-        final Optional<DnsRecord> result = entries(serviceName)
-            .stream()
-            .filter(r -> r.name().equals(serviceName) && isSameType(r, recordType) && isSameClass(r, recordClass))
-            .findFirst();
+        final Optional<DnsRecord> result =
+                entries(name).stream().filter(r -> isSameType(r, type) && isSameClass(r, clazz)).findFirst();
         logResult(result);
         return result;
     }
@@ -175,8 +158,35 @@ final class Cache {
      */
     final void remove(final DnsRecord record) {
         Objects.requireNonNull(record);
-        LOGGER.fine(() -> "Removing " + record + " from cache");
-        map.remove(key(record));
+        final int index = indexOf(record);
+        if (index != -1) {
+            LOGGER.fine(() -> "Removing " + record + " from cache");
+            final List<DnsRecord> records = map.get(key(record));
+            if (records.isEmpty()) {
+                map.remove(key(record));
+            } else {
+                records.remove(index);
+            }
+        } else {
+            LOGGER.fine(() -> record + " not cached");
+        }
+    }
+
+    /**
+     * Returns the index of the DNS record matching the given DNS record if it exists.
+     *
+     * @param record DNS record
+     * @return the index or {@code -1}
+     */
+    private int indexOf(final DnsRecord record) {
+        int index = 0;
+        for (final DnsRecord r : entries(record.name())) {
+            if (isSameType(r, record) && isSameClass(r, record)) {
+                return index;
+            }
+            index++;
+        }
+        return -1;
     }
 
     /**

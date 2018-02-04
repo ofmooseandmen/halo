@@ -303,20 +303,6 @@ final class HaloChannel implements Closeable {
     }
 
     /**
-     * @return {@code true} iff IPV4 is supported by this machine.
-     */
-    final boolean ipv4Supported() {
-        return !ipv4.isEmpty();
-    }
-
-    /**
-     * @return {@code true} iff IPV6 is supported by this machine.
-     */
-    final boolean ipv6Supported() {
-        return !ipv6.isEmpty();
-    }
-
-    /**
      * Adds the given message to the queue of messages to send.
      *
      * @param message message to send

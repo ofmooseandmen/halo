@@ -164,34 +164,16 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     }
 
     @Override
-    public final boolean ipv4Supported() {
-        return channel.ipv4Supported();
-    }
-
-    @Override
-    public final boolean ipv6Supported() {
-        return channel.ipv6Supported();
-    }
-
-    @Override
     public final Service register(final Service service, final Duration ttl, final boolean allowNameChange)
             throws IOException {
         LOGGER.fine(() -> "Registering " + service + ON_DOMAIN);
         final Service rservice = checkInstanceName(service, allowNameChange);
-        final String serviceKey = rservice.serviceName().toLowerCase();
-        services.put(serviceKey, rservice);
-        final String rpn = rservice.registrationPointerName();
-        if (registrationPointerNames.containsKey(rpn)) {
-            registrationPointerNames.put(rpn, registrationPointerNames.get(rpn) + 1);
-        } else {
-            registrationPointerNames.put(rpn, 1);
-        }
+        add(rservice);
 
         final boolean announced = announcer.announce(rservice);
         if (!announced) {
+            remove(rservice);
             final String msg = "Found conflicts while announcing " + rservice + " on network";
-            registrationPointerNames.put(rpn, registrationPointerNames.get(rpn) - 1);
-            services.remove(serviceKey);
             LOGGER.warning(msg);
             throw new IOException(msg);
         }
@@ -221,9 +203,8 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     }
 
     @Override
-    final Optional<DnsRecord> cachedRecord(final String serviceName, final short recordType,
-            final short recordClass) {
-        return cache.get(serviceName, recordType, recordClass);
+    final Optional<DnsRecord> cachedRecord(final String name, final short type, final short clazz) {
+        return cache.get(name, type, clazz);
     }
 
     @Override
@@ -243,7 +224,14 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
         channel.send(msg);
     }
 
-    private void addIpv4Address(final DnsMessage msg, final DnsQuestion question, final Builder builder,
+    private void add(final Service s) {
+        services.put(s.serviceName().toLowerCase(), s);
+        final String rpn = s.registrationPointerName();
+        final int current = registrationPointerNames.getOrDefault(rpn, 0);
+        registrationPointerNames.put(rpn, current + 1);
+    }
+
+    private void addIpv4Address(final DnsMessage query, final DnsQuestion question, final Builder builder,
             final Instant now) {
         services
             .values()
@@ -252,11 +240,12 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
             .filter(h -> h.ipv4Address().isPresent())
             .forEach(s -> {
                 final Inet4Address addr = s.ipv4Address().get();
-                builder.addAnswer(msg, new AddressRecord(question.name(), uniqueClass(CLASS_IN), TTL, now, addr));
+                builder.addAnswer(query,
+                        new AddressRecord(question.name(), uniqueClass(CLASS_IN), TTL, now, addr));
             });
     }
 
-    private void addIpv6Address(final DnsMessage msg, final DnsQuestion question, final Builder builder,
+    private void addIpv6Address(final DnsMessage query, final DnsQuestion question, final Builder builder,
             final Instant now) {
         services
             .values()
@@ -265,8 +254,44 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
             .filter(h -> h.ipv6Address().isPresent())
             .forEach(s -> {
                 final Inet6Address addr = s.ipv6Address().get();
-                builder.addAnswer(msg, new AddressRecord(question.name(), uniqueClass(CLASS_IN), TTL, now, addr));
+                builder.addAnswer(query,
+                        new AddressRecord(question.name(), uniqueClass(CLASS_IN), TTL, now, addr));
             });
+    }
+
+    private void addPtrAnswer(final DnsMessage query, final DnsQuestion question, final Builder builder,
+            final Instant now) {
+        if (question.name().equals(DISCOVERY)) {
+            for (final String rpn : registrationPointerNames.keySet()) {
+                builder.addAnswer(query, new PtrRecord(DISCOVERY, CLASS_IN, TTL, now, rpn));
+            }
+        }
+        for (final Service s : services.values()) {
+            if (question.name().equalsIgnoreCase(s.registrationPointerName())) {
+                builder.addAnswer(query,
+                        new PtrRecord(s.registrationPointerName(), CLASS_IN, TTL, now, s.serviceName()));
+            }
+        }
+    }
+
+    private void addServiceAnswer(final DnsMessage query, final DnsQuestion question, final Service service,
+            final Builder builder, final Instant now) {
+        final short unique = uniqueClass(CLASS_IN);
+        final String hostname = service.hostname();
+        if (question.type() == TYPE_SRV || question.type() == TYPE_ANY) {
+            builder.addAnswer(query, new SrvRecord(question.name(), unique, TTL, now, service.port(), hostname));
+        }
+
+        if (question.type() == TYPE_TXT || question.type() == TYPE_ANY) {
+            builder.addAnswer(query, new TxtRecord(question.name(), unique, TTL, now, service.attributes()));
+        }
+
+        if (question.type() == TYPE_SRV) {
+            service.ipv4Address().ifPresent(
+                    a -> builder.addAnswer(query, new AddressRecord(hostname, unique, TTL, now, a)));
+            service.ipv6Address().ifPresent(
+                    a -> builder.addAnswer(query, new AddressRecord(hostname, unique, TTL, now, a)));
+        }
     }
 
     private DnsMessage buildResponse(final DnsMessage query) {
@@ -274,17 +299,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
         final Instant now = now();
         for (final DnsQuestion question : query.questions()) {
             if (question.type() == TYPE_PTR) {
-                if (question.name().equals(DISCOVERY)) {
-                    for (final String rpn : registrationPointerNames.keySet()) {
-                        builder.addAnswer(query, new PtrRecord(DISCOVERY, CLASS_IN, TTL, now, rpn));
-                    }
-                }
-                for (final Service s : services.values()) {
-                    if (question.name().equalsIgnoreCase(s.registrationPointerName())) {
-                        builder.addAnswer(query,
-                                new PtrRecord(s.registrationPointerName(), CLASS_IN, TTL, now, s.serviceName()));
-                    }
-                }
+                addPtrAnswer(query, question, builder, now);
             } else {
                 if (question.type() == TYPE_A || question.type() == TYPE_ANY) {
                     addIpv4Address(query, question, builder, now);
@@ -295,23 +310,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
 
                 final Service s = services.get(question.name().toLowerCase());
                 if (s != null) {
-                    final short unique = uniqueClass(CLASS_IN);
-                    final String hostname = s.hostname();
-                    if (question.type() == TYPE_SRV || question.type() == TYPE_ANY) {
-                        builder.addAnswer(query,
-                                new SrvRecord(question.name(), unique, TTL, now, s.port(), hostname));
-                    }
-
-                    if (question.type() == TYPE_TXT || question.type() == TYPE_ANY) {
-                        builder.addAnswer(query, new TxtRecord(question.name(), unique, TTL, now, s.attributes()));
-                    }
-
-                    if (question.type() == TYPE_SRV) {
-                        s.ipv4Address().ifPresent(
-                                a -> builder.addAnswer(query, new AddressRecord(hostname, unique, TTL, now, a)));
-                        s.ipv6Address().ifPresent(
-                                a -> builder.addAnswer(query, new AddressRecord(hostname, unique, TTL, now, a)));
-                    }
+                    addServiceAnswer(query, question, s, builder, now);
                 }
             }
         }
@@ -345,13 +344,8 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
                 .findFirst();
             if (rec.isPresent()) {
                 collision = true;
-                final String str = "Cache collision: " + rec.get();
-                if (!allowNameChange) {
-                    throw new IOException(str);
-                }
-                LOGGER.info(str);
-                final String instanceName = changeInstanceName(result.instanceName());
-                result = new ServiceImpl(instanceName, result);
+                final String msg = "Cache collision: " + rec.get();
+                result = tryResolveCollision(result, allowNameChange, msg);
             }
 
             /* check own services. */
@@ -360,13 +354,8 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
                 final String otherHostname = own.hostname();
                 collision = own.port() != port || !otherHostname.equals(hostname);
                 if (collision) {
-                    final String str = "Registered service collision: " + own;
-                    if (!allowNameChange) {
-                        throw new IOException(str);
-                    }
-                    LOGGER.info(str);
-                    final String instanceName = changeInstanceName(result.instanceName());
-                    result = new ServiceImpl(instanceName, result);
+                    final String msg = "Registered service collision: " + own;
+                    result = tryResolveCollision(result, allowNameChange, msg);
                 }
             }
         } while (collision);
@@ -385,15 +374,11 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     }
 
     private void handleResponse(final DnsMessage response) {
-        LOGGER.fine(() -> "Caching response " + response);
+        LOGGER.fine(() -> "Handling response " + response);
         final Instant now = now();
         for (final DnsRecord record : response.answers()) {
-            if (cache.entries().contains(record)) {
-                if (record.isExpired(now)) {
-                    cache.remove(record);
-                } else {
-                    cache.get(record).ifPresent(r -> r.resetTtl(record));
-                }
+            if (record.isExpired(now)) {
+                cache.remove(record);
             } else {
                 cache.add(record);
             }
@@ -403,6 +388,26 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
         } else {
             rls.forEach(l -> l.responseReceived(response, this));
         }
+    }
+
+    private void remove(final Service s) {
+        final String rpn = s.registrationPointerName();
+        if (registrationPointerNames.get(rpn) == 1) {
+            registrationPointerNames.remove(rpn);
+        } else {
+            registrationPointerNames.put(rpn, registrationPointerNames.get(rpn) - 1);
+        }
+        services.remove(s.serviceName().toLowerCase());
+    }
+
+    private Service tryResolveCollision(final Service service, final boolean allowNameChange, final String msg)
+            throws IOException {
+        if (!allowNameChange) {
+            throw new IOException(msg);
+        }
+        LOGGER.info(msg);
+        final String instanceName = changeInstanceName(service.instanceName());
+        return new ServiceImpl(instanceName, service);
     }
 
 }

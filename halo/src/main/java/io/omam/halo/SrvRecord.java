@@ -37,19 +37,30 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * DNS SRV (service) record.
+ * Service record (SRV).
  * <p>
  * According to <a href=
  * "https://developer.apple.com/library/content/documentation/Cocoa/Conceptual/NetServices/Introduction.html#//apple_ref/doc/uid/TP40002445-SW1">Apple
  * Bonjour</a>, both the priority and weight are always {@code 0}.
  */
-@SuppressWarnings("javadoc")
 final class SrvRecord extends DnsRecord {
 
+    /** service port. */
     private final short port;
 
+    /** service server. */
     private final String server;
 
+    /**
+     * Constructor.
+     *
+     * @param aName record name
+     * @param aClass record class
+     * @param aTtl record time-to-live
+     * @param now current instant
+     * @param aPort service port
+     * @param aServer service server
+     */
     SrvRecord(final String aName, final short aClass, final Duration aTtl, final Instant now, final short aPort,
             final String aServer) {
         super(aName, TYPE_SRV, aClass, aTtl, now);
@@ -84,10 +95,16 @@ final class SrvRecord extends DnsRecord {
         mos.writeName(server);
     }
 
+    /**
+     * @return service port.
+     */
     final short port() {
         return port;
     }
 
+    /**
+     * @return service server.
+     */
     final String server() {
         return server;
     }

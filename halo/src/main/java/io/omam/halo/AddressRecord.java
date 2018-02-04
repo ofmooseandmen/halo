@@ -40,13 +40,22 @@ import java.time.Duration;
 import java.time.Instant;
 
 /**
- * A DNS address record.
+ * Address record (A or AAAA).
  */
-@SuppressWarnings("javadoc")
 final class AddressRecord extends DnsRecord {
 
+    /** IP address. */
     private final InetAddress address;
 
+    /**
+     * Constructor.
+     *
+     * @param aName record name
+     * @param aClass record class
+     * @param aTtl record time-to-live
+     * @param now current instant
+     * @param anAddress IP address
+     */
     AddressRecord(final String aName, final short aClass, final Duration aTtl, final Instant now,
             final InetAddress anAddress) {
         super(aName, type(anAddress), aClass, aTtl, now);
@@ -83,6 +92,9 @@ final class AddressRecord extends DnsRecord {
         mos.writeBytes(address.getAddress());
     }
 
+    /**
+     * @return the IP address.
+     */
     final InetAddress address() {
         return address;
     }

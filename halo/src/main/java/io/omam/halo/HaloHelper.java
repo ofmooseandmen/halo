@@ -46,29 +46,14 @@ abstract class HaloHelper {
     abstract void addResponseListener(final ResponseListener listener);
 
     /**
-     * Returns the cached DNS record matching the given service name, record type and class if it exists.
+     * Returns the cached DNS record matching the given name, type and class if it exists.
      *
-     * @param serviceName service name
-     * @param recordType service type
-     * @param recordClass service class
+     * @param name record name
+     * @param type record type
+     * @param clazz record class
      * @return an Optional describing the matching cached DNS record or empty
      */
-    abstract Optional<DnsRecord> cachedRecord(final String serviceName, final short recordType,
-            final short recordClass);
-
-    /**
-     * Whether at least one of the network interface given at creation supports IPV4.
-     *
-     * @return {@code true} iff IPV4 is supported
-     */
-    abstract boolean ipv4Supported();
-
-    /**
-     * Whether at least one of the network interface given at creation supports IPV6.
-     *
-     * @return {@code true} iff IPV6 is supported
-     */
-    abstract boolean ipv6Supported();
+    abstract Optional<DnsRecord> cachedRecord(final String name, final short type, final short clazz);
 
     /**
      * @return the current instant.

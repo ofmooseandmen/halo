@@ -37,13 +37,22 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * DNS text record.
+ * Text (TXT) record.
  */
-@SuppressWarnings("javadoc")
 final class TxtRecord extends DnsRecord {
 
+    /** attributes. */
     private final Attributes attributes;
 
+    /**
+     * Constructor.
+     *
+     * @param aName record name
+     * @param aClass record class
+     * @param aTtl record time-to-live
+     * @param now current instant
+     * @param someAttributes attributes
+     */
     TxtRecord(final String aName, final short aClass, final Duration aTtl, final Instant now,
             final Attributes someAttributes) {
         super(aName, TYPE_TXT, aClass, aTtl, now);
@@ -71,6 +80,9 @@ final class TxtRecord extends DnsRecord {
         AttributesCodec.encode(attributes, mos);
     }
 
+    /**
+     * @return attributes.
+     */
     final Attributes attributes() {
         return attributes;
     }

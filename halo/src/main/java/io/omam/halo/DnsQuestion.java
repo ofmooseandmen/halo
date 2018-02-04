@@ -30,9 +30,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-@SuppressWarnings("javadoc")
+/**
+ * A DNS question.
+ */
 final class DnsQuestion extends DnsEntry {
 
+    /**
+     * Constructor.
+     *
+     * @param aName question name
+     * @param aType question type
+     * @param aClass question class
+     */
     protected DnsQuestion(final String aName, final short aType, final short aClass) {
         super(aName, aType, aClass);
     }

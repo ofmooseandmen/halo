@@ -69,15 +69,6 @@ public final class TtlSteps {
         }
     }
 
-    @Then("^the DNS record is (not stale|stale)$")
-    public final void thenDnsRecordStale(final String stale) {
-        if (stale.startsWith("not")) {
-            assertFalse(factory.record().isStale(now));
-        } else {
-            assertTrue(factory.record().isStale(now));
-        }
-    }
-
     @Then("^the DNS record remaining TTL shall be '(.+)'$")
     public final void thenRemainingTtlIs(final String ttl) {
         assertEquals(Duration.parse(ttl), factory.record().remainingTtl(now));

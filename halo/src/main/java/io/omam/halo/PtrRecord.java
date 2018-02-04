@@ -37,13 +37,22 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * Pointer Record - maps a domain name representing an Internet Address to a hostname.
+ * Pointer Record (PTR) - maps a domain name representing an Internet Address to a hostname.
  */
-@SuppressWarnings("javadoc")
 final class PtrRecord extends DnsRecord {
 
+    /** target */
     private final String target;
 
+    /**
+     * Constructor.
+     *
+     * @param aName record name
+     * @param aClass record class
+     * @param aTtl record time-to-live
+     * @param now current instant
+     * @param aTarget pointer target
+     */
     PtrRecord(final String aName, final short aClass, final Duration aTtl, final Instant now,
             final String aTarget) {
         super(aName, TYPE_PTR, aClass, aTtl, now);
@@ -71,6 +80,9 @@ final class PtrRecord extends DnsRecord {
         mos.writeName(target);
     }
 
+    /**
+     * @return pointer target.
+     */
     final String target() {
         return target;
     }

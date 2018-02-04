@@ -72,7 +72,7 @@ public final class SuppressionSteps {
 
     @When("^the record to record suppression check is performed$")
     public void whenRecordToRecordSuppression() {
-        suppression = factory.record().suppressedByAnswer(factory.otherRecord());
+        suppression = factory.record().suppressedBy(factory.otherRecord());
     }
 
 }
