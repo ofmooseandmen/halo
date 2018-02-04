@@ -30,57 +30,66 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.logging.Logger;
+import static io.omam.halo.MulticastDns.REAPING_INTERVAL;
 
-import cucumber.api.Scenario;
-import cucumber.api.java.After;
-import cucumber.api.java.Before;
-import cucumber.api.java.en.Given;
+import java.time.Clock;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
- * Steps to log start/end of scenario.
+ * Periodically removes expired DNS records from the cache.
  */
-public final class ScenarioSteps {
+final class Reaper implements AutoCloseable {
 
-    /** logger. */
-    private static final Logger LOGGER = Logger.getLogger(ScenarioSteps.class.getName());
+    /** cache. */
+    private final Cache cache;
+
+    /** clock. */
+    private final Clock clock;
+
+    /** scheduled executor service. */
+    private final ScheduledExecutorService ses;
+
+    /** future to cancel the background reaping task. */
+    private Future<?> f;
 
     /**
-     * Logs end of scenario and the most severe status of the scenario's steps.
+     * Constructor.
      *
-     * @param scenario scenario
+     * @param aCache cache
+     * @param aClock clock
      */
-    @After
-    public final void after(final Scenario scenario) {
-        LOGGER.info(() -> "Scenario '"
-            + scenario.getName()
-            + "' ended @ "
-            + Instant.now()
-            + " with status "
-            + scenario.getStatus());
+    Reaper(final Cache aCache, final Clock aClock) {
+        cache = aCache;
+        clock = aClock;
+        ses = Executors.newSingleThreadScheduledExecutor(new HaloThreadFactory("reaper"));
+    }
+
+    @Override
+    public final void close() {
+        stop();
+        ses.shutdownNow();
     }
 
     /**
-     * Logs start of scenario.
-     *
-     * @param scenario scenario
+     * Starts a background task to remove expired records.
      */
-    @Before
-    public final void before(final Scenario scenario) {
-        LOGGER.info(() -> "Scenario '" + scenario.getName() + "' started @ " + Instant.now());
+    final void start() {
+        f = ses.scheduleAtFixedRate(() -> cache.clean(clock.instant()), REAPING_INTERVAL.toMillis(),
+                REAPING_INTERVAL.toMillis(), TimeUnit.MILLISECONDS);
     }
 
     /**
-     * Sleeps for given duration.
-     *
-     * @param dur textual representation of the duration
-     * @throws InterruptedException if any thread has interrupted the current thread
+     * Stops the background task that removes expired records.
      */
-    @Given("\"([^\"]*)\" has elapsed$")
-    public final void givenDurationElapsed(final String dur) throws InterruptedException {
-        Thread.sleep(Duration.parse(dur).toMillis());
+    final void stop() {
+        if (f != null) {
+            f.cancel(true);
+            f = null;
+        }
+
     }
 
 }

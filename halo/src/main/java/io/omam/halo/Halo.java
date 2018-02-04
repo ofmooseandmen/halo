@@ -45,6 +45,8 @@ import java.util.Optional;
 /**
  * A multicast DNS Service Discovery, supporting {@link Service named service} registration, resolution and
  * browsing.
+ * <p>
+ * All registered services are de-registered upon {@link #close()}.
  * <h3>Registration</h3>
  *
  * <pre>
@@ -122,6 +124,17 @@ public interface Halo extends Closeable {
         }
         return new HaloImpl(clock, c);
     }
+
+    /**
+     * De-register the given service.
+     * <p>
+     * This method performs no function, nor does it throw an exception, if the given service was not previously
+     * registered or has already been de-registered.
+     *
+     * @param service service to de-register
+     * @throws IOException if the service cannot be de-registered for any reason
+     */
+    void deregister(final Service service) throws IOException;
 
     /**
      * Registers the given service on the <strong>local</strong> domain with a TTL of 1 hour.

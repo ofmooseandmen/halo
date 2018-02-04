@@ -73,3 +73,14 @@ Feature: Service registration
       | Living Room Speaker (2) | _music._tcp.     | 9010 | Some Text |
     And the service "Living Room Speaker._music._tcp." shall be resolved by "JmDNS"
     And the service "Living Room Speaker (2)._music._tcp." shall be resolved by "JmDNS"
+
+  Scenario: Service de-registration
+    Given a "Halo" instance has been created
+    And a "JmDNS" instance has been created
+    And the following service has been registered with "Halo":
+      | instanceName        | registrationType | port | text      |
+      | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
+    And the service has been de-registered
+    And "PT1S" has elapsed
+    When the service "Living Room Speaker._music._tcp." is resolved by "JmDNS"
+    Then no resolved service shall be returned

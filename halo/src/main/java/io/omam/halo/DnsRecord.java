@@ -42,7 +42,7 @@ import java.util.stream.Stream;
 abstract class DnsRecord extends DnsEntry {
 
     /** time-to-live */
-    private final Duration ttl;
+    private Duration ttl;
 
     /** creation instant. */
     private final Instant ioc;
@@ -106,6 +106,15 @@ abstract class DnsRecord extends DnsEntry {
             return Duration.ZERO;
         }
         return dur;
+    }
+
+    /**
+     * Sets TTL to given value.
+     *
+     * @param aTtl new TTL
+     */
+    final void setTtl(final Duration aTtl) {
+        ttl = aTtl;
     }
 
     /**

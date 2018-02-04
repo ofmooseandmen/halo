@@ -33,10 +33,13 @@ package io.omam.halo;
 import static io.omam.halo.HaloAssert.assertAttributesEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+
+import javax.jmdns.ServiceInfo;
 
 import cucumber.api.java.After;
 import cucumber.api.java.en.Given;
@@ -44,7 +47,7 @@ import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 
 /**
- * Steps to tests service resolution.
+ * Steps to tests service registration/de-registration.
  */
 @SuppressWarnings("javadoc")
 public final class RegistrationSteps {
@@ -53,17 +56,34 @@ public final class RegistrationSteps {
 
     private final Exceptions exceptions;
 
+    private Optional<ServiceInfo> js;
+
     private Optional<Service> hs;
 
     public RegistrationSteps(final Engines someEngines, final Exceptions someExceptions) {
         engines = someEngines;
         exceptions = someExceptions;
+        js = Optional.empty();
         hs = Optional.empty();
     }
 
     @After
     public final void after() {
+        js = Optional.empty();
         hs = Optional.empty();
+    }
+
+    @Given("the service has been de-registered$")
+    public final void givenServiceDeregistered() throws IOException {
+        if (!(js.isPresent() ^ hs.isPresent())) {
+            fail("No unique service previously registered");
+        } else if (js.isPresent()) {
+            engines.jmdns().unregisterService(js.get());
+            js = Optional.empty();
+        } else {
+            engines.halo().deregister(hs.get());
+            hs = Optional.empty();
+        }
     }
 
     @Given("^the following service has been registered with \"(Halo|JmDNS)\":$")
@@ -73,7 +93,9 @@ public final class RegistrationSteps {
         if (engine.equals("Halo")) {
             hs = Optional.of(engines.halo().register(engines.toHalo(service.get(0)), false));
         } else {
-            engines.jmdns().registerService(engines.toJmdns(service.get(0)));
+            final ServiceInfo s = engines.toJmdns(service.get(0));
+            engines.jmdns().registerService(s);
+            js = Optional.of(s);
         }
     }
 

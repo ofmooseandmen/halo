@@ -81,8 +81,20 @@ final class MulticastDns {
     /** number of probes before announcing a registered service. */
     static final int PROBE_NUM = 3;
 
+    /** canceling interval. */
+    static final Duration CANCELING_INTERVAL = Duration.ofMillis(250);
+
+    /** number of cancel message sent when de-registering a service. */
+    static final int CANCEL_NUM = 3;
+
+    /** cache record reaper interval. */
+    static final Duration REAPING_INTERVAL = Duration.ofSeconds(10);
+
     /** time to live: 1 hour. */
     static final Duration TTL = Duration.ofHours(1);
+
+    /** time to live after expiry: 1 second. */
+    static final Duration EXPIRY_TTL = Duration.ofSeconds(1);
 
     /** query or response mask (unsigned). */
     static final short FLAGS_QR_MASK = (short) 0x8000;

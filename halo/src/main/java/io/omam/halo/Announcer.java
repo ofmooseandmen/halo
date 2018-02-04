@@ -40,7 +40,6 @@ import static io.omam.halo.MulticastDns.TYPE_ANY;
 import static io.omam.halo.MulticastDns.TYPE_SRV;
 import static io.omam.halo.MulticastDns.uniqueClass;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -64,11 +63,8 @@ import io.omam.halo.DnsMessage.Builder;
 
 /**
  * Announces {@link Service}s on the network.
- * <p>
- * Announcing a service first requires to probe the network for the hostname and port of the service and if no
- * conflict is found announcing the service.
  */
-final class Announcer implements Closeable {
+final class Announcer implements AutoCloseable {
 
     /**
      * Announcing task.
@@ -265,6 +261,8 @@ final class Announcer implements Closeable {
     /**
      * Probes the network for the hostname and port of the given service and announces the service if no conflict
      * have been discovered.
+     * <p>
+     * This method does not check whether the service has already been announced.
      *
      * @param service service
      * @return {@code true} iff no conflicts have been discovered while probing and the service was successfully
@@ -302,7 +300,6 @@ final class Announcer implements Closeable {
         } finally {
             halo.removeResponseListener(listener);
         }
-
     }
 
 }

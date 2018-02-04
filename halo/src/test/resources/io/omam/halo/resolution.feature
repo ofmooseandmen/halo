@@ -24,8 +24,19 @@ Feature: Service resolution
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
 
-  Scenario: Unresolved service
+  Scenario: Unresolved service: never registered
     Given a "Halo" instance has been created
+    When the service "Living Room Speaker._music._tcp." is resolved by "Halo"
+    Then no resolved service shall be returned
+
+  Scenario: Unresolved service: de-registered
+    Given a "Halo" instance has been created
+    And a "JmDNS" instance has been created
+    And the following service has been registered with "JmDNS":
+      | instanceName        | registrationType | port | text      |
+      | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
+    And the service has been de-registered
+    And "PT1S" has elapsed
     When the service "Living Room Speaker._music._tcp." is resolved by "Halo"
     Then no resolved service shall be returned
 

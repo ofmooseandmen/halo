@@ -31,14 +31,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package io.omam.halo;
 
 import static io.omam.halo.MulticastDns.CLASS_ANY;
+import static io.omam.halo.MulticastDns.EXPIRY_TTL;
 import static io.omam.halo.MulticastDns.TYPE_ANY;
 
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Logger;
@@ -57,7 +61,7 @@ final class Cache {
     /**
      * Constructor.
      */
-    public Cache() {
+    Cache() {
         map = new ConcurrentHashMap<>();
     }
 
@@ -83,6 +87,22 @@ final class Cache {
     }
 
     /**
+     * Removes all expired DNS records.
+     *
+     * @param now current instant
+     */
+    final void clean(final Instant now) {
+        final Set<String> services = new HashSet<>();
+        for (final Entry<String, List<DnsRecord>> e : map.entrySet()) {
+            e.getValue().removeIf(r -> r.isExpired(now));
+            if (e.getValue().isEmpty()) {
+                services.add(e.getKey());
+            }
+        }
+        services.forEach(map::remove);
+    }
+
+    /**
      * Clears all DNS records.
      */
     final void clear() {
@@ -98,6 +118,22 @@ final class Cache {
      */
     final Collection<DnsRecord> entries(final String serviceName) {
         return map.getOrDefault(serviceName.toLowerCase(), Collections.emptyList());
+    }
+
+    /**
+     * Sets the TTL of the given cached record to {@link MulticastDns#EXPIRY_TTL} in order for the reaper to remove
+     * it later.
+     *
+     * @param record DNS record to remove
+     */
+    final void expire(final DnsRecord record) {
+        Objects.requireNonNull(record);
+        final int index = indexOf(record);
+        final String key = key(record);
+        if (index != -1) {
+            LOGGER.fine(() -> "Setting TTL of " + record + " to " + EXPIRY_TTL);
+            map.get(key).get(index).setTtl(EXPIRY_TTL);
+        }
     }
 
     /**
@@ -170,6 +206,17 @@ final class Cache {
         } else {
             LOGGER.fine(() -> record + " not cached");
         }
+    }
+
+    /**
+     * Removes all DNS records associated with the given service.
+     *
+     * @param serviceName service name
+     */
+    final void removeAll(final String serviceName) {
+        Objects.requireNonNull(serviceName);
+        LOGGER.fine(() -> "Removing all DNS records associated with" + serviceName + " from cache");
+        map.remove(serviceName.toLowerCase());
     }
 
     /**
