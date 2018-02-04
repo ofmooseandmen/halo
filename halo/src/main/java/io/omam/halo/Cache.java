@@ -111,13 +111,13 @@ final class Cache {
     }
 
     /**
-     * Returns all DNS records matching the given service name.
+     * Returns all DNS records matching the given name.
      *
-     * @param serviceName service name
-     * @return all DNS records matching the given service name
+     * @param name record name
+     * @return all DNS records matching the given name
      */
-    final Collection<DnsRecord> entries(final String serviceName) {
-        return map.getOrDefault(serviceName.toLowerCase(), Collections.emptyList());
+    final Collection<DnsRecord> entries(final String name) {
+        return map.getOrDefault(name.toLowerCase(), Collections.emptyList());
     }
 
     /**
@@ -159,25 +159,25 @@ final class Cache {
     }
 
     /**
-     * Returns the {@link PtrRecord PTR record} matching the given service name and target which is not yet
+     * Returns the {@link PtrRecord PTR record} matching the given record name and target which is not yet
      * {@link DnsRecord#isExpired(Instant) expired} if it exists.
      *
-     * @param serviceName service name
+     * @param name record name
      * @param target pointer target
      * @param now current time
      * @return an Optional describing the matching DNS record or empty
      */
-    final Optional<PtrRecord> pointer(final String serviceName, final String target, final Instant now) {
+    final Optional<PtrRecord> pointer(final String name, final String target, final Instant now) {
         Objects.requireNonNull(target);
         Objects.requireNonNull(now);
         LOGGER.fine(() -> "Searching cache for DNS pointer matching [Name="
-            + serviceName
+            + name
             + "; target="
             + target
             + "; now="
             + now
             + "]");
-        final Optional<PtrRecord> result = entries(serviceName)
+        final Optional<PtrRecord> result = entries(name)
             .stream()
             .filter(e -> e instanceof PtrRecord)
             .map(e -> (PtrRecord) e)
@@ -209,14 +209,14 @@ final class Cache {
     }
 
     /**
-     * Removes all DNS records associated with the given service.
+     * Removes all DNS records associated with the given name.
      *
-     * @param serviceName service name
+     * @param name service name
      */
-    final void removeAll(final String serviceName) {
-        Objects.requireNonNull(serviceName);
-        LOGGER.fine(() -> "Removing all DNS records associated with" + serviceName + " from cache");
-        map.remove(serviceName.toLowerCase());
+    final void removeAll(final String name) {
+        Objects.requireNonNull(name);
+        LOGGER.fine(() -> "Removing all DNS records associated with" + name + " from cache");
+        map.remove(name.toLowerCase());
     }
 
     /**

@@ -90,6 +90,9 @@ final class MulticastDns {
     /** cache record reaper interval. */
     static final Duration REAPING_INTERVAL = Duration.ofSeconds(10);
 
+    /** resolution delay */
+    static final Duration RESOLUTION_INTERVAL = Duration.ofMillis(200);
+
     /** time to live: 1 hour. */
     static final Duration TTL = Duration.ofHours(1);
 

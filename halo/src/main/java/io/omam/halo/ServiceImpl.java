@@ -31,6 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package io.omam.halo;
 
 import static io.omam.halo.MulticastDns.CLASS_IN;
+import static io.omam.halo.MulticastDns.RESOLUTION_INTERVAL;
 import static io.omam.halo.MulticastDns.TYPE_A;
 import static io.omam.halo.MulticastDns.TYPE_AAAA;
 import static io.omam.halo.MulticastDns.TYPE_SRV;
@@ -50,38 +51,56 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-@SuppressWarnings("javadoc")
+/**
+ * Service implementation.
+ */
 final class ServiceImpl implements Service, ResponseListener {
 
     /** the domain: always local. */
     private static final String DOMAIN = "local";
 
-    private static final Duration INIT_REQ_DELAY = Duration.ofMillis(200);
-
+    /** logger. */
     private static final Logger LOGGER = Logger.getLogger(ServiceImpl.class.getName());
 
+    /** string for log. */
     private static final String UPDATED_TO = "] updated to ";
 
+    /** service attributes */
     private Attributes attributes;
 
-    private volatile boolean awaitingResponse;
+    /** whether this service is awaiting resolution. */
+    private volatile boolean awaitingResolution;
 
+    /** service hostname. */
     private String hostname;
 
+    /** service instance name. */
     private final String instanceName;
 
+    /** service IPv4 address. */
     private Optional<Inet4Address> ipv4Address;
 
+    /** service IPv6 address. */
     private Optional<Inet6Address> ipv6Address;
 
+    /** lock (see #resolved condition). */
     private final Lock lock;
 
+    /** service port. */
     private short port;
 
+    /** service registration type. */
     private final String registrationType;
 
-    private final Condition responded;
+    /** condition signaled when service has been resolved. */
+    private final Condition resolved;
 
+    /**
+     * Constructor enabling to create a new service from another one but with a new instance name.
+     *
+     * @param anInstanceName the service instance name, a human-readable string, e.g. {@code Living Room Printer}
+     * @param other other service
+     */
     ServiceImpl(final String anInstanceName, final Service other) {
         instanceName = anInstanceName;
         registrationType = other.registrationType();
@@ -92,16 +111,16 @@ final class ServiceImpl implements Service, ResponseListener {
         port = other.port();
         hostname = other.hostname();
 
-        awaitingResponse = false;
+        awaitingResolution = false;
         lock = new ReentrantLock();
-        responded = lock.newCondition();
+        resolved = lock.newCondition();
     }
 
     /**
      * Constructor.
      *
-     * @param instanceName the service instance name, a human-readable string, e.g. {@code Living Room Printer}
-     * @param registrationType service type (IANA) and transport protocol (udp or tcp), e.g. {@code _ftp._tcp.} or
+     * @param anInstanceName the service instance name, a human-readable string, e.g. {@code Living Room Printer}
+     * @param aRegistrationType service type (IANA) and transport protocol (udp or tcp), e.g. {@code _ftp._tcp.} or
      *            {@code _http._udp.}
      */
     ServiceImpl(final String anInstanceName, final String aRegistrationType) {
@@ -114,9 +133,9 @@ final class ServiceImpl implements Service, ResponseListener {
         port = -1;
         hostname = null;
 
-        awaitingResponse = false;
+        awaitingResolution = false;
         lock = new ReentrantLock();
-        responded = lock.newCondition();
+        resolved = lock.newCondition();
     }
 
     @Override
@@ -164,11 +183,11 @@ final class ServiceImpl implements Service, ResponseListener {
         lock.lock();
         LOGGER.fine(() -> "Handling " + response);
         try {
-            response.answers().forEach(a -> updateRecord(halo, a));
-            awaitingResponse = resolved();
-            if (!awaitingResponse) {
+            response.answers().forEach(a -> update(halo, a));
+            awaitingResolution = resolved();
+            if (!awaitingResolution) {
                 LOGGER.fine("Received response resolving service");
-                responded.signalAll();
+                resolved.signalAll();
             }
         } finally {
             lock.unlock();
@@ -186,26 +205,27 @@ final class ServiceImpl implements Service, ResponseListener {
     }
 
     /**
-     * Returns true if the service could be discovered on the network, and updates this object with details
-     * discovered.
+     * Tries to resolve this service on the network. Updates service IP address(es), server and attributes if the
+     * service is discovered.
      *
      * @param halo halo helper
      * @param timeout resolution timeout
+     * @return {@code true} iff service has been resolved
      */
     final boolean resolve(final HaloHelper halo, final Duration timeout) {
         final String serviceName = serviceName();
 
         /* look for a cached SRV record. */
-        halo.cachedRecord(serviceName, TYPE_SRV, CLASS_IN).ifPresent(c -> updateRecord(halo, c));
+        halo.cachedRecord(serviceName, TYPE_SRV, CLASS_IN).ifPresent(c -> update(halo, c));
 
         /* look for a cached TXT record. */
-        halo.cachedRecord(serviceName, TYPE_TXT, CLASS_IN).ifPresent(c -> updateRecord(halo, c));
+        halo.cachedRecord(serviceName, TYPE_TXT, CLASS_IN).ifPresent(c -> update(halo, c));
 
         if (hostname != null) {
             /* look for a cached A record. */
-            halo.cachedRecord(hostname, TYPE_A, CLASS_IN).ifPresent(c -> updateRecord(halo, c));
+            halo.cachedRecord(hostname, TYPE_A, CLASS_IN).ifPresent(c -> update(halo, c));
             /* look for a cached AAAA record. */
-            halo.cachedRecord(hostname, TYPE_AAAA, CLASS_IN).ifPresent(c -> updateRecord(halo, c));
+            halo.cachedRecord(hostname, TYPE_AAAA, CLASS_IN).ifPresent(c -> update(halo, c));
         }
 
         if (resolved()) {
@@ -231,7 +251,7 @@ final class ServiceImpl implements Service, ResponseListener {
                     halo.cachedRecord(hostname, TYPE_AAAA, CLASS_IN).ifPresent(r -> b.addAnswer(r, now));
                 }
                 halo.sendMessage(b.get());
-                awaitResponse(delays.poll());
+                awaitingResolution(delays.poll());
             }
         } finally {
             halo.removeResponseListener(this);
@@ -239,6 +259,11 @@ final class ServiceImpl implements Service, ResponseListener {
         return resolved();
     }
 
+    /**
+     * Sets the attributes.
+     *
+     * @param someAttributes attributes
+     */
     final void setAttributes(final Attributes someAttributes) {
         attributes = someAttributes;
     }
@@ -259,27 +284,47 @@ final class ServiceImpl implements Service, ResponseListener {
         hostname = aHostname;
     }
 
+    /**
+     * Sets the IPv4 address.
+     *
+     * @param anAddress address
+     */
     final void setIpv4Address(final Inet4Address anAddress) {
         ipv4Address = Optional.of(anAddress);
     }
 
+    /**
+     * Sets the IPv6 address.
+     *
+     * @param anAddress address
+     */
     final void setIpv6Address(final Inet6Address anAddress) {
         ipv6Address = Optional.of(anAddress);
     }
 
+    /**
+     * Sets the port.
+     *
+     * @param aPort port
+     */
     final void setPort(final short aPort) {
         port = aPort;
     }
 
-    private void awaitResponse(final Duration dur) {
+    /**
+     * Awaits until this service is resolved or the given timeout has elapsed whichever occurs first.
+     *
+     * @param dur timeout
+     */
+    private void awaitingResolution(final Duration dur) {
         lock.lock();
-        awaitingResponse = true;
+        awaitingResolution = true;
         boolean response = false;
         try {
             final Timeout timeout = Timeout.of(dur);
             Duration remaining = timeout.remaining();
-            while (awaitingResponse && !remaining.isZero()) {
-                response = responded.await(remaining.toMillis(), TimeUnit.MILLISECONDS);
+            while (awaitingResolution && !remaining.isZero()) {
+                response = resolved.await(remaining.toMillis(), TimeUnit.MILLISECONDS);
                 remaining = timeout.remaining();
             }
         } catch (final InterruptedException e) {
@@ -293,19 +338,28 @@ final class ServiceImpl implements Service, ResponseListener {
         }
     }
 
+    /**
+     * Computes delays covering the given timeout.
+     * <p>
+     * First delay is always {@link #RESOLUTION_INTERVAL}, following are twice the previous delay (in order to
+     * space more and more the sent messages and avoid over-flooding receiver).
+     *
+     * @param timeout timeout
+     * @return delays
+     */
     private Queue<Duration> delays(final Duration timeout) {
         final Queue<Duration> q = new ArrayDeque<>();
-        if (timeout.compareTo(INIT_REQ_DELAY) <= 0) {
+        if (timeout.compareTo(RESOLUTION_INTERVAL) <= 0) {
             return q;
         }
         int factor = 1;
-        Duration delay = INIT_REQ_DELAY;
+        Duration delay = RESOLUTION_INTERVAL;
         Duration total = Duration.ZERO;
         do {
             q.add(delay);
             total = total.plus(delay);
             factor = factor * 2;
-            delay = INIT_REQ_DELAY.multipliedBy(factor);
+            delay = RESOLUTION_INTERVAL.multipliedBy(factor);
         } while (total.plus(delay).compareTo(timeout) <= 0);
         delay = timeout.minus(total);
         if (!delay.isZero()) {
@@ -314,37 +368,53 @@ final class ServiceImpl implements Service, ResponseListener {
         return q;
     }
 
+    /**
+     * Determines whether this service is resolved: hostname and attributes are not null and at least an IPv4 or
+     * IPv6 address is present.
+     *
+     * @return {@code true} if this service is resolved
+     */
     private boolean resolved() {
         return hostname != null && (ipv4Address.isPresent() || ipv6Address.isPresent()) && attributes != null;
     }
 
-    /* Updates service information from a DNS record. */
-    private void updateRecord(final HaloHelper halo, final DnsRecord record) {
+    /**
+     * Updates this service with data of the given DNS record.
+     *
+     * @param halo halo helper
+     * @param record DNS record
+     */
+    private void update(final HaloHelper halo, final DnsRecord record) {
         if (!record.isExpired(halo.now())) {
             final String serviceName = serviceName();
-            final boolean matchesHost = record.name().equals(hostname);
+            final boolean matchesService = record.name().equalsIgnoreCase(serviceName);
+            final boolean matchesHost = record.name().equalsIgnoreCase(hostname);
             if (record.type() == TYPE_A && matchesHost) {
                 ipv4Address = Optional.of((Inet4Address) ((AddressRecord) record).address());
                 LOGGER.fine(() -> "IPV4 address of service [" + serviceName + UPDATED_TO + ipv4Address.get());
+
             } else if (record.type() == TYPE_AAAA && matchesHost) {
                 ipv6Address = Optional.of((Inet6Address) ((AddressRecord) record).address());
                 LOGGER.fine(() -> "Address of service [" + serviceName + UPDATED_TO + ipv6Address.get());
-            } else if (record.type() == TYPE_SRV && record.name().equalsIgnoreCase(serviceName)) {
+
+            } else if (record.type() == TYPE_SRV && matchesService) {
                 final SrvRecord srv = (SrvRecord) record;
                 port = srv.port();
                 hostname = srv.server();
                 LOGGER.fine(() -> "Port of service [" + serviceName + UPDATED_TO + port);
                 LOGGER.fine(() -> "Server of service [" + serviceName + UPDATED_TO + hostname);
-                halo.cachedRecord(hostname, TYPE_A, CLASS_IN).ifPresent(r -> updateRecord(halo, r));
-                halo.cachedRecord(hostname, TYPE_AAAA, CLASS_IN).ifPresent(r -> updateRecord(halo, r));
-            } else if (record.type() == TYPE_TXT && record.name().equalsIgnoreCase(serviceName)) {
+                halo.cachedRecord(hostname, TYPE_A, CLASS_IN).ifPresent(r -> update(halo, r));
+                halo.cachedRecord(hostname, TYPE_AAAA, CLASS_IN).ifPresent(r -> update(halo, r));
+
+            } else if (record.type() == TYPE_TXT && matchesService) {
                 attributes = ((TxtRecord) record).attributes();
                 LOGGER.fine(() -> "Attributes of service [" + serviceName + UPDATED_TO + attributes);
+
             } else {
-                LOGGER.fine(() -> "Ignored irrelevant answer of type " + record.type() + " for " + record.name());
+                LOGGER.fine(() -> "Ignored irrelevant " + record);
             }
         } else {
-            LOGGER.info(() -> "Ignored expired answer of type " + record.type());
+            LOGGER.info(() -> "Ignored expired " + record);
         }
     }
 
