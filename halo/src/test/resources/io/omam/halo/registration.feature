@@ -81,6 +81,6 @@ Feature: Service registration
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
     And the service has been de-registered
-    And "PT1S" has elapsed
+    And "PT1.5S" has elapsed
     When the service "Living Room Speaker._music._tcp." is resolved by "JmDNS"
     Then no resolved service shall be returned
