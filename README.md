@@ -1,6 +1,7 @@
 # Halo
 
 [![travis build status](https://img.shields.io/travis/ofmooseandmen/halo/master.svg?label=travis+build)](https://travis-ci.org/ofmooseandmen/halo)
+[![appveyor build status](https://ci.appveyor.com/api/projects/status/wugjgsm3gs4jothg?svg=true)](https://ci.appveyor.com/project/ofmooseandmen/halo)
 [![codecov.io](https://codecov.io/github/ofmooseandmen/halo/branches/master/graphs/badge.svg)](https://codecov.io/github/ofmooseandmen/halo)
 [![license](https://img.shields.io/badge/license-BSD3-lightgray.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
