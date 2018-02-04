@@ -14,101 +14,54 @@ buildscript {
     }
 }
 
-allprojects {
-    repositories {
-        mavenCentral()
-    }
-
-    apply plugin: 'jacoco'
-    jacoco { toolVersion = '0.8.0' }
+repositories {
+    mavenCentral()
 }
 
-subprojects {
-    apply plugin: 'java'
-    apply plugin: 'eclipse'
+apply plugin: 'jacoco'
+jacoco { toolVersion = '0.8.0' }
 
-    sourceCompatibility = 1.8
-    targetCompatibility = 1.8
+apply plugin: 'java'
+apply plugin: 'eclipse'
 
-    test {
-        testLogging.showStandardStreams = true
-    }
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
-    jar {
-        /* include source */
-        from (sourceSets.main.allSource.getSrcDirTrees())
-
-        /* include resources */
-        into('resources') {
-            from 'resources'
-        }
-    }
-
-    javadoc {
-       options.memberLevel = JavadocMemberLevel.PUBLIC
-    }
-
-    /* remove all transitive dependencies for compilation. */
-    [configurations.compile, configurations.compileClasspath, configurations.compileOnly]*.transitive = false
-
-    /* Modify the Eclipse project settings. */
-    eclipse { jdt { file { withProperties eclipsePrefs } } }
-
-    task ('copyEclipsePrefs', type: Copy) {
-        from rootProject.file('resources/eclipse-prefs/org.eclipse.jdt.ui.prefs')
-        into "${projectDir}/.settings"
-    }
-    tasks.eclipse.finalizedBy copyEclipsePrefs
+dependencies {
+    testCompile libraries.junit
+    testCompile libraries.cucumber
+    testCompile libraries.jmdns
 }
 
-task codeCoverageReport(type: JacocoReport) {
-    group 'Verification'
-    description 'Generates code coverage report for this project.'
+test {
+    testLogging.showStandardStreams = true
+}
 
-    executionData fileTree(project.rootDir.absolutePath).include("**/build/jacoco/*.exec")
+jar {
+    /* include source */
+    from (sourceSets.main.allSource.getSrcDirTrees())
 
-    subprojects.each {
-        sourceSets it.sourceSets.main
-    }
-
-    reports {
-        xml.enabled true
-        xml.destination "${buildDir}/reports/jacoco/report.xml"
-        html.enabled false
-        csv.enabled false
+    /* include resources */
+    into('resources') {
+        from 'resources'
     }
 }
 
-codeCoverageReport.dependsOn {
-    subprojects*.test
+javadoc {
+   options.memberLevel = JavadocMemberLevel.PUBLIC
 }
 
-task allJavadocs(type: Javadoc) {
-	group = "Documentation"
-	description = "Generates aggregated Javadocs"
-	title = "Localhost ${version} API"
+/* remove all transitive dependencies for compilation. */
+[configurations.compile, configurations.compileClasspath, configurations.compileOnly]*.transitive = false
 
-	setDependsOn subprojects.collect { it.tasks.getByName("jar") }
+/* Modify the Eclipse project settings. */
+eclipse { jdt { file { withProperties eclipsePrefs } } }
 
-	options.memberLevel = JavadocMemberLevel.PUBLIC
-	options.use = true
-	options.splitIndex = true
-	options.addStringOption('Xdoclint:none', '-quiet')
-	options.addMultilineStringsOption('tag').setValue(['apiNote:a:API Note:', 'implSpec:a:Implementation Requirements:', 'implNote:a:Implementation Note:'])
-	options.encoding = 'UTF-8'
-	options.jFlags '-Xmx1g'
-	options.links(
-		'https://docs.oracle.com/javase/8/docs/api/',
-	)
-	options
-		.group("Halo", ["io.omam.Halo.*"])
-
-	setSource subprojects.collect { it.sourceSets.main.allJava }
-
-	maxMemory = "1024m"
-	destinationDir = new File(buildDir, "docs/javadoc")
-	classpath = files(subprojects.collect { it.sourceSets.main.compileClasspath })
+task ('copyEclipsePrefs', type: Copy) {
+    from rootProject.file('resources/eclipse-prefs/org.eclipse.jdt.ui.prefs')
+    into "${projectDir}/.settings"
 }
+tasks.eclipse.finalizedBy copyEclipsePrefs
 
 task wrapper(type: Wrapper) {
 	description = 'Generates gradlew and gradlew.bat scripts'

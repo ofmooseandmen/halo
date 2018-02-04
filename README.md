@@ -1,32 +1,58 @@
-# Localcast
+# Halo
 
-[![travis build status](https://img.shields.io/travis/ofmooseandmen/localcast/master.svg?label=travis+build)](https://travis-ci.org/ofmooseandmen/localcast)
-[![codecov.io](https://codecov.io/github/ofmooseandmen/localcast/branches/master/graphs/badge.svg)](https://codecov.io/github/ofmooseandmen/localcast)
+[![travis build status](https://img.shields.io/travis/ofmooseandmen/halo/master.svg?label=travis+build)](https://travis-ci.org/ofmooseandmen/halo)
+[![codecov.io](https://codecov.io/github/ofmooseandmen/halo/branches/master/graphs/badge.svg)](https://codecov.io/github/ofmooseandmen/halo)
 [![license](https://img.shields.io/badge/license-BSD3-lightgray.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
-Java FX application to stream music from local folders via Google Chromecast.
+> __Halo__ [_Javanese_] is __Bonjour__ [_French_] is __Hello__ [_English_]
+
+[Multicast DNS Service Discovery](http://en.wikipedia.org/wiki/Multicast_DNS) implementation in pure java.
 
 ## Building from Source
 
-You need [JDK-8](http://openjdk.java.net/projects/jdk8/) or higher to build Localcast.
-All modules can be built with Gradle using the following command.
+You need [JDK-8](http://openjdk.java.net/projects/jdk8/) or higher to build Halo.
+Halo can be built with Gradle using the following command:
 
 ```
 ./gradlew clean build
 ```
 
-## Modules
+## Tests
 
-All modules are tested with [cucumber](https://cucumber.io). Feature files can be found in the `src/test/resources` folder of each module.
+Halo is tested with [cucumber](https://cucumber.io). Feature files can be found in the `src/test/resources` folder.
 
-### [Halo](halo/README.md)
+## Usage
 
- _[WIP]_ Multicast DNS Service Discovery.
+### Service Registration
 
-### Chromecast
+```java
+try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
+    // allowing service instance name to be changed and with a default TTL of 1 hour.
+    Service service = halo.register(Service.create("Foo Bar", "_http._udp.", (short) 8009).get());
+    // registered service is returned.
+    System.err.println(service);
 
-_[Coming soon]_
+    // registering again the service instance and registration type will return a service
+    // with an instance name of "Foo Bar (2)".
+    service = halo.register(Service.create("Foo Bar", "_http._udp.", (short) 8010).get());
+    System.err.println(service);
 
-### App
+    // not allowing service instance name to be changed will throw an IOException at this point.
+    halo.register(Service.create("Foo Bar", "_http._udp.", (short) 8011).get(), false);
+}
+```
 
-_[Coming soon]_
+### Service Resolution
+
+```java
+try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
+    // default timeout of 6 seconds.
+    Optional<Service> service = halo.resolve("Foo Bar", "_http._udp.");
+    // Optional contains the service if it could be resolved, empty otherwise.
+    System.err.println(service);
+    
+    // user defined timeout.
+    service = halo.resolve("Foo Bar", "_http._udp.", Duration.ofSeconds(1));
+    System.err.println(service);
+}
+```
