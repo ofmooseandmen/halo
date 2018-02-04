@@ -16,7 +16,7 @@ matrix:
 
 script:
   - ./gradlew -version
-  - ./gradlew build codeCoverageReport --stacktrace
+  - ./gradlew build --stacktrace
 
 # Do not store unnecessary files from Gradle dependency cache
 before_cache:
