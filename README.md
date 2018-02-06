@@ -57,3 +57,29 @@ try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
     System.err.println(service);
 }
 ```
+
+### Service Browsing by Registration Type
+
+```java
+try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
+    final BrowserListener l = new BrowserListener() {
+
+        @Override
+        public final void down(final Service service) {
+            System.err.println(service + " is down!!!!!");
+        }
+
+        @Override
+        public final void up(final Service service) {
+            System.err.println(service + " is up!!!!!");
+        }
+    };
+
+    final Browser browser = halo.browse("_http._udp.", l);
+
+    // Wait for some services to be registered on the network...
+    Thread.sleep(5000);
+
+    browser.stop();
+}
+```

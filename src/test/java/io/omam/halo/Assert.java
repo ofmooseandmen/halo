@@ -30,35 +30,27 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
+import static io.omam.halo.Engines.attributes;
+import static io.omam.halo.Engines.toHalo;
+import static io.omam.halo.Engines.toJmdns;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.List;
 
+import javax.jmdns.ServiceInfo;
+
 /**
- * A set of assertion methods for Halo objects.
+ * A set of assertion methods for Halo and JmDNS objects.
  */
-final class HaloAssert {
+final class Assert {
 
     /**
      * Constructor.
      */
-    private HaloAssert() {
+    private Assert() {
         // empty.
-    }
-
-    /**
-     * Asserts that two {@link Attributes} instances are equal.
-     *
-     * @param expected expected value
-     * @param actual the value to check against {@code expected}
-     */
-    static void assertAttributesEquals(final Attributes expected, final Attributes actual) {
-        assertTrue(expected.keys().equals(actual.keys()));
-        for (final String key : expected.keys()) {
-            assertEquals(expected.value(key), actual.value(key));
-        }
     }
 
     /**
@@ -139,6 +131,45 @@ final class HaloAssert {
         assertEquals(expecteds.size(), actuals.size());
         for (int i = 0; i < expecteds.size(); i++) {
             assertDnsRecordEquals(expecteds.get(i), actuals.get(i));
+        }
+    }
+
+    /**
+     * Asserts that given {@link ServiceDetails} equals Halo {@link Service}.
+     *
+     * @param expected expected service
+     * @param actual actual service
+     */
+    static void assertServiceEquals(final ServiceDetails expected, final Service actual) {
+        assertEquals(expected.instanceName(), actual.instanceName());
+        assertEquals(expected.registrationType(), actual.registrationType());
+        assertEquals(expected.port(), actual.port());
+        assertAttributesEquals(toHalo(expected.text()), actual.attributes());
+    }
+
+    /**
+     * Asserts that given {@link ServiceDetails} equals JmDNS {@link ServiceInfo}.
+     *
+     * @param expected expected service
+     * @param actual actual service
+     */
+    static void assertServiceEquals(final ServiceDetails expected, final ServiceInfo actual) {
+        assertEquals(expected.instanceName(), actual.getName());
+        assertEquals(expected.registrationType() + "local.", actual.getType());
+        assertEquals(expected.port(), actual.getPort());
+        assertEquals(toJmdns(expected.text()), attributes(actual));
+    }
+
+    /**
+     * Asserts that two {@link Attributes} instances are equal.
+     *
+     * @param expected expected value
+     * @param actual the value to check against {@code expected}
+     */
+    private static void assertAttributesEquals(final Attributes expected, final Attributes actual) {
+        assertTrue(expected.keys().equals(actual.keys()));
+        for (final String key : expected.keys()) {
+            assertEquals(expected.value(key), actual.value(key));
         }
     }
 

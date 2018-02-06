@@ -66,6 +66,49 @@ public final class Engines {
         // empty.
     }
 
+    static Map<String, String> attributes(final ServiceInfo actual) {
+        final Map<String, String> atts = new HashMap<>();
+        for (final Enumeration<String> keys = actual.getPropertyNames(); keys.hasMoreElements();) {
+            final String key = keys.nextElement();
+            final String value = actual.getPropertyString(key);
+            atts.put(key, value);
+        }
+        return atts;
+    }
+
+    static Service toHalo(final ServiceDetails sd) throws UnknownHostException {
+        /*
+         * fake hostname and IP to trigger probing conflict.
+         */
+        final Optional<String> hostname = sd.hostname();
+        final Optional<InetAddress> ip = hostname.isPresent()
+                ? Optional.of(InetAddress.getByName("2001:0db8:85a3:0000:0000:8a2e:0370:7334"))
+                : Optional.empty();
+        final Service.Builder s =
+                Service.create(sd.instanceName(), sd.registrationType(), sd.port()).attributes(toHalo(sd.text()));
+        hostname.ifPresent(h -> s.hostname(h));
+        ip.ifPresent(i -> s.ipv6Address((Inet6Address) i));
+        return s.get();
+    }
+
+    static Attributes toHalo(final String attributes) {
+        /* for some reason JmDNS returns true if the attribute has no value. */
+        return Attributes.create().with(attributes, "true", StandardCharsets.UTF_8).get();
+    }
+
+    static ServiceInfo toJmdns(final ServiceDetails sd) {
+        assertFalse(sd.hostname().isPresent());
+        return ServiceInfo.create(sd.registrationType() + "local.", sd.instanceName(), sd.port(), 0, 0,
+                toJmdns(sd.text()));
+    }
+
+    static Map<String, String> toJmdns(final String attributes) {
+        final Map<String, String> atts = new HashMap<>();
+        /* for some reason JmDNS returns true if the attribute has no value. */
+        atts.put(attributes, "true");
+        return atts;
+    }
+
     @After
     public final void after() throws IOException {
         try {
@@ -94,55 +137,12 @@ public final class Engines {
         }
     }
 
-    final Map<String, String> attributes(final ServiceInfo actual) {
-        final Map<String, String> atts = new HashMap<>();
-        for (final Enumeration<String> keys = actual.getPropertyNames(); keys.hasMoreElements();) {
-            final String key = keys.nextElement();
-            final String value = actual.getPropertyString(key);
-            atts.put(key, value);
-        }
-        return atts;
-    }
-
     final Halo halo() {
         return halo;
     }
 
     final JmDNS jmdns() {
         return jmdns;
-    }
-
-    final Service toHalo(final ServiceDetails sd) throws UnknownHostException {
-        /*
-         * fake hostname and IP to trigger probing conflict.
-         */
-        final Optional<String> hostname = sd.hostname();
-        final Optional<InetAddress> ip = hostname.isPresent()
-                ? Optional.of(InetAddress.getByName("2001:0db8:85a3:0000:0000:8a2e:0370:7334"))
-                : Optional.empty();
-        final Service.Builder s =
-                Service.create(sd.instanceName(), sd.registrationType(), sd.port()).attributes(toHalo(sd.text()));
-        hostname.ifPresent(h -> s.hostname(h));
-        ip.ifPresent(i -> s.ipv6Address((Inet6Address) i));
-        return s.get();
-    }
-
-    final Attributes toHalo(final String attributes) {
-        /* for some reason JmDNS returns true if the attribute has no value. */
-        return Attributes.create().with(attributes, "true", StandardCharsets.UTF_8).get();
-    }
-
-    final ServiceInfo toJmdns(final ServiceDetails sd) {
-        assertFalse(sd.hostname().isPresent());
-        return ServiceInfo.create(sd.registrationType() + "local.", sd.instanceName(), sd.port(), 0, 0,
-                toJmdns(sd.text()));
-    }
-
-    final Map<String, String> toJmdns(final String attributes) {
-        final Map<String, String> atts = new HashMap<>();
-        /* for some reason JmDNS returns true if the attribute has no value. */
-        atts.put(attributes, "true");
-        return atts;
     }
 
 }

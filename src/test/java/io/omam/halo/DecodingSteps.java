@@ -31,8 +31,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package io.omam.halo;
 
 import static io.omam.halo.MulticastDnsHelper.flagsForName;
-import static io.omam.halo.HaloAssert.assertDnsQuestionsEquals;
-import static io.omam.halo.HaloAssert.assertDnsRecordsEquals;
+import static io.omam.halo.Assert.assertDnsQuestionsEquals;
+import static io.omam.halo.Assert.assertDnsRecordsEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;

@@ -28,9 +28,10 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 dependencies {
-    testCompile libraries.junit
+    testCompile libraries.awaitility
     testCompile libraries.cucumber
     testCompile libraries.jmdns
+    testCompile libraries.junit
 }
 
 test {

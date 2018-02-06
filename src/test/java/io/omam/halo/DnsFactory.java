@@ -30,6 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
+import static io.omam.halo.Engines.toHalo;
 import static io.omam.halo.MulticastDns.CLASS_ANY;
 import static io.omam.halo.MulticastDns.TYPE_A;
 import static io.omam.halo.MulticastDns.TYPE_AAAA;
@@ -49,14 +50,6 @@ import java.util.List;
 
 import cucumber.api.java.After;
 import cucumber.api.java.en.Given;
-import io.omam.halo.AddressRecord;
-import io.omam.halo.Attributes;
-import io.omam.halo.DnsMessage;
-import io.omam.halo.DnsQuestion;
-import io.omam.halo.DnsRecord;
-import io.omam.halo.PtrRecord;
-import io.omam.halo.SrvRecord;
-import io.omam.halo.TxtRecord;
 import io.omam.halo.DnsMessage.Builder;
 
 /**
@@ -64,8 +57,6 @@ import io.omam.halo.DnsMessage.Builder;
  */
 @SuppressWarnings("javadoc")
 public final class DnsFactory {
-
-    private final Engines engines;
 
     private Attributes attributes;
 
@@ -77,11 +68,9 @@ public final class DnsFactory {
 
     /**
      * Constructor.
-     *
-     * @param someEngines engines
      */
-    public DnsFactory(final Engines someEngines) {
-        engines = someEngines;
+    public DnsFactory() {
+        // empty.
     }
 
     @After
@@ -216,7 +205,7 @@ public final class DnsFactory {
                 case TYPE_SRV:
                     return new SrvRecord(rec.name(), clazz, ttlDur, now, rec.port(), rec.server());
                 case TYPE_TXT:
-                    return new TxtRecord(rec.name(), clazz, ttlDur, now, engines.toHalo(rec.text()));
+                    return new TxtRecord(rec.name(), clazz, ttlDur, now, toHalo(rec.text()));
                 default:
                     throw new IllegalArgumentException();
             }

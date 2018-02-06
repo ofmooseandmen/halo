@@ -4,29 +4,29 @@ Feature: Service registration
 
   Scenario: Service registered before client started
     Given a "Halo" instance has been created
-    And a "JmDNS" instance has been created
-    And the following service has been registered with "Halo":
+    And the following services have been registered with "Halo":
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
+    And a "JmDNS" instance has been created
     When the service "Living Room Speaker._music._tcp." is resolved by "JmDNS"
-    Then the following resolved service shall be returned:
+    Then the following resolved services shall be returned:
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
 
   Scenario: Service registered after client started
     Given a "Halo" instance has been created
-    And the following service has been registered with "Halo":
+    And a "JmDNS" instance has been created
+    And the following services have been registered with "Halo":
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
-    And a "JmDNS" instance has been created
     When the service "Living Room Speaker._music._tcp." is resolved by "JmDNS"
-    Then the following resolved service shall be returned:
+    Then the following resolved services shall be returned:
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
 
   Scenario: Service registration with unresolved instance name collision
     Given a "Halo" instance has been created
-    And the following service has been registered with "Halo":
+    And the following services have been registered with "Halo":
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
     When the following service is registered with "Halo" not allowing instance name change:
@@ -39,7 +39,7 @@ Feature: Service registration
   Scenario: Service registration with unresolved instance name collision from cache
     Given a "Halo" instance has been created
     And a "JmDNS" instance has been created
-    And the following service has been registered with "JmDNS":
+    And the following services have been registered with "JmDNS":
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
     And the service "Living Room Speaker._music._tcp." has been resolved by "Halo"
@@ -50,7 +50,7 @@ Feature: Service registration
 
   Scenario: Service registration with conflict during probing
     Given a "JmDNS" instance has been created
-    And the following service has been registered with "JmDNS":
+    And the following services have been registered with "JmDNS":
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
     And a "Halo" instance has been created
@@ -61,15 +61,16 @@ Feature: Service registration
 
   Scenario: Service registration with resolved instance name collision
     Given a "Halo" instance has been created
-    And the following service has been registered with "Halo":
+    And the following services have been registered with "Halo":
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
     And a "JmDNS" instance has been created
     When the following service is registered with "Halo" allowing instance name change:
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9010 | Some Text |
-    Then the following registered service shall be returned:
+    Then the following registered services shall be returned:
       | instanceName            | registrationType | port | text      |
+      | Living Room Speaker     | _music._tcp.     | 9009 | Some Text |
       | Living Room Speaker (2) | _music._tcp.     | 9010 | Some Text |
     And the service "Living Room Speaker._music._tcp." shall be resolved by "JmDNS"
     And the service "Living Room Speaker (2)._music._tcp." shall be resolved by "JmDNS"
@@ -77,10 +78,10 @@ Feature: Service registration
   Scenario: Service de-registration
     Given a "Halo" instance has been created
     And a "JmDNS" instance has been created
-    And the following service has been registered with "Halo":
+    And the following services have been registered with "Halo":
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
-    And the service has been de-registered
+    And the service "Living Room Speaker._music._tcp." has been de-registered
     And "PT1.5S" has elapsed
     When the service "Living Room Speaker._music._tcp." is resolved by "JmDNS"
     Then no resolved service shall be returned

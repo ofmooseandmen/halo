@@ -5,22 +5,22 @@ Feature: Service resolution
   Scenario: Service resolved from cache
     Given a "Halo" instance has been created
     And a "JmDNS" instance has been created
-    And the following service has been registered with "JmDNS":
+    And the following services have been registered with "JmDNS":
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
     When the service "Living Room Speaker._music._tcp." is resolved by "Halo"
-    Then the following resolved service shall be returned:
+    Then the following resolved services shall be returned:
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
 
   Scenario: Service resolved from messages
     Given a "JmDNS" instance has been created
-    And the following service has been registered with "JmDNS":
+    And the following services have been registered with "JmDNS":
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
     And a "Halo" instance has been created
     When the service "Living Room Speaker._music._tcp." is resolved by "Halo"
-    Then the following resolved service shall be returned:
+    Then the following resolved services shall be returned:
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
 
@@ -32,20 +32,20 @@ Feature: Service resolution
   Scenario: Unresolved service: de-registered
     Given a "Halo" instance has been created
     And a "JmDNS" instance has been created
-    And the following service has been registered with "JmDNS":
+    And the following services have been registered with "JmDNS":
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
-    And the service has been de-registered
+    And the service "Living Room Speaker._music._tcp." has been de-registered
     And "PT1.5S" has elapsed
     When the service "Living Room Speaker._music._tcp." is resolved by "Halo"
     Then no resolved service shall be returned
 
   Scenario: Service resolved from registered services
     Given a "Halo" instance has been created
-    And the following service has been registered with "Halo":
+    And the following services have been registered with "Halo":
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
     When the service "Living Room Speaker._music._tcp." is resolved by "Halo"
-    Then the following resolved service shall be returned:
+    Then the following resolved services shall be returned:
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9009 | Some Text |

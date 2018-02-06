@@ -30,14 +30,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import static io.omam.halo.HaloAssert.assertAttributesEquals;
+import static io.omam.halo.Assert.assertServiceEquals;
+import static io.omam.halo.Engines.toHalo;
+import static io.omam.halo.Engines.toJmdns;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import javax.jmdns.ServiceInfo;
 
@@ -56,59 +57,67 @@ public final class RegistrationSteps {
 
     private final Exceptions exceptions;
 
-    private Optional<ServiceInfo> js;
+    private final List<ServiceInfo> jss;
 
-    private Optional<Service> hs;
+    private final List<Service> hss;
+
+    private String registeredBy;
 
     public RegistrationSteps(final Engines someEngines, final Exceptions someExceptions) {
         engines = someEngines;
         exceptions = someExceptions;
-        js = Optional.empty();
-        hs = Optional.empty();
+        jss = new ArrayList<>();
+        hss = new ArrayList<>();
+        registeredBy = null;
     }
 
     @After
     public final void after() {
-        js = Optional.empty();
-        hs = Optional.empty();
+        jss.clear();
+        hss.clear();
+        registeredBy = null;
     }
 
-    @Given("the service has been de-registered$")
-    public final void givenServiceDeregistered() throws IOException {
-        if (!(js.isPresent() ^ hs.isPresent())) {
-            fail("No unique service previously registered");
-        } else if (js.isPresent()) {
-            engines.jmdns().unregisterService(js.get());
-            js = Optional.empty();
+    @Given("the service \"([^\"]*)\" has been de-registered$")
+    public final void givenServiceDeregistered(final String service) throws IOException {
+        assertNotNull(registeredBy);
+        if (registeredBy.equals("Halo")) {
+            final Service s =
+                    hss.stream().filter(hs -> hs.serviceName().equals(service + "local.")).findFirst().orElseThrow(
+                            AssertionError::new);
+            engines.halo().deregister(s);
+            hss.remove(s);
         } else {
-            engines.halo().deregister(hs.get());
-            hs = Optional.empty();
+            final ServiceInfo s = jss
+                .stream()
+                .filter(js -> js.getQualifiedName().equals(service + "local."))
+                .findFirst()
+                .orElseThrow(AssertionError::new);
+            engines.jmdns().unregisterService(s);
+            jss.remove(s);
         }
     }
 
-    @Given("^the following service has been registered with \"(Halo|JmDNS)\":$")
-    public final void givenServiceRegistered(final String engine, final List<ServiceDetails> service)
+    @Given("^the following services have been registered with \"(Halo|JmDNS)\":$")
+    public final void givenServicesRegistered(final String engine, final List<ServiceDetails> service)
             throws IOException {
-        assertEquals(1, service.size());
-        if (engine.equals("Halo")) {
-            hs = Optional.of(engines.halo().register(engines.toHalo(service.get(0)), false));
-        } else {
-            final ServiceInfo s = engines.toJmdns(service.get(0));
-            engines.jmdns().registerService(s);
-            js = Optional.of(s);
-        }
+        whenServicesRegistered(engine, service);
     }
 
-    @Then("^the following registered service shall be returned:$")
-    public final void thenServiceReturned(final List<ServiceDetails> service) {
-        assertEquals(1, service.size());
-        final ServiceDetails expected = service.get(0);
-        assertTrue(hs.isPresent());
-        final Service actual = hs.get();
-        assertEquals(expected.instanceName(), actual.instanceName());
-        assertEquals(expected.registrationType(), actual.registrationType());
-        assertEquals(expected.port(), actual.port());
-        assertAttributesEquals(engines.toHalo(expected.text()), actual.attributes());
+    @Then("^the following registered services shall be returned:$")
+    public final void thenServicesReturned(final List<ServiceDetails> service) {
+        assertNotNull(registeredBy);
+        if (registeredBy.equals("Halo")) {
+            assertEquals(service.size(), hss.size());
+            for (int i = 0; i < hss.size(); i++) {
+                assertServiceEquals(service.get(i), hss.get(i));
+            }
+        } else {
+            assertEquals(service.size(), jss.size());
+            for (int i = 0; i < jss.size(); i++) {
+                assertServiceEquals(service.get(i), jss.get(i));
+            }
+        }
     }
 
     @When("^the following service is registered with \"Halo\"( not)? allowing instance name change:$")
@@ -116,11 +125,23 @@ public final class RegistrationSteps {
             final List<ServiceDetails> service) {
         try {
             final boolean allowNameChange = nameChangeNotAllowed == null;
-            hs = Optional.of(engines.halo().register(engines.toHalo(service.get(0)), allowNameChange));
+            hss.add(engines.halo().register(toHalo(service.get(0)), allowNameChange));
         } catch (final IOException e) {
-            hs = Optional.empty();
             exceptions.thrown(e);
         }
+    }
+
+    @When("^the following services are registered with \"(Halo|JmDNS)\":$")
+    public final void whenServicesRegistered(final String engine, final List<ServiceDetails> service)
+            throws IOException {
+        if (engine.equals("Halo")) {
+            hss.add(engines.halo().register(toHalo(service.get(0)), false));
+        } else {
+            final ServiceInfo s = toJmdns(service.get(0));
+            engines.jmdns().registerService(s);
+            jss.add(s);
+        }
+        registeredBy = engine;
     }
 
 }
