@@ -41,7 +41,7 @@ import java.util.Objects;
  */
 final class Timeout {
 
-    /** remaing duration. */
+    /** remaining duration. */
     private final Duration duration;
 
     /** when the timeout was created, milliseconds from the epoch of 1970-01-01T00:00Z. */
@@ -50,9 +50,10 @@ final class Timeout {
     /**
      * Class constructor.
      *
-     * @param initialDuration initial duration, not null and not negative
+     * @param initialDuration initial duration, not null
      */
     private Timeout(final Duration initialDuration) {
+        Objects.requireNonNull(initialDuration);
         duration = initialDuration;
         start = System.nanoTime();
     }
@@ -60,14 +61,10 @@ final class Timeout {
     /**
      * Returns a new {@link Timeout timeout} starting at the given {@code initialDuration}.
      *
-     * @param initialDuration initial duration, not null and not negative
+     * @param initialDuration initial duration, not null
      * @return a new {@link Timeout timeout}
      */
     static Timeout of(final Duration initialDuration) {
-        Objects.requireNonNull(initialDuration);
-        if (initialDuration.isNegative()) {
-            throw new IllegalArgumentException("Invalid initial duration: " + initialDuration);
-        }
         return new Timeout(initialDuration);
     }
 

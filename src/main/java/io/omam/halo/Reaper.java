@@ -41,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Periodically removes expired DNS records from the cache.
  */
-final class Reaper implements AutoCloseable {
+final class Reaper {
 
     /** cache. */
     private final Cache cache;
@@ -67,12 +67,6 @@ final class Reaper implements AutoCloseable {
         ses = Executors.newSingleThreadScheduledExecutor(new HaloThreadFactory("reaper"));
     }
 
-    @Override
-    public final void close() {
-        stop();
-        ses.shutdownNow();
-    }
-
     /**
      * Starts a background task to remove expired records.
      */
@@ -89,7 +83,7 @@ final class Reaper implements AutoCloseable {
             f.cancel(true);
             f = null;
         }
-
+        ses.shutdownNow();
     }
 
 }
