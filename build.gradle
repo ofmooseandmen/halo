@@ -72,6 +72,6 @@ tasks.eclipse.finalizedBy copyEclipsePrefs
 
 task wrapper(type: Wrapper) {
 	description = 'Generates gradlew and gradlew.bat scripts'
-	gradleVersion = '4.5'
+	gradleVersion = '4.5.1'
 	distributionType = Wrapper.DistributionType.BIN
 }
