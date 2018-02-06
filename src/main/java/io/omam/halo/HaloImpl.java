@@ -80,11 +80,14 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     /** Service announcer. */
     private final Announcer announcer;
 
+    /** Service browser. */
+    private final HaloBrowser browser;
+
     /** DNS record cache. */
     private final Cache cache;
 
-    /** Service canceler. */
-    private final Canceler canceler;
+    /** Service canceller. */
+    private final Canceller canceller;
 
     /** channel. */
     private final HaloChannel channel;
@@ -113,8 +116,9 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
      */
     HaloImpl(final Clock aClock, final Collection<NetworkInterface> nics) throws IOException {
         announcer = new Announcer(this);
+        browser = new HaloBrowser(this);
         cache = new Cache();
-        canceler = new Canceler(this);
+        canceller = new Canceller(this);
         if (nics.isEmpty()) {
             channel = HaloChannel.allNetworkInterfaces(this, aClock);
         } else {
@@ -167,11 +171,20 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     }
 
     @Override
+    public final Browser browse(final String registrationType, final BrowserListener listener) {
+        browser.addListener(registrationType, listener);
+        /* start in case this is the first time this method is called. */
+        browser.start();
+        return () -> browser.removeListener(registrationType, listener);
+    }
+
+    @Override
     public final void close() throws IOException {
+        browser.stop();
         reaper.stop();
         cache.clear();
         announcer.close();
-        canceler.close();
+        canceller.close();
         channel.close();
         rls.clear();
     }
@@ -179,7 +192,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     @Override
     public final void deregister(final Service service) throws IOException {
         if (services.containsKey(service.serviceName().toLowerCase())) {
-            canceler.cancel(service);
+            canceller.cancel(service);
             remove(service);
             cache.removeAll(service.serviceName());
         } else {

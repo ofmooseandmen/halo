@@ -31,7 +31,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package io.omam.halo;
 
 import static io.omam.halo.MulticastDns.CLASS_IN;
-import static io.omam.halo.MulticastDns.RESOLUTION_INTERVAL;
+import static io.omam.halo.MulticastDns.DOMAIN;
+import static io.omam.halo.MulticastDns.RESOLVING_INTERVAL;
 import static io.omam.halo.MulticastDns.TYPE_A;
 import static io.omam.halo.MulticastDns.TYPE_AAAA;
 import static io.omam.halo.MulticastDns.TYPE_SRV;
@@ -55,9 +56,6 @@ import java.util.logging.Logger;
  * Service implementation.
  */
 final class ServiceImpl implements Service, ResponseListener {
-
-    /** the domain: always local. */
-    private static final String DOMAIN = "local";
 
     /** logger. */
     private static final Logger LOGGER = Logger.getLogger(ServiceImpl.class.getName());
@@ -136,6 +134,31 @@ final class ServiceImpl implements Service, ResponseListener {
         awaitingResolution = false;
         lock = new ReentrantLock();
         resolved = lock.newCondition();
+    }
+
+    /**
+     * Determines the instance name of the given service name.
+     *
+     * @param serviceName service name
+     * @return instance name
+     */
+    static Optional<String> instanceNameOf(final String serviceName) {
+        /* everything until first dot. */
+        final int end = serviceName.indexOf('.');
+        return end == -1 ? Optional.empty() : Optional.of(serviceName.substring(0, end));
+    }
+
+    /**
+     * Determines the registration type of the given service name.
+     *
+     * @param serviceName service name
+     * @return registration type
+     */
+    static Optional<String> registrationTypeOf(final String serviceName) {
+        final int begin = serviceName.indexOf('.');
+        final int end = serviceName.indexOf(DOMAIN);
+        /* everything after first dot and until local. */
+        return begin == -1 || end == -1 ? Optional.empty() : Optional.of(serviceName.substring(begin + 1, end));
     }
 
     @Override
@@ -260,6 +283,16 @@ final class ServiceImpl implements Service, ResponseListener {
     }
 
     /**
+     * Determines whether this service is resolved: hostname and attributes are not null and at least an IPv4 or
+     * IPv6 address is present.
+     *
+     * @return {@code true} if this service is resolved
+     */
+    final boolean resolved() {
+        return hostname != null && (ipv4Address.isPresent() || ipv6Address.isPresent()) && attributes != null;
+    }
+
+    /**
      * Sets the attributes.
      *
      * @param someAttributes attributes
@@ -341,41 +374,31 @@ final class ServiceImpl implements Service, ResponseListener {
     /**
      * Computes delays covering the given timeout.
      * <p>
-     * First delay is always {@link #RESOLUTION_INTERVAL}, following are twice the previous delay (in order to
-     * space more and more the sent messages and avoid over-flooding receiver).
+     * First delay is always {@link #RESOLVING_INTERVAL}, following are twice the previous delay (in order to space
+     * more and more the sent messages and avoid over-flooding receiver).
      *
      * @param timeout timeout
      * @return delays
      */
     private Queue<Duration> delays(final Duration timeout) {
         final Queue<Duration> q = new ArrayDeque<>();
-        if (timeout.compareTo(RESOLUTION_INTERVAL) <= 0) {
+        if (timeout.compareTo(RESOLVING_INTERVAL) <= 0) {
             return q;
         }
         int factor = 1;
-        Duration delay = RESOLUTION_INTERVAL;
+        Duration delay = RESOLVING_INTERVAL;
         Duration total = Duration.ZERO;
         do {
             q.add(delay);
             total = total.plus(delay);
             factor = factor * 2;
-            delay = RESOLUTION_INTERVAL.multipliedBy(factor);
+            delay = RESOLVING_INTERVAL.multipliedBy(factor);
         } while (total.plus(delay).compareTo(timeout) <= 0);
         delay = timeout.minus(total);
         if (!delay.isZero()) {
             q.add(delay);
         }
         return q;
-    }
-
-    /**
-     * Determines whether this service is resolved: hostname and attributes are not null and at least an IPv4 or
-     * IPv6 address is present.
-     *
-     * @return {@code true} if this service is resolved
-     */
-    private boolean resolved() {
-        return hostname != null && (ipv4Address.isPresent() || ipv6Address.isPresent()) && attributes != null;
     }
 
     /**

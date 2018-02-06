@@ -30,7 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import static io.omam.halo.MulticastDns.CANCELING_INTERVAL;
+import static io.omam.halo.MulticastDns.CANCELLING_INTERVAL;
 import static io.omam.halo.MulticastDns.CANCEL_NUM;
 import static io.omam.halo.MulticastDns.CLASS_IN;
 import static io.omam.halo.MulticastDns.FLAGS_AA;
@@ -54,14 +54,14 @@ import java.util.logging.Logger;
 import io.omam.halo.DnsMessage.Builder;
 
 /**
- * Cancels {@link Service}s on the network.
+ * Cancels {@link Service}s on the network by sending goodbyes packet (i.e. packet with a TTL of 0).
  */
-final class Canceler implements AutoCloseable {
+final class Canceller implements AutoCloseable {
 
     /**
-     * Announcing task.
+     * Cancelling task.
      */
-    private static final class CancelingTask implements Callable<Void> {
+    private static final class CancellingTask implements Callable<Void> {
 
         /** the service to cancel. */
         private final Service s;
@@ -75,7 +75,7 @@ final class Canceler implements AutoCloseable {
          * @param service service to cancel
          * @param haloHelper halo helper
          */
-        CancelingTask(final Service service, final HaloHelper haloHelper) {
+        CancellingTask(final Service service, final HaloHelper haloHelper) {
             s = service;
             halo = haloHelper;
         }
@@ -106,7 +106,7 @@ final class Canceler implements AutoCloseable {
     }
 
     /** logger. */
-    private static final Logger LOGGER = Logger.getLogger(Canceler.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(Canceller.class.getName());
 
     /** halo helper. */
     private final HaloHelper halo;
@@ -120,7 +120,7 @@ final class Canceler implements AutoCloseable {
      *
      * @param haloHelper halo helper
      */
-    Canceler(final HaloHelper haloHelper) {
+    Canceller(final HaloHelper haloHelper) {
         halo = haloHelper;
         ses = Executors.newSingleThreadScheduledExecutor(new HaloThreadFactory("canceler"));
     }
@@ -141,10 +141,10 @@ final class Canceler implements AutoCloseable {
     final void cancel(final Service service) throws IOException {
         LOGGER.fine(() -> "Canceling " + service);
         try {
-            final CancelingTask task = new CancelingTask(service, halo);
+            final CancellingTask task = new CancellingTask(service, halo);
             final List<Future<?>> cancels = new ArrayList<>();
             for (int i = 0; i < CANCEL_NUM; i++) {
-                cancels.add(ses.schedule(task, CANCELING_INTERVAL.toMillis(), TimeUnit.MILLISECONDS));
+                cancels.add(ses.schedule(task, CANCELLING_INTERVAL.toMillis(), TimeUnit.MILLISECONDS));
             }
             for (final Future<?> cancel : cancels) {
                 cancel.get();

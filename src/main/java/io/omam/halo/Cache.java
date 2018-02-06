@@ -159,35 +159,6 @@ final class Cache {
     }
 
     /**
-     * Returns the {@link PtrRecord PTR record} matching the given record name and target which is not yet
-     * {@link DnsRecord#isExpired(Instant) expired} if it exists.
-     *
-     * @param name record name
-     * @param target pointer target
-     * @param now current time
-     * @return an Optional describing the matching DNS record or empty
-     */
-    final Optional<PtrRecord> pointer(final String name, final String target, final Instant now) {
-        Objects.requireNonNull(target);
-        Objects.requireNonNull(now);
-        LOGGER.fine(() -> "Searching cache for DNS pointer matching [Name="
-            + name
-            + "; target="
-            + target
-            + "; now="
-            + now
-            + "]");
-        final Optional<PtrRecord> result = entries(name)
-            .stream()
-            .filter(e -> e instanceof PtrRecord)
-            .map(e -> (PtrRecord) e)
-            .filter(e -> e.target().equals(target) && !e.isExpired(now))
-            .findFirst();
-        logResult(result);
-        return result;
-    }
-
-    /**
      * Removes all DNS records associated with the given name.
      *
      * @param name service name

@@ -40,6 +40,9 @@ import java.time.Duration;
  */
 final class MulticastDns {
 
+    /** the domain: always local. */
+    static final String DOMAIN = "local";
+
     /** discovery service. */
     static final String DISCOVERY = "_services._dns-sd._udp.local";
 
@@ -72,7 +75,7 @@ final class MulticastDns {
         }
     }
 
-    /** probing interval. */
+    /** interval between probe message. */
     static final Duration PROBING_INTERVAL = Duration.ofMillis(250);
 
     /** probing timeout. */
@@ -81,8 +84,8 @@ final class MulticastDns {
     /** number of probes before announcing a registered service. */
     static final int PROBE_NUM = 3;
 
-    /** canceling interval. */
-    static final Duration CANCELING_INTERVAL = Duration.ofMillis(250);
+    /** interval between goodbyes messages. */
+    static final Duration CANCELLING_INTERVAL = Duration.ofMillis(250);
 
     /** number of cancel message sent when de-registering a service. */
     static final int CANCEL_NUM = 3;
@@ -90,8 +93,11 @@ final class MulticastDns {
     /** cache record reaper interval. */
     static final Duration REAPING_INTERVAL = Duration.ofSeconds(10);
 
-    /** resolution delay */
-    static final Duration RESOLUTION_INTERVAL = Duration.ofMillis(200);
+    /** interval between resolution question. */
+    static final Duration RESOLVING_INTERVAL = Duration.ofMillis(200);
+
+    /** interval between service registration type query. */
+    static final Duration QUERYING_INTERVAL = Duration.ofMillis(225);
 
     /** time to live: 1 hour. */
     static final Duration TTL = Duration.ofHours(1);
