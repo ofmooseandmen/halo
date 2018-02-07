@@ -62,7 +62,7 @@ try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
 
 ```java
 try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
-    final BrowserListener l = new BrowserListener() {
+    final ServiceBrowserListener l = new ServiceBrowserListener() {
 
         @Override
         public final void down(final Service service) {

@@ -31,22 +31,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package io.omam.halo;
 
 /**
- * The listener interface for discovering {@link Service named service}s of a given registration type.
+ * The listener interface for discovering registration type on the <strong>local</strong> domain.
  */
-public interface BrowserListener {
+public interface RegistrationTypeBrowserListener {
 
     /**
-     * Invoked when a named service of a target registration type has been cancelled.
+     * Invoked when a new registration type has been discovered.
      *
-     * @param service the service
+     * @param registrationType the registration type, e.g. '_music._udp.'
      */
-    void down(final Service service);
-
-    /**
-     * Invoked when a new named service of a target registration type has been discovered.
-     *
-     * @param service the service
-     */
-    void up(final Service service);
+    void registrationTypeDiscovered(final String registrationType);
 
 }

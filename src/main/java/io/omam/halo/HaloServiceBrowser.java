@@ -64,7 +64,7 @@ import io.omam.halo.DnsMessage.Builder;
  * Network (local domain) is queried at regular interval for pointer records of selected registration types and
  * discovered services are then resolved.
  */
-final class HaloBrowser {
+final class HaloServiceBrowser {
 
     /**
      * Task to query the cache and network about service of the browsed registration type.
@@ -110,7 +110,7 @@ final class HaloBrowser {
          */
         private void handleResponse(final String rpn, final Collection<PtrRecord> pointers, final Instant now) {
             final Map<String, ServiceImpl> rservices = services.get(rpn);
-            final Collection<BrowserListener> rlisteners = listeners.get(rpn);
+            final Collection<ServiceBrowserListener> rlisteners = listeners.get(rpn);
             for (final PtrRecord ptr : pointers) {
                 final String serviceName = ptr.target();
                 final String skey = serviceName.toLowerCase();
@@ -190,7 +190,7 @@ final class HaloBrowser {
             if (resolved) {
                 LOGGER.fine(() -> "Resolved " + s);
                 services.get(rpn).put(skey, s);
-                final Collection<BrowserListener> rlisteners = listeners.get(rpn);
+                final Collection<ServiceBrowserListener> rlisteners = listeners.get(rpn);
                 rlisteners.forEach(l -> l.up(s));
             } else {
                 LOGGER.warning(() -> "Could not resolve " + s);
@@ -200,13 +200,13 @@ final class HaloBrowser {
     }
 
     /** logger. */
-    private static final Logger LOGGER = Logger.getLogger(HaloBrowser.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(HaloServiceBrowser.class.getName());
 
     /** halo helper. */
     private final HaloHelper halo;
 
     /** listeners, indexed by registration pointer name. */
-    private final Map<String, Collection<BrowserListener>> listeners;
+    private final Map<String, Collection<ServiceBrowserListener>> listeners;
 
     /**
      * resolved services, indexed by registration pointer name, indexed by service name.
@@ -233,13 +233,13 @@ final class HaloBrowser {
      *
      * @param haloHelper halo helper
      */
-    HaloBrowser(final HaloHelper haloHelper) {
+    HaloServiceBrowser(final HaloHelper haloHelper) {
         halo = haloHelper;
         listeners = new ConcurrentHashMap<>();
         services = new ConcurrentHashMap<>();
         qt = new QueryingTask();
-        qes = Executors.newSingleThreadScheduledExecutor(new HaloThreadFactory("discoverer"));
-        res = Executors.newCachedThreadPool(new HaloThreadFactory("resolver"));
+        qes = Executors.newSingleThreadScheduledExecutor(new HaloThreadFactory("service-discoverer"));
+        res = Executors.newCachedThreadPool(new HaloThreadFactory("service-resolver"));
         qFuture = null;
         rFutures = new ConcurrentHashMap<>();
     }
@@ -262,11 +262,12 @@ final class HaloBrowser {
      * @param registrationType service registration type
      * @param listener listener
      */
-    final void addListener(final String registrationType, final BrowserListener listener) {
+    final void addListener(final String registrationType, final ServiceBrowserListener listener) {
         Objects.requireNonNull(registrationType);
         Objects.requireNonNull(listener);
         final String rpn = toRpn(registrationType);
-        final Collection<BrowserListener> rls = listeners.computeIfAbsent(rpn, k -> new CopyOnWriteArrayList<>());
+        final Collection<ServiceBrowserListener> rls =
+                listeners.computeIfAbsent(rpn, k -> new CopyOnWriteArrayList<>());
         final Map<String, ServiceImpl> rs = services.computeIfAbsent(rpn, k -> new ConcurrentHashMap<>());
         rs.values().forEach(listener::up);
         rls.add(listener);
@@ -278,11 +279,11 @@ final class HaloBrowser {
      * @param registrationType service registration type
      * @param listener listener
      */
-    final void removeListener(final String registrationType, final BrowserListener listener) {
+    final void removeListener(final String registrationType, final ServiceBrowserListener listener) {
         Objects.requireNonNull(registrationType);
         Objects.requireNonNull(listener);
         final String rpn = toRpn(registrationType);
-        final Collection<BrowserListener> rls = listeners.get(rpn);
+        final Collection<ServiceBrowserListener> rls = listeners.get(rpn);
         if (rls != null && rls.size() > 1) {
             rls.remove(listener);
         } else if (rls != null && rls.size() == 1) {

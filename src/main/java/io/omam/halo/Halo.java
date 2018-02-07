@@ -90,7 +90,7 @@ import java.util.Optional;
  * <pre>
  * <code>
  * try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
- *     final BrowserListener l = new BrowserListener() {
+ *     final ServiceBrowserListener l = new ServiceBrowserListener() {
  *
  *         &#64;Override
  *         public final void down(final Service service) {
@@ -156,19 +156,30 @@ public interface Halo extends Closeable {
     }
 
     /**
+     * Browses for registration types on the <strong>local</strong> domain.
+     * <p>
+     * The network is queried at regular interval and the given listener is invoked with discovered services
+     * registration types.
+     *
+     * @param listener the listener
+     * @return a {@code Browser} to stop browsing
+     */
+    Browser browse(final RegistrationTypeBrowserListener listener);
+
+    /**
      * Browses for services of the <strong>local</strong> domain having the given registration type.
      * <p>
-     * The given listener whenever changes in the availability of service having the given registration type are
-     * discovered.
+     * The given listener is invoked whenever changes in the availability of service having the given registration
+     * type are discovered.
      * <p>
      * The network is queried at regular interval and discovered services are attempted to be resolved.
      *
      * @param registrationType service type (IANA) and transport protocol (udp or tcp), e.g. {@code _ftp._tcp.} or
      *            {@code _http._udp.}
-     * @param listener the browser listener
+     * @param listener the listener
      * @return a {@code Browser} to stop browsing
      */
-    Browser browse(final String registrationType, final BrowserListener listener);
+    Browser browse(final String registrationType, final ServiceBrowserListener listener);
 
     /**
      * De-register the given service.

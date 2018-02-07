@@ -55,9 +55,9 @@ import cucumber.api.java.en.When;
  * Steps to tests browsing by registration type.
  */
 @SuppressWarnings("javadoc")
-public final class BrowsingSteps {
+public final class ServiceBrowsingSteps {
 
-    private static final class CollectingBrowserListener implements BrowserListener {
+    private static final class CollectingBrowserListener implements ServiceBrowserListener {
 
         private final List<Service> ups;
 
@@ -130,7 +130,7 @@ public final class BrowsingSteps {
 
     private String browsedBy;
 
-    public BrowsingSteps(final Engines someEngines) {
+    public ServiceBrowsingSteps(final Engines someEngines) {
         engines = someEngines;
         hls = new HashMap<>();
         hbs = new HashMap<>();

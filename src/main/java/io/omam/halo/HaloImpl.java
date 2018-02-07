@@ -31,8 +31,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package io.omam.halo;
 
 import static io.omam.halo.MulticastDns.CLASS_IN;
-import static io.omam.halo.MulticastDns.DISCOVERY;
 import static io.omam.halo.MulticastDns.FLAGS_AA;
+import static io.omam.halo.MulticastDns.RT_DISCOVERY;
 import static io.omam.halo.MulticastDns.TTL;
 import static io.omam.halo.MulticastDns.TYPE_A;
 import static io.omam.halo.MulticastDns.TYPE_AAAA;
@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
@@ -80,9 +81,6 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     /** Service announcer. */
     private final Announcer announcer;
 
-    /** Service browser. */
-    private final HaloBrowser browser;
-
     /** DNS record cache. */
     private final Cache cache;
 
@@ -101,11 +99,17 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     /** {@link ResponseListener listener}s. */
     private final List<ResponseListener> rls;
 
+    /** Registration Types browser. */
+    private final HaloRegistrationTypeBrowser rBrowser;
+
+    /** Service browser. */
+    private final HaloServiceBrowser sBrowser;
+
     /** map of all registered service indexed by {@link Service#instanceName()}. */
     private final Map<String, Service> services;
 
-    /** number of services registered by {@link Service#registrationPointerName()}. */
-    private final Map<String, Integer> registrationPointerNames;
+    /** set of all registration pointer names. */
+    private final Set<String> registrationPointerNames;
 
     /**
      * Constructor.
@@ -116,7 +120,6 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
      */
     HaloImpl(final Clock aClock, final Collection<NetworkInterface> nics) throws IOException {
         announcer = new Announcer(this);
-        browser = new HaloBrowser(this);
         cache = new Cache();
         canceller = new Canceller(this);
         if (nics.isEmpty()) {
@@ -128,8 +131,11 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
         reaper = new Reaper(cache, clock);
         rls = new CopyOnWriteArrayList<>();
 
+        rBrowser = new HaloRegistrationTypeBrowser(this);
+        sBrowser = new HaloServiceBrowser(this);
+
         services = new ConcurrentHashMap<>();
-        registrationPointerNames = new ConcurrentHashMap<>();
+        registrationPointerNames = ConcurrentHashMap.newKeySet();
 
         channel.enable();
         reaper.start();
@@ -171,16 +177,24 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     }
 
     @Override
-    public final Browser browse(final String registrationType, final BrowserListener listener) {
-        browser.addListener(registrationType, listener);
+    public final Browser browse(final RegistrationTypeBrowserListener listener) {
+        rBrowser.addListener(listener);
         /* start in case this is the first time this method is called. */
-        browser.start();
-        return () -> browser.removeListener(registrationType, listener);
+        rBrowser.start();
+        return () -> rBrowser.removeListener(listener);
+    }
+
+    @Override
+    public final Browser browse(final String registrationType, final ServiceBrowserListener listener) {
+        sBrowser.addListener(registrationType, listener);
+        /* start in case this is the first time this method is called. */
+        sBrowser.start();
+        return () -> sBrowser.removeListener(registrationType, listener);
     }
 
     @Override
     public final void close() throws IOException {
-        browser.stop();
+        sBrowser.stop();
         reaper.stop();
         cache.clear();
         announcer.close();
@@ -270,8 +284,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     private void add(final Service s) {
         services.put(s.serviceName().toLowerCase(), s);
         final String rpn = s.registrationPointerName();
-        final int current = registrationPointerNames.getOrDefault(rpn, 0);
-        registrationPointerNames.put(rpn, current + 1);
+        registrationPointerNames.add(rpn);
     }
 
     /**
@@ -328,15 +341,16 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
      */
     private void addPtrAnswer(final DnsMessage query, final DnsQuestion question, final Builder builder,
             final Instant now) {
-        if (question.name().equals(DISCOVERY)) {
-            for (final String rpn : registrationPointerNames.keySet()) {
-                builder.addAnswer(query, new PtrRecord(DISCOVERY, CLASS_IN, TTL, now, rpn));
+        if (question.name().equals(RT_DISCOVERY)) {
+            for (final String rpn : registrationPointerNames) {
+                builder.addAnswer(query, new PtrRecord(RT_DISCOVERY, CLASS_IN, TTL, now, rpn));
             }
-        }
-        for (final Service s : services.values()) {
-            if (question.name().equalsIgnoreCase(s.registrationPointerName())) {
-                builder.addAnswer(query,
-                        new PtrRecord(s.registrationPointerName(), CLASS_IN, TTL, now, s.serviceName()));
+        } else {
+            for (final Service s : services.values()) {
+                if (question.name().equalsIgnoreCase(s.registrationPointerName())) {
+                    builder.addAnswer(query,
+                            new PtrRecord(s.registrationPointerName(), CLASS_IN, TTL, now, s.serviceName()));
+                }
             }
         }
     }
@@ -489,12 +503,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
      * @param s service
      */
     private void remove(final Service s) {
-        final String rpn = s.registrationPointerName();
-        if (registrationPointerNames.get(rpn) == 1) {
-            registrationPointerNames.remove(rpn);
-        } else {
-            registrationPointerNames.put(rpn, registrationPointerNames.get(rpn) - 1);
-        }
+        registrationPointerNames.remove(s.registrationPointerName());
         services.remove(s.serviceName().toLowerCase());
     }
 

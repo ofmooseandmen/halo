@@ -43,8 +43,8 @@ final class MulticastDns {
     /** the domain: always local. */
     static final String DOMAIN = "local";
 
-    /** discovery service. */
-    static final String DISCOVERY = "_services._dns-sd._udp.local";
+    /** registration types discovery. */
+    static final String RT_DISCOVERY = "_services._dns-sd._udp.local.";
 
     /** maximum size of DNS message in bytes. */
     static final int MAX_DNS_MESSAGE_SIZE = 65536;
