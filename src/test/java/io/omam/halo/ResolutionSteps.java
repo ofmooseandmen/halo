@@ -31,13 +31,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package io.omam.halo;
 
 import static io.omam.halo.Assert.assertServiceEquals;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 
 import javax.jmdns.ServiceInfo;
 
@@ -80,6 +84,19 @@ public final class ResolutionSteps {
         assertNotNull(engines.halo().resolve(split[0], split[1]));
     }
 
+    @Then("after at least \"([^\"]*)\", the service \"([^\"]*)\" cannot resolved by \"(Halo|JmDNS)\"$")
+    public final void thenServiceEventuallyNotResolved(final String dur, final String service,
+            final String engine) {
+        final String[] split = split(service);
+        final Callable<Boolean> c;
+        if (engine.equals("Halo")) {
+            c = () -> !engines.halo().resolve(split[0], split[1]).isPresent();
+        } else {
+            c = () -> engines.jmdns().getServiceInfo(split[1] + "local.", split[0]) == null;
+        }
+        await().atLeast(Duration.parse(dur).toMillis(), MILLISECONDS).until(c);
+    }
+
     @Then("^no resolved service shall be returned$")
     public final void thenServiceNotResolved() {
         assertNotNull(resolvedBy);
@@ -114,6 +131,7 @@ public final class ResolutionSteps {
 
     @When("^the service \"([^\"]*)\" is resolved by \"(Halo|JmDNS)\"$")
     public final void whenServiceResolved(final String service, final String engine) {
+        // FIXME use split and check elsewhere
         final int firstDot = service.indexOf('.');
         final String instanceName = service.substring(0, firstDot);
         final String registrationType = service.substring(firstDot + 1, service.length());

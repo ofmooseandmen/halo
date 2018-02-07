@@ -24,7 +24,7 @@ Feature: Service registration
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
 
-  Scenario: Service registration with unresolved instance name collision
+  Scenario: Service registration with unresolved instance name collision from registered services
     Given a "Halo" instance has been created
     And the following services have been registered with "Halo":
       | instanceName        | registrationType | port | text      |
@@ -32,9 +32,7 @@ Feature: Service registration
     When the following service is registered with "Halo" not allowing instance name change:
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9010 | Some Text |
-    # Note: depending on whether another zeroconf (e.g. Bonjour) service is running on
-    #       the machine, the collision can come from the cache or from the registered services.
-    Then a "java.io.IOException" shall be thrown with message containing "collision (...) Living Room Speaker (...) _music._tcp."
+    Then a "java.io.IOException" shall be thrown with message containing "Registered service collision (...) Living Room Speaker (...) _music._tcp."
 
   Scenario: Service registration with unresolved instance name collision from cache
     Given a "Halo" instance has been created
@@ -81,7 +79,5 @@ Feature: Service registration
     And the following services have been registered with "Halo":
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
-    And the service "Living Room Speaker._music._tcp." has been de-registered
-    And "PT1.5S" has elapsed
-    When the service "Living Room Speaker._music._tcp." is resolved by "JmDNS"
-    Then no resolved service shall be returned
+    When the service "Living Room Speaker._music._tcp." is de-registered
+    Then after at least "PT1S", the service "Living Room Speaker._music._tcp." cannot resolved by "JmDNS"

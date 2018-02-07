@@ -415,6 +415,18 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
         do {
             collision = false;
             final Instant now = now();
+
+            /* check own services. */
+            final Service own = services.get(result.serviceName().toLowerCase());
+            if (own != null) {
+                final String otherHostname = own.hostname();
+                collision = own.port() != port || !otherHostname.equals(hostname);
+                if (collision) {
+                    final String msg = "Registered service collision: " + own;
+                    result = tryResolveCollision(result, allowNameChange, msg);
+                }
+            }
+
             /* check cache. */
             final Optional<SrvRecord> rec = cache
                 .entries(result.serviceName())
@@ -430,16 +442,6 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
                 result = tryResolveCollision(result, allowNameChange, msg);
             }
 
-            /* check own services. */
-            final Service own = services.get(result.serviceName().toLowerCase());
-            if (own != null) {
-                final String otherHostname = own.hostname();
-                collision = own.port() != port || !otherHostname.equals(hostname);
-                if (collision) {
-                    final String msg = "Registered service collision: " + own;
-                    result = tryResolveCollision(result, allowNameChange, msg);
-                }
-            }
         } while (collision);
         return result;
     }

@@ -30,14 +30,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.logging.Logger;
 
 import cucumber.api.Scenario;
 import cucumber.api.java.After;
 import cucumber.api.java.Before;
-import cucumber.api.java.en.Given;
 
 /**
  * Steps to log start/end of scenario.
@@ -70,17 +68,6 @@ public final class ScenarioSteps {
     @Before
     public final void before(final Scenario scenario) {
         LOGGER.info(() -> "Scenario '" + scenario.getName() + "' started @ " + Instant.now());
-    }
-
-    /**
-     * Sleeps for given duration.
-     *
-     * @param dur textual representation of the duration
-     * @throws InterruptedException if any thread has interrupted the current thread
-     */
-    @Given("\"([^\"]*)\" has elapsed$")
-    public final void givenDurationElapsed(final String dur) throws InterruptedException {
-        Thread.sleep(Duration.parse(dur).toMillis());
     }
 
 }

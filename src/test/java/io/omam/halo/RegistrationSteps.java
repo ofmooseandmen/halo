@@ -78,8 +78,14 @@ public final class RegistrationSteps {
         registeredBy = null;
     }
 
-    @Given("the service \"([^\"]*)\" has been de-registered$")
-    public final void givenServiceDeregistered(final String service) throws IOException {
+    @Given("^the following services have been registered with \"(Halo|JmDNS)\":$")
+    public final void givenServicesRegistered(final String engine, final List<ServiceDetails> service)
+            throws IOException {
+        whenServicesRegistered(engine, service);
+    }
+
+    @When("the service \"([^\"]*)\" is de-registered$")
+    public final void thenDeregisterService(final String service) throws IOException {
         assertNotNull(registeredBy);
         if (registeredBy.equals("Halo")) {
             final Service s =
@@ -96,12 +102,6 @@ public final class RegistrationSteps {
             engines.jmdns().unregisterService(s);
             jss.remove(s);
         }
-    }
-
-    @Given("^the following services have been registered with \"(Halo|JmDNS)\":$")
-    public final void givenServicesRegistered(final String engine, final List<ServiceDetails> service)
-            throws IOException {
-        whenServicesRegistered(engine, service);
     }
 
     @Then("^the following registered services shall be returned:$")
@@ -132,14 +132,18 @@ public final class RegistrationSteps {
     }
 
     @When("^the following services are registered with \"(Halo|JmDNS)\":$")
-    public final void whenServicesRegistered(final String engine, final List<ServiceDetails> service)
+    public final void whenServicesRegistered(final String engine, final List<ServiceDetails> services)
             throws IOException {
         if (engine.equals("Halo")) {
-            hss.add(engines.halo().register(toHalo(service.get(0)), false));
+            for (final ServiceDetails service : services) {
+                hss.add(engines.halo().register(toHalo(service), false));
+            }
         } else {
-            final ServiceInfo s = toJmdns(service.get(0));
-            engines.jmdns().registerService(s);
-            jss.add(s);
+            for (final ServiceDetails service : services) {
+                final ServiceInfo s = toJmdns(service);
+                engines.jmdns().registerService(s);
+                jss.add(s);
+            }
         }
         registeredBy = engine;
     }

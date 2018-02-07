@@ -89,15 +89,16 @@ final class HaloBrowser {
         @Override
         public final void run() {
             final Set<String> rpns = listeners.keySet();
+            final Builder b = DnsMessage.query();
             for (final String rpn : rpns) {
                 final Collection<ServiceImpl> rservices = services.get(rpn).values();
-                final Builder b = DnsMessage.query().addQuestion(new DnsQuestion(rpn, TYPE_PTR, CLASS_IN));
+                b.addQuestion(new DnsQuestion(rpn, TYPE_PTR, CLASS_IN));
                 final Instant now = halo.now();
                 final Optional<Instant> onow = Optional.of(now);
                 rservices.forEach(s -> b.addAnswer(
                         new PtrRecord(s.registrationPointerName(), CLASS_IN, TTL, now, s.serviceName()), onow));
-                halo.sendMessage(b.get());
             }
+            halo.sendMessage(b.get());
         }
 
         /**
@@ -281,8 +282,11 @@ final class HaloBrowser {
         Objects.requireNonNull(registrationType);
         Objects.requireNonNull(listener);
         final String rpn = toRpn(registrationType);
-        if (listeners.containsKey(rpn)) {
-            listeners.get(rpn).remove(listener);
+        final Collection<BrowserListener> rls = listeners.get(rpn);
+        if (rls != null && rls.size() > 1) {
+            rls.remove(listener);
+        } else if (rls != null && rls.size() == 1) {
+            listeners.remove(rpn);
         } else {
             LOGGER.warning(() -> registrationType + " is not being browsed.");
         }

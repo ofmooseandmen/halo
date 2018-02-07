@@ -33,16 +33,17 @@ package io.omam.halo;
 import static io.omam.halo.Assert.assertServiceEquals;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
-import static org.junit.Assert.assertNotNull;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
-import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 
+import javax.jmdns.ServiceEvent;
+import javax.jmdns.ServiceInfo;
 import javax.jmdns.ServiceListener;
 
 import cucumber.api.java.After;
@@ -56,15 +57,15 @@ import cucumber.api.java.en.When;
 @SuppressWarnings("javadoc")
 public final class BrowsingSteps {
 
-    private static class CollectingBrowserListener implements BrowserListener {
+    private static final class CollectingBrowserListener implements BrowserListener {
 
-        private final Queue<Service> ups;
+        private final List<Service> ups;
 
-        private final Queue<Service> downs;
+        private final List<Service> downs;
 
         CollectingBrowserListener() {
-            ups = new ArrayDeque<>();
-            downs = new ArrayDeque<>();
+            ups = new ArrayList<>();
+            downs = new ArrayList<>();
         }
 
         @Override
@@ -77,16 +78,44 @@ public final class BrowsingSteps {
             ups.add(service);
         }
 
-        final int events() {
-            return downs.size() + ups.size();
+        final List<Service> downs() {
+            return downs;
         }
 
-        final Service pollDown() {
-            return downs.poll();
+        final List<Service> ups() {
+            return ups;
         }
 
-        final Service pollUp() {
-            return ups.poll();
+    }
+
+    private static final class CollectingServiceListener implements ServiceListener {
+
+        private final List<ServiceInfo> ups;
+
+        CollectingServiceListener() {
+            ups = new ArrayList<>();
+        }
+
+        @Override
+        public final void serviceAdded(final ServiceEvent event) {
+            // ignore: wait for resolved.
+        }
+
+        @Override
+        public final void serviceRemoved(final ServiceEvent event) {
+            // ignore: not tested.
+        }
+
+        @Override
+        public final void serviceResolved(final ServiceEvent event) {
+            /* for some reason JmDNS sometimes notified several times for the same service. */
+            if (!ups.contains(event.getInfo())) {
+                ups.add(event.getInfo());
+            }
+        }
+
+        final List<ServiceInfo> ups() {
+            return ups;
         }
 
     }
@@ -97,7 +126,7 @@ public final class BrowsingSteps {
 
     private final Map<String, Browser> hbs;
 
-    private final Map<String, ServiceListener> jls;
+    private final Map<String, CollectingServiceListener> jls;
 
     private String browsedBy;
 
@@ -111,10 +140,16 @@ public final class BrowsingSteps {
 
     @After
     public final void after() {
-        assertTrue(hls.isEmpty());
-        assertTrue(jls.isEmpty());
-        assertTrue(hbs.isEmpty());
+        hls.clear();
+        jls.clear();
+        hbs.values().forEach(Browser::stop);
+        hbs.clear();
         browsedBy = null;
+    }
+
+    @Given("the browser associated with the listener \"([^\"]*)\" has been stopped")
+    public final void givenBrowserStopped(final String listener) {
+        hbs.remove(listener).stop();
     }
 
     @Given("^the following registration types are being browsed with \"([^\"]*)\":$")
@@ -125,25 +160,32 @@ public final class BrowsingSteps {
     @Then("^the listener \"([^\"]*)\" shall be notified of the following \"([^\"]*)\" services:$")
     public final void thenListenerNotified(final String listener, final String eventType,
             final List<ServiceDetails> services) {
+        /* sort expecteds and actuals by instance name. */
+        final List<ServiceDetails> expecteds = new ArrayList<>(services);
+        Collections.sort(expecteds, (s1, s2) -> s1.instanceName().compareTo(s2.instanceName()));
+
+        final boolean up = eventType.equals("up");
+
         if (browsedBy.equals("Halo")) {
-            final CollectingBrowserListener l = hls.remove(listener);
+            final CollectingBrowserListener l = hls.get(listener);
+            final List<Service> actuals = up ? l.ups() : l.downs();
+            Collections.sort(actuals, (s1, s2) -> s1.instanceName().compareTo(s2.instanceName()));
             /* await for listener to have received expected number of events. */
-            await().atMost(5, SECONDS).until(() -> l.events() == services.size());
-            for (final ServiceDetails expected : services) {
-                final Service actual;
-                if (eventType.equals("up")) {
-                    actual = l.pollUp();
-                } else {
-                    actual = l.pollDown();
-                }
-                assertNotNull(actual);
-                assertServiceEquals(expected, actual);
+            await().atMost(5, SECONDS).until(() -> actuals.size(), equalTo(expecteds.size()));
+            for (int i = 0; i < expecteds.size(); i++) {
+                assertServiceEquals(expecteds.get(i), actuals.get(i));
             }
-            hbs.remove(listener).stop();
         } else {
-            fail("Implement tests browsing with JmDNS to ensure Halo behave correctly.");
+            assertTrue(up);
+            final CollectingServiceListener l = jls.get(listener);
+            final List<ServiceInfo> actuals = l.ups();
+            /* await for listener to have received expected number of events. */
+            await().atMost(5, SECONDS).until(() -> actuals.size(), equalTo(expecteds.size()));
+            Collections.sort(actuals, (s1, s2) -> s1.getName().compareTo(s2.getName()));
+            for (int i = 0; i < expecteds.size(); i++) {
+                assertServiceEquals(expecteds.get(i), actuals.get(i));
+            }
         }
-        browsedBy = null;
     }
 
     @When("^the following registration types are browsed with \"([^\"]*)\":$")
@@ -156,7 +198,11 @@ public final class BrowsingSteps {
                 hbs.put(rt.listenerName(), b);
             }
         } else {
-            fail("Implement tests browsing with JmDNS to ensure Halo behave correctly.");
+            for (final RegistrationType rt : types) {
+                final CollectingServiceListener l = new CollectingServiceListener();
+                jls.put(rt.listenerName(), l);
+                engines.jmdns().addServiceListener(rt.registrationType() + "local.", l);
+            }
         }
         browsedBy = engine;
     }
