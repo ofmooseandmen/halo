@@ -1,4 +1,4 @@
-Feature: Service browsing by registration type
+Feature: Services browsing by registration type
   
   Halo implementation tested against JmDNS
 
@@ -98,7 +98,7 @@ Feature: Service browsing by registration type
       | instanceName  | registrationType | port | text      |
       | Bedroom Thing | _thingy._udp.    | 9012 | Some Text |
 
-  Scenario: Halo supports browsing messages
+  Scenario: Halo supports service browsing queries
     Given a "Halo" instance has been created
     And the following services have been registered with "Halo":
       | instanceName        | registrationType | port | text      |

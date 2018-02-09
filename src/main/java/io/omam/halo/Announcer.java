@@ -274,23 +274,21 @@ final class Announcer implements AutoCloseable {
         final ProbingListener listener = new ProbingListener(service);
         halo.addResponseListener(listener);
         final ProbingTask task = new ProbingTask(service, halo);
-        boolean conflictFree = true;
         try {
             final List<Future<?>> probes = new ArrayList<>();
-            for (int i = 0; i < PROBE_NUM && conflictFree; i++) {
+            for (int i = 0; i < PROBE_NUM; i++) {
                 probes.add(ses.schedule(task, PROBING_INTERVAL.toMillis(), TimeUnit.MILLISECONDS));
             }
-            conflictFree = !listener.await();
+            final boolean conflictFree = !listener.await();
             probes.forEach(p -> p.cancel(true));
-            final boolean result = conflictFree;
-            LOGGER.fine(() -> "Done probing for " + service + "; found conflicts? " + !result);
-            if (result) {
+            LOGGER.fine(() -> "Done probing for " + service + "; found conflicts? " + !conflictFree);
+            if (conflictFree) {
                 /* announce */
                 LOGGER.fine(() -> "Announcing " + service);
                 ses.submit(new AnnouncingTask(service, halo)).get();
                 LOGGER.info(() -> "Announced " + service);
             }
-            return result;
+            return conflictFree;
         } catch (final ExecutionException e) {
             throw new IOException(e);
         } catch (final InterruptedException e) {

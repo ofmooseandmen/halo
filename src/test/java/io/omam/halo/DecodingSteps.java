@@ -30,9 +30,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import static io.omam.halo.MulticastDnsHelper.flagsForName;
 import static io.omam.halo.Assert.assertDnsQuestionsEquals;
 import static io.omam.halo.Assert.assertDnsRecordsEquals;
+import static io.omam.halo.MulticastDnsHelper.flagsForName;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -42,7 +42,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import cucumber.api.DataTable;
@@ -50,12 +49,6 @@ import cucumber.api.java.After;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
-import io.omam.halo.Attributes;
-import io.omam.halo.AttributesCodec;
-import io.omam.halo.DnsMessage;
-import io.omam.halo.DnsQuestion;
-import io.omam.halo.DnsRecord;
-import io.omam.halo.MessageInputStream;
 
 /**
  * Steps to tests DNS message decoding.
@@ -91,15 +84,10 @@ public final class DecodingSteps {
     }
 
     @Then("^the following attributes shall be returned:$")
-    public final void thenAttributes(final List<Pair> pairs) {
+    public final void thenAttributes(final List<String> pairs) {
         assertEquals(pairs.size(), attributes.keys().size());
-        for (final Pair pair : pairs) {
-            if (pair.value().isEmpty()) {
-                assertEquals(Optional.empty(), attributes.value(pair.key(), StandardCharsets.UTF_8));
-            } else {
-                assertEquals(Optional.of(pair.value()), attributes.value(pair.key(), StandardCharsets.UTF_8));
-            }
-        }
+        pairs.stream().map(Pair::parse).forEach(pair -> assertEquals("for key: " + pair.key(), pair.value(),
+                attributes.value(pair.key(), StandardCharsets.UTF_8)));
     }
 
     @Then("^it contains the following answers:$")

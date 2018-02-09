@@ -30,21 +30,44 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
+import java.util.Optional;
+
 /**
  * key/value pair.
  */
 @SuppressWarnings("javadoc")
 public final class Pair {
 
-    private String key;
+    private final String key;
 
-    private String value;
+    private final Optional<String> value;
+
+    private Pair(final String aKey, final Optional<String> aValue) {
+        key = aKey;
+        value = aValue;
+    }
+
+    static Pair parse(final String s) {
+        final String t = s.trim();
+        final String[] split = t.split("=");
+        final Optional<String> value;
+        if (split.length == 1) {
+            if (t.endsWith("=")) {
+                value = Optional.of("");
+            } else {
+                value = Optional.empty();
+            }
+        } else {
+            value = Optional.of(split[1]);
+        }
+        return new Pair(split[0], value);
+    }
 
     final String key() {
         return key;
     }
 
-    final String value() {
+    final Optional<String> value() {
         return value;
     }
 

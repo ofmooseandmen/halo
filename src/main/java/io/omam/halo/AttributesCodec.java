@@ -147,7 +147,7 @@ final class AttributesCodec {
      */
     private static ByteBuffer value(final byte[] bytes, final int sep) {
         final int length = bytes.length - sep;
-        if (length <= 0) {
+        if (length == 1) {
             return ByteBuffer.allocate(0);
         }
         return ByteBuffer.wrap(subarray(bytes, sep + 1, bytes.length));

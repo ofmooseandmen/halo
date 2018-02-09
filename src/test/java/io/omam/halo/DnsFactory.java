@@ -47,6 +47,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 import cucumber.api.java.After;
 import cucumber.api.java.en.Given;
@@ -94,17 +95,21 @@ public final class DnsFactory {
     }
 
     @Given("^attributes are created with the following key/value pairs:$")
-    public final void givenAttributesCreated(final List<Pair> pairs) {
+    public final void givenAttributesCreated(final List<String> pairs) {
         final Attributes.Builder b = Attributes.create();
-        pairs.forEach(e -> {
+        pairs.stream().map(Pair::parse).forEach(e -> {
             final String key = e.key().trim();
-            final String value = e.value().trim();
-            if (value.isEmpty()) {
-                b.with(key);
+            final Optional<String> value = e.value();
+            if (value.isPresent()) {
+                final String v = value.get();
+                if (v.isEmpty()) {
+                    b.with(key, "", StandardCharsets.UTF_8);
+                } else {
+                    b.with(key, v, StandardCharsets.UTF_8);
+                }
             } else {
-                b.with(key, value, StandardCharsets.UTF_8);
+                b.with(key);
             }
-
         });
         attributes = b.get();
     }

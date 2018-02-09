@@ -76,7 +76,7 @@ import java.util.logging.Logger;
 final class HaloChannel implements Closeable {
 
     /**
-     * DNS message sender.
+     * DNS message receiver.
      * <p>
      * {@link Consumer} given at construction is invoked whenever a message is received.
      */

@@ -38,8 +38,6 @@ import cucumber.api.DataTable;
 import cucumber.api.java.After;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
-import io.omam.halo.AttributesCodec;
-import io.omam.halo.MessageOutputStream;
 
 /**
  * Steps to tests DNS message encoding.

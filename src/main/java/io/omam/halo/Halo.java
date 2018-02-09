@@ -89,6 +89,17 @@ import java.util.Optional;
  *
  * <pre>
  * <code>
+ * // browse registration types.
+ * try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
+ *     final Browser browser = halo.browse(System.err::printLn);
+ *
+ *     // Wait for some services to be registered on the network...
+ *     Thread.sleep(5000);
+ *
+ *     browser.stop();
+ * }
+ *
+ * // browse services for a given registration type.
  * try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
  *     final ServiceBrowserListener l = new ServiceBrowserListener() {
  *

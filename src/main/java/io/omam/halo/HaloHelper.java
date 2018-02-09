@@ -34,7 +34,7 @@ import java.time.Instant;
 import java.util.Optional;
 
 /**
- * Internal helper methods. This is an abstract class in order to reduce the visibility of the method.
+ * Internal helper methods. This is an abstract class in order to reduce the visibility of the methods.
  */
 abstract class HaloHelper {
 

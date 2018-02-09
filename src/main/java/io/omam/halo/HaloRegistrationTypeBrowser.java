@@ -35,7 +35,6 @@ import static io.omam.halo.MulticastDns.DOMAIN;
 import static io.omam.halo.MulticastDns.QUERYING_INTERVAL;
 import static io.omam.halo.MulticastDns.RT_DISCOVERY;
 import static io.omam.halo.MulticastDns.TTL;
-import static io.omam.halo.MulticastDns.TYPE_ANY;
 import static io.omam.halo.MulticastDns.TYPE_PTR;
 
 import java.time.Instant;
@@ -54,7 +53,7 @@ import io.omam.halo.DnsMessage.Builder;
 /**
  * Halo registration type browser.
  * <p>
- * Network (local domain) is queried at regular interval with a {@link MulticastDns#RT_DISCOVERY} question.
+ * Network (local domain) is queried at regular intervals with a {@link MulticastDns#RT_DISCOVERY} question.
  */
 final class HaloRegistrationTypeBrowser {
 
@@ -84,7 +83,7 @@ final class HaloRegistrationTypeBrowser {
 
         @Override
         public final void run() {
-            final Builder b = DnsMessage.query().addQuestion(new DnsQuestion(RT_DISCOVERY, TYPE_ANY, CLASS_IN));
+            final Builder b = DnsMessage.query().addQuestion(new DnsQuestion(RT_DISCOVERY, TYPE_PTR, CLASS_IN));
             final Instant now = halo.now();
             final Optional<Instant> onow = Optional.of(now);
             for (final String rt : rts) {
@@ -104,6 +103,7 @@ final class HaloRegistrationTypeBrowser {
             if (end != -1) {
                 final String rt = p.target().substring(0, end);
                 if (!rts.contains(rt)) {
+                    LOGGER.fine(() -> "Discovered new registration type [" + p.target() + "]");
                     rts.add(rt);
                     listeners.forEach(l -> l.registrationTypeDiscovered(rt));
                 }
