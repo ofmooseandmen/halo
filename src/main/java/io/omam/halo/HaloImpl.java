@@ -195,6 +195,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     @Override
     public final void close() throws IOException {
         sBrowser.stop();
+        rBrowser.stop();
         reaper.stop();
         cache.clear();
         announcer.close();
