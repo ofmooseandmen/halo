@@ -32,9 +32,7 @@ package io.omam.halo;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collection;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 /**
  * A DNS record.
@@ -125,8 +123,7 @@ abstract class DnsRecord extends DnsEntry {
      * @return {@code true} iff the given message suppresses this record
      */
     final boolean suppressedBy(final DnsMessage msg) {
-        return Stream.of(msg.answers(), msg.authorities(), msg.additional()).flatMap(Collection::stream).anyMatch(
-                this::suppressedBy);
+        return msg.answers().stream().anyMatch(this::suppressedBy);
     }
 
     /**

@@ -32,20 +32,13 @@ package io.omam.halo;
 
 import static io.omam.halo.MulticastDns.CLASS_IN;
 import static io.omam.halo.MulticastDns.DOMAIN;
-import static io.omam.halo.MulticastDns.QUERYING_INTERVAL;
 import static io.omam.halo.MulticastDns.RT_DISCOVERY;
-import static io.omam.halo.MulticastDns.TTL;
 import static io.omam.halo.MulticastDns.TYPE_PTR;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import io.omam.halo.DnsMessage.Builder;
@@ -55,61 +48,26 @@ import io.omam.halo.DnsMessage.Builder;
  * <p>
  * Network (local domain) is queried at regular intervals with a {@link MulticastDns#RT_DISCOVERY} question.
  */
-final class HaloRegistrationTypeBrowser {
+final class HaloRegistrationTypeBrowser extends HaloBrowser {
 
     /**
      * Task to query the cache and network about registration types.
      */
     @SuppressWarnings("synthetic-access")
-    private final class QueryingTask implements Runnable, ResponseListener {
+    private final class QueryTask implements Callable<Void> {
 
         /**
          * Constructor.
          */
-        QueryingTask() {
+        QueryTask() {
             // empty.
         }
 
         @Override
-        public final void responseReceived(final DnsMessage response, final HaloHelper haloHelper) {
-            LOGGER.fine(() -> "Handling " + response);
-            response
-                .answers()
-                .stream()
-                .filter(r -> r.type() == TYPE_PTR && r.name().equalsIgnoreCase(RT_DISCOVERY))
-                .map(r -> (PtrRecord) r)
-                .forEach(this::handlePointer);
-        }
-
-        @Override
-        public final void run() {
+        public final Void call() {
             final Builder b = DnsMessage.query().addQuestion(new DnsQuestion(RT_DISCOVERY, TYPE_PTR, CLASS_IN));
-            final Instant now = halo.now();
-            final Optional<Instant> onow = Optional.of(now);
-            for (final String rt : rts) {
-                final String pointer = rt + DOMAIN + ".";
-                b.addAnswer(new PtrRecord(RT_DISCOVERY, CLASS_IN, TTL, now, pointer), onow);
-            }
             halo.sendMessage(b.get());
-        }
-
-        /**
-         * Handles a response PTR record.
-         *
-         * @param p pointer
-         */
-        private void handlePointer(final PtrRecord p) {
-            final int end = p.target().indexOf(DOMAIN);
-            if (end != -1) {
-                final String rt = p.target().substring(0, end);
-                if (!rts.contains(rt)) {
-                    LOGGER.fine(() -> "Discovered new registration type [" + p.target() + "]");
-                    rts.add(rt);
-                    listeners.forEach(l -> l.registrationTypeDiscovered(rt));
-                }
-            } else {
-                LOGGER.warning(() -> "Ignored pointer to [" + p.target() + "]");
-            }
+            return null;
         }
 
     }
@@ -126,27 +84,37 @@ final class HaloRegistrationTypeBrowser {
     /** all discovered registration types. */
     private final List<String> rts;
 
-    /** querying task. */
-    private final QueryingTask qt;
-
-    /** discoverer executor service. */
-    private final ScheduledExecutorService qes;
-
-    /** future representing the querying task. */
-    private Future<?> future;
-
     /**
      * Constructor.
      *
      * @param haloHelper halo helper
      */
     HaloRegistrationTypeBrowser(final HaloHelper haloHelper) {
+        super("registration-discoverer", haloHelper);
         halo = haloHelper;
         listeners = new CopyOnWriteArrayList<>();
         rts = new CopyOnWriteArrayList<>();
-        qt = new QueryingTask();
-        qes = Executors.newSingleThreadScheduledExecutor(new HaloThreadFactory("registration-discoverer"));
-        future = null;
+    }
+
+    @Override
+    public final void responseReceived(final DnsMessage response, final HaloHelper haloHelper) {
+        LOGGER.fine(() -> "Handling " + response);
+        response
+            .answers()
+            .stream()
+            .filter(r -> r.type() == TYPE_PTR && r.name().equalsIgnoreCase(RT_DISCOVERY))
+            .map(r -> (PtrRecord) r)
+            .forEach(this::handlePointer);
+    }
+
+    @Override
+    protected final void doStop() {
+        // empty.
+    }
+
+    @Override
+    protected final Callable<Void> queryTask() {
+        return new QueryTask();
     }
 
     /**
@@ -173,27 +141,21 @@ final class HaloRegistrationTypeBrowser {
     }
 
     /**
-     * Starts browsing for registration types.
-     * <p>
-     * If this browser is already started this method has no effect.
+     * Handles a response PTR record.
+     *
+     * @param p pointer
      */
-    final void start() {
-        if (future == null) {
-            halo.addResponseListener(qt);
-            future = qes.scheduleAtFixedRate(qt, QUERYING_INTERVAL.toMillis(), QUERYING_INTERVAL.toMillis(),
-                    TimeUnit.MILLISECONDS);
+    private void handlePointer(final PtrRecord p) {
+        final int end = p.target().indexOf(DOMAIN);
+        if (end != -1) {
+            final String rt = p.target().substring(0, end);
+            if (!rts.contains(rt)) {
+                LOGGER.fine(() -> "Discovered new registration type [" + p.target() + "]");
+                rts.add(rt);
+                listeners.forEach(l -> l.registrationTypeDiscovered(rt));
+            }
+        } else {
+            LOGGER.warning(() -> "Ignored pointer to [" + p.target() + "]");
         }
     }
-
-    /**
-     * Stops browsing for services.
-     */
-    final void stop() {
-        halo.removeResponseListener(qt);
-        if (future != null) {
-            future.cancel(true);
-        }
-        qes.shutdownNow();
-    }
-
 }

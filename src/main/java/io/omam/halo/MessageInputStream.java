@@ -106,7 +106,7 @@ final class MessageInputStream extends ByteArrayInputStream {
         return readByte() << 8 | readByte();
     }
 
-    final String readString(final int length) {
+    private String readString(final int length) {
         final byte[] bytes = readBytes(length);
         return new String(bytes, StandardCharsets.UTF_8);
     }

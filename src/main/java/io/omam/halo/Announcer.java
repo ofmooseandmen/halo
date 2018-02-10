@@ -43,14 +43,11 @@ import static io.omam.halo.MulticastDns.uniqueClass;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
@@ -67,9 +64,9 @@ import io.omam.halo.DnsMessage.Builder;
 final class Announcer implements AutoCloseable {
 
     /**
-     * Announcing task.
+     * Announce task.
      */
-    private static final class AnnouncingTask implements Callable<Void> {
+    private static final class AnnounceTask implements Callable<Void> {
 
         /** the service to announce. */
         private final Service s;
@@ -83,7 +80,7 @@ final class Announcer implements AutoCloseable {
          * @param service service to announce
          * @param haloHelper halo helper
          */
-        AnnouncingTask(final Service service, final HaloHelper haloHelper) {
+        AnnounceTask(final Service service, final HaloHelper haloHelper) {
             s = service;
             halo = haloHelper;
         }
@@ -115,7 +112,7 @@ final class Announcer implements AutoCloseable {
     /**
      * Listener for response during probe.
      */
-    private static final class ProbingListener implements ResponseListener {
+    private static final class ProbeListener implements ResponseListener {
 
         /** condition to signal if matching response is received. */
         private final Condition cdt;
@@ -134,7 +131,7 @@ final class Announcer implements AutoCloseable {
          *
          * @param service the service being probed
          */
-        ProbingListener(final Service service) {
+        ProbeListener(final Service service) {
             s = service;
             match = new AtomicBoolean(false);
             lock = new ReentrantLock();
@@ -195,7 +192,7 @@ final class Announcer implements AutoCloseable {
     /**
      * Probe task.
      */
-    private static final class ProbingTask implements Callable<Void> {
+    private static final class ProbeTask implements Callable<Void> {
 
         /** the service being probed. */
         private final Service s;
@@ -209,7 +206,7 @@ final class Announcer implements AutoCloseable {
          * @param service the service being probed
          * @param haloHelper halo helper
          */
-        ProbingTask(final Service service, final HaloHelper haloHelper) {
+        ProbeTask(final Service service, final HaloHelper haloHelper) {
             s = service;
             halo = haloHelper;
         }
@@ -240,7 +237,7 @@ final class Announcer implements AutoCloseable {
     private final HaloHelper halo;
 
     /** scheduled executor service. */
-    private final ScheduledExecutorService ses;
+    private final HaloScheduledExecutorService ses;
 
     /**
      *
@@ -250,7 +247,7 @@ final class Announcer implements AutoCloseable {
      */
     Announcer(final HaloHelper haloHelper) {
         halo = haloHelper;
-        ses = Executors.newSingleThreadScheduledExecutor(new HaloThreadFactory("announcer"));
+        ses = new HaloScheduledExecutorService("announcer");
     }
 
     @Override
@@ -271,21 +268,18 @@ final class Announcer implements AutoCloseable {
      */
     final boolean announce(final Service service) throws IOException {
         LOGGER.fine(() -> "Start probing for " + service);
-        final ProbingListener listener = new ProbingListener(service);
+        final ProbeListener listener = new ProbeListener(service);
         halo.addResponseListener(listener);
-        final ProbingTask task = new ProbingTask(service, halo);
+        final ProbeTask task = new ProbeTask(service, halo);
         try {
-            final List<Future<?>> probes = new ArrayList<>();
-            for (int i = 0; i < PROBE_NUM; i++) {
-                probes.add(ses.schedule(task, PROBING_INTERVAL.toMillis(), TimeUnit.MILLISECONDS));
-            }
+            final Collection<ScheduledFuture<Void>> probes = ses.scheduleBatch(task, PROBE_NUM, PROBING_INTERVAL);
             final boolean conflictFree = !listener.await();
             probes.forEach(p -> p.cancel(true));
             LOGGER.fine(() -> "Done probing for " + service + "; found conflicts? " + !conflictFree);
             if (conflictFree) {
                 /* announce */
                 LOGGER.fine(() -> "Announcing " + service);
-                ses.submit(new AnnouncingTask(service, halo)).get();
+                ses.submit(new AnnounceTask(service, halo)).get();
                 LOGGER.info(() -> "Announced " + service);
             }
             return conflictFree;

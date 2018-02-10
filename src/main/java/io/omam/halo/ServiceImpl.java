@@ -207,7 +207,7 @@ final class ServiceImpl implements Service, ResponseListener {
         LOGGER.fine(() -> "Handling " + response);
         try {
             response.answers().forEach(a -> update(halo, a));
-            awaitingResolution = resolved();
+            awaitingResolution = !resolved();
             if (!awaitingResolution) {
                 LOGGER.fine("Received response resolving service");
                 resolved.signalAll();
@@ -280,16 +280,6 @@ final class ServiceImpl implements Service, ResponseListener {
             halo.removeResponseListener(this);
         }
         return resolved();
-    }
-
-    /**
-     * Determines whether this service is resolved: hostname and attributes are not null and at least an IPv4 or
-     * IPv6 address is present.
-     *
-     * @return {@code true} if this service is resolved
-     */
-    final boolean resolved() {
-        return hostname != null && (ipv4Address.isPresent() || ipv6Address.isPresent()) && attributes != null;
     }
 
     /**
@@ -399,6 +389,16 @@ final class ServiceImpl implements Service, ResponseListener {
             q.add(delay);
         }
         return q;
+    }
+
+    /**
+     * Determines whether this service is resolved: hostname and attributes are not null and at least an IPv4 or
+     * IPv6 address is present.
+     *
+     * @return {@code true} if this service is resolved
+     */
+    private boolean resolved() {
+        return hostname != null && (ipv4Address.isPresent() || ipv6Address.isPresent()) && attributes != null;
     }
 
     /**

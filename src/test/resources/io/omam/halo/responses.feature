@@ -32,5 +32,3 @@ Feature: DNS responses
     And it contains the following answers:
       | serviceName    | recordType | recordClass | ttl   | port | server      |
       | foo.bar.local. | SRV        | IN          | PT45M | 8008 | server.net. |
-    And it contains no authority
-    And it contains no additional

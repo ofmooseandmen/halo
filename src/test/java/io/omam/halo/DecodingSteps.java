@@ -97,26 +97,9 @@ public final class DecodingSteps {
         assertDnsRecordsEquals(expecteds, msg.answers());
     }
 
-    @Then("^it contains the following authorities:$")
-    public final void thenContainsAuthorities(final List<Record> records) {
-        final List<DnsRecord> expecteds =
-                records.stream().map(r -> factory.newRecord(r, now)).collect(Collectors.toList());
-        assertDnsRecordsEquals(expecteds, msg.authorities());
-    }
-
-    @Then("^it contains no additional$")
-    public final void thenContainsNoAdditional() {
-        assertTrue(msg.additional().isEmpty());
-    }
-
     @Then("^it contains no answer$")
     public final void thenContainsNoAnswer() {
         assertTrue(msg.answers().isEmpty());
-    }
-
-    @Then("^it contains no authority$")
-    public final void thenContainsNoAuthority() {
-        assertTrue(msg.authorities().isEmpty());
     }
 
     @Then("^it contains no question$")

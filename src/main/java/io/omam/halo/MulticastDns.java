@@ -96,8 +96,14 @@ final class MulticastDns {
     /** interval between resolution question. */
     static final Duration RESOLVING_INTERVAL = Duration.ofMillis(200);
 
-    /** interval between service registration type query. */
-    static final Duration QUERYING_INTERVAL = Duration.ofMillis(225);
+    /** number of queries. */
+    static final int QUERY_NUM = 3;
+
+    /** interval between browsing query. */
+    static final Duration QUERYING_DELAY = Duration.ofMillis(120);
+
+    /** interval between browsing query. */
+    static final Duration QUERYING_INTERVAL = Duration.ofMinutes(20);
 
     /** time to live: 1 hour. */
     static final Duration TTL = Duration.ofHours(1);

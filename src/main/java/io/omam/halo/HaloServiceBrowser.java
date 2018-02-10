@@ -32,8 +32,6 @@ package io.omam.halo;
 
 import static io.omam.halo.MulticastDns.CLASS_IN;
 import static io.omam.halo.MulticastDns.DOMAIN;
-import static io.omam.halo.MulticastDns.QUERYING_INTERVAL;
-import static io.omam.halo.MulticastDns.TTL;
 import static io.omam.halo.MulticastDns.TYPE_PTR;
 import static io.omam.halo.ServiceImpl.instanceNameOf;
 import static io.omam.halo.ServiceImpl.registrationTypeOf;
@@ -47,114 +45,41 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import io.omam.halo.DnsMessage.Builder;
 
-/**
- * Halo service browser.
- * <p>
- * Network (local domain) is queried at regular interval for pointer records of selected registration types and
- * discovered services are then resolved.
- */
-final class HaloServiceBrowser {
+@SuppressWarnings("javadoc")
+final class HaloServiceBrowser extends HaloBrowser {
 
     /**
      * Task to query the cache and network about service of the browsed registration type.
      */
     @SuppressWarnings("synthetic-access")
-    private final class QueryingTask implements Runnable, ResponseListener {
+    private final class QueryTask implements Callable<Void> {
 
         /**
          * Constructor.
          */
-        QueryingTask() {
+        QueryTask() {
             // empty.
         }
 
         @Override
-        public final void responseReceived(final DnsMessage response, final HaloHelper haloHelper) {
-            LOGGER.fine(() -> "Handling " + response);
-            final Instant now = haloHelper.now();
-            pointers(response).forEach((rpn, ptr) -> handleResponse(rpn, ptr, now));
-        }
-
-        @Override
-        public final void run() {
+        public final Void call() {
             final Set<String> rpns = listeners.keySet();
             final Builder b = DnsMessage.query();
             for (final String rpn : rpns) {
-                final Collection<ServiceImpl> rservices = services.get(rpn).values();
                 b.addQuestion(new DnsQuestion(rpn, TYPE_PTR, CLASS_IN));
-                final Instant now = halo.now();
-                final Optional<Instant> onow = Optional.of(now);
-                rservices.forEach(s -> b.addAnswer(
-                        new PtrRecord(s.registrationPointerName(), CLASS_IN, TTL, now, s.serviceName()), onow));
             }
             halo.sendMessage(b.get());
-        }
-
-        /**
-         * Handles answers for the given registration pointer name.
-         *
-         * @param rpn registration pointer name
-         * @param pointers PTR records
-         * @param now current instant
-         */
-        private void handleResponse(final String rpn, final Collection<PtrRecord> pointers, final Instant now) {
-            final Map<String, ServiceImpl> rservices = services.get(rpn);
-            final Collection<ServiceBrowserListener> rlisteners = listeners.get(rpn);
-            for (final PtrRecord ptr : pointers) {
-                final String serviceName = ptr.target();
-                final String skey = serviceName.toLowerCase();
-                if (ptr.isExpired(now)) {
-                    LOGGER.fine(() -> "Service [" + serviceName + "] is down");
-                    final Future<?> f = rFutures.remove(skey);
-                    if (f != null) {
-                        f.cancel(true);
-                    }
-                    final ServiceImpl s = rservices.remove(skey);
-                    if (s != null) {
-                        rlisteners.forEach(l -> l.down(s));
-                    }
-                } else if (!rservices.containsKey(skey)) {
-                    LOGGER.fine(() -> "Discovered [" + serviceName + "]");
-
-                    final Optional<String> instanceName = instanceNameOf(serviceName);
-                    final Optional<String> registrationType = registrationTypeOf(serviceName);
-
-                    if (instanceName.isPresent() && registrationType.isPresent()) {
-                        final ServiceImpl s = new ServiceImpl(instanceName.get(), registrationType.get());
-                        final Future<?> f = res.submit(new ResolvingTask(rpn, s));
-                        rFutures.put(s.serviceName().toLowerCase(), f);
-                    } else {
-                        LOGGER.warning(() -> "Could not decode service name [" + serviceName + "]");
-                    }
-                }
-            }
-        }
-
-        /**
-         * Extracts all PTR records related to browsed service types.
-         *
-         * @param response DNS response
-         * @return map of PTR records indexed by browsed registration pointer name in lower case
-         */
-        private Map<String, List<PtrRecord>> pointers(final DnsMessage response) {
-            final Set<String> rpns = listeners.keySet();
-            return response
-                .answers()
-                .stream()
-                .filter(r -> r.type() == TYPE_PTR && rpns.contains(r.name().toLowerCase()))
-                .map(r -> (PtrRecord) r)
-                .collect(groupingBy(r -> r.name().toLowerCase()));
+            return null;
         }
 
     }
@@ -162,7 +87,7 @@ final class HaloServiceBrowser {
     /**
      * Task to resolve services that have been discovered during query.
      */
-    private final class ResolvingTask implements Runnable {
+    private final class ResolveTask implements Runnable {
 
         /** registration pointer name of the service being resolved. */
         private final String rpn;
@@ -176,7 +101,7 @@ final class HaloServiceBrowser {
          * @param registrationPointerName registration pointer name of the service being resolved
          * @param service service to resolve
          */
-        ResolvingTask(final String registrationPointerName, final ServiceImpl service) {
+        ResolveTask(final String registrationPointerName, final ServiceImpl service) {
             rpn = registrationPointerName;
             s = service;
         }
@@ -202,7 +127,6 @@ final class HaloServiceBrowser {
     /** logger. */
     private static final Logger LOGGER = Logger.getLogger(HaloServiceBrowser.class.getName());
 
-    /** halo helper. */
     private final HaloHelper halo;
 
     /** listeners, indexed by registration pointer name. */
@@ -213,17 +137,8 @@ final class HaloServiceBrowser {
      */
     private final Map<String, Map<String, ServiceImpl>> services;
 
-    /** querying task. */
-    private final QueryingTask qt;
-
-    /** discoverer executor service. */
-    private final ScheduledExecutorService qes;
-
     /** resolver executor service. */
     private final ExecutorService res;
-
-    /** future representing the querying task. */
-    private Future<?> qFuture;
 
     /** futures representing resolving task indexed by service name in lower case. */
     private final Map<String, Future<?>> rFutures;
@@ -234,13 +149,11 @@ final class HaloServiceBrowser {
      * @param haloHelper halo helper
      */
     HaloServiceBrowser(final HaloHelper haloHelper) {
+        super("service-discoverer", haloHelper);
         halo = haloHelper;
         listeners = new ConcurrentHashMap<>();
         services = new ConcurrentHashMap<>();
-        qt = new QueryingTask();
-        qes = Executors.newSingleThreadScheduledExecutor(new HaloThreadFactory("service-discoverer"));
         res = Executors.newCachedThreadPool(new HaloThreadFactory("service-resolver"));
-        qFuture = null;
         rFutures = new ConcurrentHashMap<>();
     }
 
@@ -252,6 +165,23 @@ final class HaloServiceBrowser {
      */
     private static String toRpn(final String registrationType) {
         return (registrationType + DOMAIN + ".").toLowerCase();
+    }
+
+    @Override
+    public final void responseReceived(final DnsMessage response, final HaloHelper haloHelper) {
+        LOGGER.fine(() -> "Handling " + response);
+        final Instant now = haloHelper.now();
+        pointers(response).forEach((rpn, ptr) -> handleResponse(rpn, ptr, now));
+    }
+
+    @Override
+    protected final void doStop() {
+        res.shutdownNow();
+    }
+
+    @Override
+    protected final Callable<Void> queryTask() {
+        return new QueryTask();
     }
 
     /**
@@ -294,28 +224,58 @@ final class HaloServiceBrowser {
     }
 
     /**
-     * Starts browsing for services.
-     * <p>
-     * If this browser is already started this method has no effect.
+     * Handles answers for the given registration pointer name.
+     *
+     * @param rpn registration pointer name
+     * @param pointers PTR records
+     * @param now current instant
      */
-    final void start() {
-        if (qFuture == null) {
-            halo.addResponseListener(qt);
-            qFuture = qes.scheduleAtFixedRate(qt, QUERYING_INTERVAL.toMillis(), QUERYING_INTERVAL.toMillis(),
-                    TimeUnit.MILLISECONDS);
+    private void handleResponse(final String rpn, final Collection<PtrRecord> pointers, final Instant now) {
+        final Map<String, ServiceImpl> rservices = services.get(rpn);
+        final Collection<ServiceBrowserListener> rlisteners = listeners.get(rpn);
+        for (final PtrRecord ptr : pointers) {
+            final String serviceName = ptr.target();
+            final String skey = serviceName.toLowerCase();
+            if (ptr.isExpired(now)) {
+                LOGGER.fine(() -> "Service [" + serviceName + "] is down");
+                final Future<?> f = rFutures.remove(skey);
+                if (f != null) {
+                    f.cancel(true);
+                }
+                final ServiceImpl s = rservices.remove(skey);
+                if (s != null) {
+                    rlisteners.forEach(l -> l.down(s));
+                }
+            } else if (!rservices.containsKey(skey)) {
+                LOGGER.fine(() -> "Discovered [" + serviceName + "]");
+                final Optional<String> instanceName = instanceNameOf(serviceName);
+                final Optional<String> registrationType = registrationTypeOf(serviceName);
+
+                if (instanceName.isPresent() && registrationType.isPresent()) {
+                    final ServiceImpl s = new ServiceImpl(instanceName.get(), registrationType.get());
+                    final Future<?> f = res.submit(new ResolveTask(rpn, s));
+                    rFutures.put(s.serviceName().toLowerCase(), f);
+                } else {
+                    LOGGER.warning(() -> "Could not decode service name [" + serviceName + "]");
+                }
+            }
         }
     }
 
     /**
-     * Stops browsing for services.
+     * Extracts all PTR records related to browsed service types.
+     *
+     * @param response DNS response
+     * @return map of PTR records indexed by browsed registration pointer name in lower case
      */
-    final void stop() {
-        halo.removeResponseListener(qt);
-        if (qFuture != null) {
-            qFuture.cancel(true);
-        }
-        qes.shutdownNow();
-        res.shutdownNow();
+    private Map<String, List<PtrRecord>> pointers(final DnsMessage response) {
+        final Set<String> rpns = listeners.keySet();
+        return response
+            .answers()
+            .stream()
+            .filter(r -> r.type() == TYPE_PTR && rpns.contains(r.name().toLowerCase()))
+            .map(r -> (PtrRecord) r)
+            .collect(groupingBy(r -> r.name().toLowerCase()));
     }
 
 }

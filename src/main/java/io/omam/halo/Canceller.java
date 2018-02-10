@@ -39,15 +39,12 @@ import static java.time.Duration.ZERO;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -59,9 +56,9 @@ import io.omam.halo.DnsMessage.Builder;
 final class Canceller implements AutoCloseable {
 
     /**
-     * Cancelling task.
+     * Cancel task.
      */
-    private static final class CancellingTask implements Callable<Void> {
+    private static final class CancelTask implements Callable<Void> {
 
         /** the service to cancel. */
         private final Service s;
@@ -75,7 +72,7 @@ final class Canceller implements AutoCloseable {
          * @param service service to cancel
          * @param haloHelper halo helper
          */
-        CancellingTask(final Service service, final HaloHelper haloHelper) {
+        CancelTask(final Service service, final HaloHelper haloHelper) {
             s = service;
             halo = haloHelper;
         }
@@ -112,7 +109,7 @@ final class Canceller implements AutoCloseable {
     private final HaloHelper halo;
 
     /** scheduled executor service. */
-    private final ScheduledExecutorService ses;
+    private final HaloScheduledExecutorService ses;
 
     /**
      *
@@ -122,7 +119,7 @@ final class Canceller implements AutoCloseable {
      */
     Canceller(final HaloHelper haloHelper) {
         halo = haloHelper;
-        ses = Executors.newSingleThreadScheduledExecutor(new HaloThreadFactory("canceler"));
+        ses = new HaloScheduledExecutorService("canceler");
     }
 
     @Override
@@ -141,11 +138,9 @@ final class Canceller implements AutoCloseable {
     final void cancel(final Service service) throws IOException {
         LOGGER.fine(() -> "Canceling " + service);
         try {
-            final CancellingTask task = new CancellingTask(service, halo);
-            final List<Future<?>> cancels = new ArrayList<>();
-            for (int i = 0; i < CANCEL_NUM; i++) {
-                cancels.add(ses.schedule(task, CANCELLING_INTERVAL.toMillis(), TimeUnit.MILLISECONDS));
-            }
+            final CancelTask task = new CancelTask(service, halo);
+            final Collection<ScheduledFuture<Void>> cancels =
+                    ses.scheduleBatch(task, CANCEL_NUM, CANCELLING_INTERVAL);
             for (final Future<?> cancel : cancels) {
                 cancel.get();
             }

@@ -54,8 +54,6 @@ Feature: DNS queries
       | serviceName    | recordType | recordClass |
       | foo.bar.local. | ANY        | IN          |
     And it contains no answer
-    And it contains no authority
-    And it contains no additional
 
   Scenario: DNS query with questions and authorities from incoming packet
     Given the following packet has been received:
@@ -80,9 +78,7 @@ Feature: DNS queries
       | serviceName    | recordType | recordClass |
       | foo.bar.local. | ANY        | IN          |
       | foo.bar.local. | SRV        | ANY         |
-    And it contains no answer
-    And it contains the following authorities:
+    And it contains the following answers:
       | serviceName          | recordType | recordClass | ttl  | address                                 |
       | some.authority.ipv6. | AAAA       | IN          | PT1H | 2001:0db8:85a3:0000:0000:8a2e:0370:7334 |
       | some.authority.ipv4. | A          | IN          | PT1H | 192.168.154.0                           |
-    And it contains no additional

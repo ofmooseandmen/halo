@@ -55,6 +55,7 @@ import java.util.stream.Collectors;
 /**
  * A DNS message.
  */
+@SuppressWarnings("synthetic-access")
 final class DnsMessage {
 
     /**
@@ -83,7 +84,7 @@ final class DnsMessage {
          * @param flag primary flag
          * @param otherFlags other flags
          */
-        Builder(final short flag, final short[] otherFlags) {
+        private Builder(final short flag, final short[] otherFlags) {
             short f = flag;
             for (final short of : otherFlags) {
                 f = (short) (f | of);
@@ -176,7 +177,7 @@ final class DnsMessage {
     /**
      * An answer to a DNS message.
      */
-    static final class DnsAnswer {
+    private static final class DnsAnswer {
 
         /** DNS record holding the answer. */
         private final DnsRecord record;
@@ -237,20 +238,23 @@ final class DnsMessage {
 
     }
 
+    /** list of all answers, authorities and additional records. */
+    private final List<DnsAnswer> answers;
+
     /** DNS message flags. */
     private final short flags;
 
+    /** number of answers. */
+    private final int nbAnswers;
+
+    /** number of authorities. */
+    private final int nbAuthorities;
+
+    /** number of additional records. */
+    private final int nbAdditional;
+
     /** list of questions. */
     private final List<DnsQuestion> questions;
-
-    /** list of answers. */
-    private final List<DnsAnswer> answers;
-
-    /** list of authorities. */
-    private final List<DnsRecord> authorities;
-
-    /** list of additional records. */
-    private final List<DnsRecord> additional;
 
     /**
      * Constructor.
@@ -261,13 +265,18 @@ final class DnsMessage {
      * @param someAuthorities list of authorities
      * @param someAdditional list of additional records
      */
-    DnsMessage(final short someFlags, final List<DnsQuestion> someQuestions, final List<DnsAnswer> someAnswers,
-            final List<DnsRecord> someAuthorities, final List<DnsRecord> someAdditional) {
+    private DnsMessage(final short someFlags, final List<DnsQuestion> someQuestions,
+            final List<DnsAnswer> someAnswers, final List<DnsRecord> someAuthorities,
+            final List<DnsRecord> someAdditional) {
+        answers = new ArrayList<>();
+        answers.addAll(someAnswers);
+        someAuthorities.forEach(a -> answers.add(DnsAnswer.unstamped(a)));
+        someAdditional.forEach(a -> answers.add(DnsAnswer.unstamped(a)));
         flags = someFlags;
+        nbAnswers = someAnswers.size();
+        nbAuthorities = someAuthorities.size();
+        nbAdditional = someAdditional.size();
         questions = someQuestions;
-        answers = someAnswers;
-        authorities = someAuthorities;
-        additional = someAdditional;
     }
 
     /**
@@ -456,24 +465,12 @@ final class DnsMessage {
     }
 
     /**
-     * @return all additional record(s) of this message.
-     */
-    final List<DnsRecord> additional() {
-        return Collections.unmodifiableList(additional);
-    }
-
-    /**
+     * Returns all answer(s), including authority(s) and additional(s), of this message.
+     *
      * @return all answer(s) of this message.
      */
     final List<DnsRecord> answers() {
         return Collections.unmodifiableList(answers.stream().map(DnsAnswer::record).collect(Collectors.toList()));
-    }
-
-    /**
-     * @return all authority(s) of this message.
-     */
-    final List<DnsRecord> authorities() {
-        return Collections.unmodifiableList(authorities);
     }
 
     /**
@@ -487,14 +484,12 @@ final class DnsMessage {
 
             mos.writeShort(flags);
             mos.writeShort((short) questions.size());
-            mos.writeShort((short) answers.size());
-            mos.writeShort((short) authorities.size());
-            mos.writeShort((short) additional.size());
+            mos.writeShort((short) nbAnswers);
+            mos.writeShort((short) nbAuthorities);
+            mos.writeShort((short) nbAdditional);
 
             questions.forEach(q -> write(q, mos));
             answers.forEach(a -> write(a.record(), a.stamp(), mos));
-            authorities.forEach(a -> write(a, Optional.empty(), mos));
-            additional.forEach(a -> write(a, Optional.empty(), mos));
 
             return mos.toByteArray();
         } catch (final IOException e) {
