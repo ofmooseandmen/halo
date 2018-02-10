@@ -131,10 +131,9 @@ public final class ResolutionSteps {
 
     @When("^the service \"([^\"]*)\" is resolved by \"(Halo|JmDNS)\"$")
     public final void whenServiceResolved(final String service, final String engine) {
-        // FIXME use split and check elsewhere
-        final int firstDot = service.indexOf('.');
-        final String instanceName = service.substring(0, firstDot);
-        final String registrationType = service.substring(firstDot + 1, service.length());
+        final String[] split = split(service);
+        final String instanceName = split[0];
+        final String registrationType = split[1];
         if (engine.equals("Halo")) {
             engines.halo().resolve(instanceName, registrationType).ifPresent(hss::add);
         } else {
