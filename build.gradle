@@ -3,7 +3,7 @@ apply plugin: 'eclipse'
 apply plugin: 'org.sonarqube'
 apply plugin: 'com.bmuschko.nexus'
 apply from: 'libraries.gradle'
-apply from: 'resources/eclipse-prefs/eclipse.gradle'
+apply from: 'gradle/eclipse-prefs/eclipse.gradle'
 
 buildscript {
     repositories {
@@ -50,25 +50,17 @@ jacocoTestReport {
 jar {
     /* include source */
     from (sourceSets.main.allSource.getSrcDirTrees())
-
-    /* include resources */
-    into('resources') {
-        from 'resources'
-    }
 }
 
 javadoc {
    options.memberLevel = JavadocMemberLevel.PUBLIC
 }
 
-/* remove all transitive dependencies for compilation. */
-[configurations.compile, configurations.compileClasspath, configurations.compileOnly]*.transitive = false
-
 /* Modify the Eclipse project settings. */
 eclipse { jdt { file { withProperties eclipsePrefs } } }
 
 task ('copyEclipsePrefs', type: Copy) {
-    from rootProject.file('resources/eclipse-prefs/org.eclipse.jdt.ui.prefs')
+    from rootProject.file('gradle/eclipse-prefs/org.eclipse.jdt.ui.prefs')
     into "${projectDir}/.settings"
 }
 tasks.eclipse.finalizedBy copyEclipsePrefs
@@ -77,6 +69,37 @@ extraArchive {
     sources = true
     tests = true
     javadoc = true
+}
+
+modifyPom {
+    project {
+        name 'halo'
+        description 'An implementation of Multicast DNS Service Discovery in Java.'
+        url 'https://github.com/ofmooseandmen/halo'
+        inceptionYear '2018'
+
+        scm {
+            url 'https://github.com/ofmooseandmen/halo'
+            connection 'scm:https://ofmooseandmen@github.com/ofmooseandmen/halo.git'
+            developerConnection 'scm:git://github.com/ofmooseandmen/halo.git'
+        }
+
+        licenses {
+            license {
+                name 'The 3-Clause BSD License'
+                url 'https://opensource.org/licenses/BSD-3-Clause'
+                distribution 'repo'
+            }
+        }
+
+        developers {
+            developer {
+                id 'ofmooseandmen'
+                name 'Cedric Liegeois'
+                email 'ofmooseandmen@yahoo.com'
+            }
+        }
+    }
 }
 
 nexus {

@@ -1,4 +1,4 @@
-# Halo
+# halo
 
 [![travis build status](https://img.shields.io/travis/ofmooseandmen/halo/master.svg?label=travis+build)](https://travis-ci.org/ofmooseandmen/halo)
 [![appveyor build status](https://ci.appveyor.com/api/projects/status/wugjgsm3gs4jothg?svg=true)](https://ci.appveyor.com/project/ofmooseandmen/halo)
@@ -7,7 +7,7 @@
 
 > __Halo__ [_Javanese_] is __Bonjour__ [_French_] is __Hello__ [_English_]
 
-[Multicast DNS Service Discovery](http://en.wikipedia.org/wiki/Multicast_DNS) implementation in pure java.
+An implementation of [Multicast DNS Service Discovery](https://en.wikipedia.org/wiki/Zero-configuration_networking#Service_discovery) in Java.
 
 ## Building from Source
 
