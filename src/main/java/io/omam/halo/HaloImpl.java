@@ -194,13 +194,21 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
 
     @Override
     public final void close() throws IOException {
+        /* stop browsers. */
         sBrowser.stop();
         rBrowser.stop();
+
+        /* stop cache reaper. */
         reaper.stop();
-        cache.clear();
+
+        /* de-register all services. */
+        dergisterAll();
+
+        /* stop service background threads. */
         announcer.close();
         canceller.close();
         channel.close();
+        cache.clear();
         rls.clear();
     }
 
@@ -212,6 +220,13 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
             cache.removeAll(service.serviceName());
         } else {
             LOGGER.info(() -> service + " is not registered");
+        }
+    }
+
+    @Override
+    public final void dergisterAll() throws IOException {
+        for (final Service service : services.values()) {
+            deregister(service);
         }
     }
 

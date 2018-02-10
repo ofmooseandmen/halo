@@ -46,7 +46,8 @@ import java.util.Optional;
  * A multicast DNS Service Discovery, supporting {@link Service named service} registration, resolution and
  * browsing.
  * <p>
- * All registered services are de-registered upon {@link #close()}.
+ * All registered services are {@link #dergisterAll() de-registered} upon {@link #close()}, the behaviour of any
+ * methods after this is undefined.
  * <h3>Registration</h3>
  *
  * <pre>
@@ -74,7 +75,7 @@ import java.util.Optional;
  * <code>
  * try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
  *     // default timeout of 6 seconds.
- *     Optional<Service> service = halo.resolve("Foo Bar", "_http._udp.");
+ *     Optional&lt;Service&gt; service = halo.resolve("Foo Bar", "_http._udp.");
  *     // Optional contains the service if it could be resolved, empty otherwise.
  *     System.err.println(service);
  *
@@ -168,9 +169,6 @@ public interface Halo extends Closeable {
 
     /**
      * Browses for registration types on the <strong>local</strong> domain.
-     * <p>
-     * The network is queried at regular interval and the given listener is invoked with discovered services
-     * registration types.
      *
      * @param listener the listener
      * @return a {@code Browser} to stop browsing
@@ -182,8 +180,6 @@ public interface Halo extends Closeable {
      * <p>
      * The given listener is invoked whenever changes in the availability of service having the given registration
      * type are discovered.
-     * <p>
-     * The network is queried at regular interval and discovered services are attempted to be resolved.
      *
      * @param registrationType service type (IANA) and transport protocol (udp or tcp), e.g. {@code _ftp._tcp.} or
      *            {@code _http._udp.}
@@ -193,7 +189,7 @@ public interface Halo extends Closeable {
     Browser browse(final String registrationType, final ServiceBrowserListener listener);
 
     /**
-     * De-register the given service.
+     * De-registers the given service.
      * <p>
      * This method performs no function, nor does it throw an exception, if the given service was not previously
      * registered or has already been de-registered.
@@ -202,6 +198,13 @@ public interface Halo extends Closeable {
      * @throws IOException if the service cannot be de-registered for any reason
      */
     void deregister(final Service service) throws IOException;
+
+    /**
+     * De-registers all services.
+     *
+     * @throws IOException if any service cannot be de-registered for any reason
+     */
+    void dergisterAll() throws IOException;
 
     /**
      * Registers the given service on the <strong>local</strong> domain with a TTL of 1 hour.

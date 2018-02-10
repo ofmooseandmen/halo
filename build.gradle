@@ -1,6 +1,7 @@
 apply plugin: 'base'
 apply plugin: 'eclipse'
 apply plugin: 'org.sonarqube'
+apply plugin: 'com.bmuschko.nexus'
 apply from: 'libraries.gradle'
 apply from: 'resources/eclipse-prefs/eclipse.gradle'
 
@@ -11,6 +12,7 @@ buildscript {
     
     dependencies {
         classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.6.1'
+        classpath 'com.bmuschko:gradle-nexus-plugin:2.3.1'
     }
 }
 
@@ -70,6 +72,18 @@ task ('copyEclipsePrefs', type: Copy) {
     into "${projectDir}/.settings"
 }
 tasks.eclipse.finalizedBy copyEclipsePrefs
+
+extraArchive {
+    sources = true
+    tests = true
+    javadoc = true
+}
+
+nexus {
+    sign = true
+    repositoryUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
+    snapshotRepositoryUrl = 'https://oss.sonatype.org/content/repositories/snapshots/'
+}
 
 task wrapper(type: Wrapper) {
 	description = 'Generates gradlew and gradlew.bat scripts'
