@@ -31,12 +31,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package io.omam.halo;
 
 /**
- * A browser for a service registration type.
+ * A browser represents an active browsing operation (for named services or registration types).
  */
 public interface Browser {
 
     /**
-     * Stops browsing for services with the targeted registration type.
+     * Stops browsing.
      */
     void stop();
 

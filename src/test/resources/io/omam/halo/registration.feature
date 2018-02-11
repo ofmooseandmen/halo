@@ -66,12 +66,15 @@ Feature: Service registration
     When the following service is registered with "Halo" allowing instance name change:
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9010 | Some Text |
+      | Living Room Speaker | _music._tcp.     | 9011 | Some Text |
     Then the following registered services shall be returned:
       | instanceName            | registrationType | port | text      |
       | Living Room Speaker     | _music._tcp.     | 9009 | Some Text |
       | Living Room Speaker (2) | _music._tcp.     | 9010 | Some Text |
+      | Living Room Speaker (3) | _music._tcp.     | 9011 | Some Text |
     And the service "Living Room Speaker._music._tcp." shall be resolved by "JmDNS"
     And the service "Living Room Speaker (2)._music._tcp." shall be resolved by "JmDNS"
+    And the service "Living Room Speaker (3)._music._tcp." shall be resolved by "JmDNS"
 
   Scenario: Service de-registration
     Given a "Halo" instance has been created

@@ -122,10 +122,12 @@ public final class RegistrationSteps {
 
     @When("^the following service is registered with \"Halo\"( not)? allowing instance name change:$")
     public final void whenServiceRegistered(final String nameChangeNotAllowed,
-            final List<ServiceDetails> service) {
+            final List<ServiceDetails> services) {
         try {
             final boolean allowNameChange = nameChangeNotAllowed == null;
-            hss.add(engines.halo().register(toHalo(service.get(0)), allowNameChange));
+            for (final ServiceDetails service : services) {
+                hss.add(engines.halo().register(toHalo(service), allowNameChange));
+            }
         } catch (final IOException e) {
             exceptions.thrown(e);
         }

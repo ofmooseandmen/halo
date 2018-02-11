@@ -43,36 +43,72 @@ import java.util.Map;
  * <p>
  * This class implements the compression algorithm used for names described in https://www.ietf.org/rfc/rfc1035.txt
  */
-@SuppressWarnings("javadoc")
 final class MessageOutputStream extends ByteArrayOutputStream {
 
+    /** pointers for decompression: string to index in this stream. */
     private final Map<String, Integer> pointers;
 
+    /**
+     * Creates a new byte array output stream. The buffer capacity is initially 32 bytes, though its size increases
+     * if necessary.
+     *
+     * @see ByteArrayOutputStream#ByteArrayOutputStream()
+     */
     MessageOutputStream() {
         pointers = new HashMap<>();
     }
 
+    /**
+     * @return the number of valid bytes in the buffer.
+     */
     final int position() {
         return count;
     }
 
-    final void skip(final int len) {
-        count += len;
+    /**
+     * Skips over the given number of bytes.
+     *
+     * @param length number of bytes to skip over
+     */
+    final void skip(final int length) {
+        count += length;
     }
 
+    /**
+     * Writes the given byte to this output stream.
+     *
+     * @see ByteArrayOutputStream#write(int)
+     * @param b byte
+     */
     final void writeByte(final int b) {
         write(b & 0xFF);
     }
 
+    /**
+     * Writes the given byte array to this output stream.
+     *
+     * @see ByteArrayOutputStream#write(byte[], int, int)
+     * @param bytes bytes
+     */
     final void writeBytes(final byte[] bytes) {
         write(bytes, 0, bytes.length);
     }
 
+    /**
+     * Writes the given integer to this output stream.
+     *
+     * @param i integer
+     */
     final void writeInt(final int i) {
         writeShort(i >> 16);
         writeShort(i);
     }
 
+    /**
+     * Writes the given name, using compression, to this output stream.
+     *
+     * @param name name
+     */
     final void writeName(final String name) {
         String sub = name;
         while (true) {
@@ -101,21 +137,43 @@ final class MessageOutputStream extends ByteArrayOutputStream {
         }
     }
 
+    /**
+     * Writes the given short to this output stream.
+     *
+     * @param s short
+     */
     final void writeShort(final int s) {
         writeByte(s >> 8);
         writeByte(s);
     }
 
+    /**
+     * Writes the given short at the given index to this output stream without advancing the position.
+     *
+     * @param index index
+     * @param s short
+     */
     final void writeShort(final int index, final short s) {
         buf[index] = (byte) (s >> 8 & 0xFF);
         buf[index + 1] = (byte) (s & 0xFF);
     }
 
+    /**
+     * Writes the given {@link StandardCharsets#UTF_8 UTF8} String to this output stream.
+     *
+     * @param str UTF8 string
+     */
     final void writeString(final String str) {
         final byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
         writeBytes(bytes);
     }
 
+    /**
+     * Writes the size of the given {@link StandardCharsets#UTF_8 UTF8} String, followed by the given String to
+     * this output stream.
+     *
+     * @param str UTF8 string
+     */
     private void writeCharacterString(final String str) {
         final byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
         writeByte(bytes.length);

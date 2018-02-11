@@ -55,7 +55,11 @@ import java.util.logging.Logger;
 
 import io.omam.halo.DnsMessage.Builder;
 
-@SuppressWarnings("javadoc")
+/**
+ * Halo service browser by registration type.
+ * <p>
+ * Network (local domain) is queried at regular intervals for named services.
+ */
 final class HaloServiceBrowser extends HaloBrowser {
 
     /**
@@ -127,6 +131,7 @@ final class HaloServiceBrowser extends HaloBrowser {
     /** logger. */
     private static final Logger LOGGER = Logger.getLogger(HaloServiceBrowser.class.getName());
 
+    /** halo helper */
     private final HaloHelper halo;
 
     /** listeners, indexed by registration pointer name. */

@@ -42,30 +42,60 @@ import java.util.Map;
  * <p>
  * This class implements the compression algorithm used for names described in https://www.ietf.org/rfc/rfc1035.txt
  */
-@SuppressWarnings("javadoc")
 final class MessageInputStream extends ByteArrayInputStream {
 
+    /** pointers for decompression: index of a string in this stream. */
     private final Map<Integer, String> pointers;
 
+    /**
+     * Creates a {@code MessageInputStream} so that it uses {@code buffer} as its buffer array. The buffer array is
+     * not copied.
+     *
+     * @see ByteArrayInputStream#ByteArrayInputStream(byte[])
+     * @param buffer the input buffer.
+     */
     MessageInputStream(final byte[] buffer) {
         super(buffer);
         pointers = new HashMap<>();
     }
 
+    /**
+     * Reads the next byte of data from this input stream.
+     *
+     * @see ByteArrayInputStream#read()
+     * @return the next byte of data, or {@code -1} if the end of the stream has been reached.
+     */
     final int readByte() {
         return read();
     }
 
+    /**
+     * Reads up to {@code length} bytes of data into an array of bytes from this input stream.
+     *
+     * @see ByteArrayInputStream#read(byte[], int, int)
+     * @param length the maximum number of bytes to read
+     * @return an array containing the read bytes
+     */
     final byte[] readBytes(final int length) {
         final byte[] bytes = new byte[length];
         read(bytes, 0, length);
         return bytes;
     }
 
+    /**
+     * Reads the next integer (4 bytes) from this input stream.
+     *
+     * @return the next integer, or {@code -1} if the end of the stream has been reached.
+     */
     final int readInt() {
         return readShort() << 16 | readShort();
     }
 
+    /**
+     * Reads the next name ({@link StandardCharsets#UTF_8 UTF8} String) from this input stream.
+     *
+     * @return the name
+     */
     final String readName() {
         final Map<Integer, StringBuilder> names = new HashMap<>();
         final StringBuilder sb = new StringBuilder();
@@ -102,10 +132,22 @@ final class MessageInputStream extends ByteArrayInputStream {
         return sb.toString();
     }
 
+    /**
+     * Reads the next short (2 bytes) from this input stream.
+     *
+     * @return the next short, or {@code -1} if the end of the stream has been reached.
+     */
     final int readShort() {
         return readByte() << 8 | readByte();
     }
 
+    /**
+     * Reads up to {@code length} bytes of data into an {@link StandardCharsets#UTF_8 UTF8} String from this input
+     * stream
+     *
+     * @param length the maximum number of bytes to read
+     * @return a String
+     */
     private String readString(final int length) {
         final byte[] bytes = readBytes(length);
         return new String(bytes, StandardCharsets.UTF_8);
