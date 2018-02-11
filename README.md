@@ -3,6 +3,8 @@
 [![travis build status](https://img.shields.io/travis/ofmooseandmen/halo/master.svg?label=travis+build)](https://travis-ci.org/ofmooseandmen/halo)
 [![appveyor build status](https://ci.appveyor.com/api/projects/status/wugjgsm3gs4jothg?svg=true)](https://ci.appveyor.com/project/ofmooseandmen/halo)
 [![codecov.io](https://codecov.io/github/ofmooseandmen/halo/branches/master/graphs/badge.svg)](https://codecov.io/github/ofmooseandmen/halo)
+[![Maven Central](https://img.shields.io/maven-central/v/com.github.ofmooseandmen/halo.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.github.ofmooseandmen%22%20AND%20a%3A%22halo%22)
+[![Javadocs](https://www.javadoc.io/badge/com.github.ofmooseandmen/halo.svg?color=lightgrey)](https://www.javadoc.io/doc/com.github.ofmooseandmen/halo)
 [![license](https://img.shields.io/badge/license-BSD3-lightgray.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
 > __Halo__ [_Javanese_] is __Bonjour__ [_French_] is __Hello__ [_English_]
