@@ -165,13 +165,14 @@ public final class ServiceBrowsingSteps {
         Collections.sort(expecteds, (s1, s2) -> s1.instanceName().compareTo(s2.instanceName()));
 
         final boolean up = eventType.equals("up");
-
+        /* Halo and JmDNS service resolution is 6 seconds. */
+        final long timeout = services.size() * 6000;
         if (browsedBy.equals("Halo")) {
             final CollectingBrowserListener l = hls.get(listener);
             final List<Service> actuals = up ? l.ups() : l.downs();
-            Collections.sort(actuals, (s1, s2) -> s1.instanceName().compareTo(s2.instanceName()));
             /* await for listener to have received expected number of events. */
-            await().atMost(5, SECONDS).until(() -> actuals.size(), equalTo(expecteds.size()));
+            await().atMost(timeout, SECONDS).until(() -> actuals.size(), equalTo(expecteds.size()));
+            Collections.sort(actuals, (s1, s2) -> s1.instanceName().compareTo(s2.instanceName()));
             for (int i = 0; i < expecteds.size(); i++) {
                 assertServiceEquals(expecteds.get(i), actuals.get(i));
             }
@@ -180,7 +181,7 @@ public final class ServiceBrowsingSteps {
             final CollectingServiceListener l = jls.get(listener);
             final List<ServiceInfo> actuals = l.ups();
             /* await for listener to have received expected number of events. */
-            await().atMost(5, SECONDS).until(() -> actuals.size(), equalTo(expecteds.size()));
+            await().atMost(timeout, SECONDS).until(() -> actuals.size(), equalTo(expecteds.size()));
             Collections.sort(actuals, (s1, s2) -> s1.getName().compareTo(s2.getName()));
             for (int i = 0; i < expecteds.size(); i++) {
                 assertServiceEquals(expecteds.get(i), actuals.get(i));
