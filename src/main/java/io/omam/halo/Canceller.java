@@ -82,7 +82,7 @@ final class Canceller implements AutoCloseable {
             final Instant now = halo.now();
             final String hostname = s.hostname();
             final Attributes attributes = s.attributes();
-            final String serviceName = s.serviceName();
+            final String serviceName = s.name();
             final short unique = uniqueClass(CLASS_IN);
             final Builder b = DnsMessage
                 .response(FLAGS_AA)

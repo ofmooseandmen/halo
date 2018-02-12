@@ -234,6 +234,6 @@ public interface Service {
      *
      * @return the service qualified name
      */
-    String serviceName();
+    String name();
 
 }

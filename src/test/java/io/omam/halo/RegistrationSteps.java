@@ -89,7 +89,7 @@ public final class RegistrationSteps {
         assertNotNull(registeredBy);
         if (registeredBy.equals("Halo")) {
             final Service s =
-                    hss.stream().filter(hs -> hs.serviceName().equals(service + "local.")).findFirst().orElseThrow(
+                    hss.stream().filter(hs -> hs.name().equals(service + "local.")).findFirst().orElseThrow(
                             AssertionError::new);
             engines.halo().deregister(s);
             hss.remove(s);

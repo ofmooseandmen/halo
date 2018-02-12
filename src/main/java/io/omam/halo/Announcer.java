@@ -90,7 +90,7 @@ final class Announcer implements AutoCloseable {
             final Instant now = halo.now();
             final String hostname = s.hostname();
             final Attributes attributes = s.attributes();
-            final String serviceName = s.serviceName();
+            final String serviceName = s.name();
             final short unique = uniqueClass(CLASS_IN);
             /* no stamp when announcing, TTL will be the one given. */
             final Optional<Instant> stamp = Optional.empty();
@@ -145,7 +145,7 @@ final class Announcer implements AutoCloseable {
             LOGGER.fine(() -> "Handling " + response);
             try {
                 if (response.answers().stream().anyMatch(
-                        a -> a.name().equalsIgnoreCase(s.serviceName()) && a.type() == TYPE_SRV)) {
+                        a -> a.name().equalsIgnoreCase(s.name()) && a.type() == TYPE_SRV)) {
                     match.set(true);
                     LOGGER.fine("Received matching response");
                     cdt.signalAll();
@@ -158,7 +158,7 @@ final class Announcer implements AutoCloseable {
         /**
          * Awaits for a response matching the probe query.
          * <p>
-         * A response matches the probe query iff it relates to the {@link Service#serviceName() service} being
+         * A response matches the probe query iff it relates to the {@link Service#name() service} being
          * probed and it contains a {@link SrvRecord SRV record}.
          *
          * @return {@code true} iff a response matching the probe query has been received before the
@@ -215,7 +215,7 @@ final class Announcer implements AutoCloseable {
         public final Void call() throws Exception {
             final Instant now = halo.now();
             final String hostname = s.hostname();
-            final String serviceName = s.serviceName();
+            final String serviceName = s.name();
             final Builder b = DnsMessage
                 .query()
                 .addQuestion(new DnsQuestion(hostname, TYPE_ANY, CLASS_IN))

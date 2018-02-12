@@ -114,7 +114,7 @@ final class HaloServiceBrowser extends HaloBrowser {
         @Override
         public final void run() {
             final boolean resolved = s.resolve(halo, Duration.ofSeconds(6));
-            final String skey = s.serviceName().toLowerCase();
+            final String skey = s.name().toLowerCase();
             rFutures.remove(skey);
             if (resolved) {
                 LOGGER.fine(() -> "Resolved " + s);
@@ -259,7 +259,7 @@ final class HaloServiceBrowser extends HaloBrowser {
                 if (instanceName.isPresent() && registrationType.isPresent()) {
                     final ServiceImpl s = new ServiceImpl(instanceName.get(), registrationType.get());
                     final Future<?> f = res.submit(new ResolveTask(rpn, s));
-                    rFutures.put(s.serviceName().toLowerCase(), f);
+                    rFutures.put(s.name().toLowerCase(), f);
                 } else {
                     LOGGER.warning(() -> "Could not decode service name [" + serviceName + "]");
                 }

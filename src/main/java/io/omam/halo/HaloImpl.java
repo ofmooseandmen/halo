@@ -213,10 +213,10 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
 
     @Override
     public final void deregister(final Service service) throws IOException {
-        if (services.containsKey(service.serviceName().toLowerCase())) {
+        if (services.containsKey(service.name().toLowerCase())) {
             canceller.cancel(service);
             remove(service);
-            cache.removeAll(service.serviceName());
+            cache.removeAll(service.name());
         } else {
             LOGGER.info(() -> service + " is not registered");
         }
@@ -297,7 +297,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
      * @param s service
      */
     private void add(final Service s) {
-        services.put(s.serviceName().toLowerCase(), s);
+        services.put(s.name().toLowerCase(), s);
         final String rpn = s.registrationPointerName();
         registrationPointerNames.add(rpn);
     }
@@ -364,7 +364,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
             for (final Service s : services.values()) {
                 if (question.name().equalsIgnoreCase(s.registrationPointerName())) {
                     builder.addAnswer(query,
-                            new PtrRecord(s.registrationPointerName(), CLASS_IN, TTL, now, s.serviceName()));
+                            new PtrRecord(s.registrationPointerName(), CLASS_IN, TTL, now, s.name()));
                 }
             }
         }
@@ -446,7 +446,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
             final Instant now = now();
 
             /* check own services. */
-            final Service own = services.get(result.serviceName().toLowerCase());
+            final Service own = services.get(result.name().toLowerCase());
             if (own != null) {
                 final String otherHostname = own.hostname();
                 collision = own.port() != port || !otherHostname.equals(hostname);
@@ -458,7 +458,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
 
             /* check cache. */
             final Optional<SrvRecord> rec = cache
-                .entries(result.serviceName())
+                .entries(result.name())
                 .stream()
                 .filter(e -> e instanceof SrvRecord)
                 .filter(e -> !e.isExpired(now))
@@ -519,7 +519,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
      */
     private void remove(final Service s) {
         registrationPointerNames.remove(s.registrationPointerName());
-        services.remove(s.serviceName().toLowerCase());
+        services.remove(s.name().toLowerCase());
     }
 
     /**

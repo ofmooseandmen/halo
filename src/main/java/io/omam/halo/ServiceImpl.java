@@ -219,7 +219,7 @@ final class ServiceImpl implements Service, ResponseListener {
     }
 
     @Override
-    public final String serviceName() {
+    public final String name() {
         return instanceName + "." + registrationPointerName();
     }
 
@@ -237,7 +237,7 @@ final class ServiceImpl implements Service, ResponseListener {
      * @return {@code true} iff service has been resolved
      */
     final boolean resolve(final HaloHelper halo, final Duration timeout) {
-        final String serviceName = serviceName();
+        final String serviceName = name();
 
         /* look for a cached SRV record. */
         final Optional<DnsRecord> cachedSrv = halo.cachedRecord(serviceName, TYPE_SRV, CLASS_IN);
@@ -419,7 +419,7 @@ final class ServiceImpl implements Service, ResponseListener {
      */
     private void update(final HaloHelper halo, final DnsRecord record) {
         if (!record.isExpired(halo.now())) {
-            final String serviceName = serviceName();
+            final String serviceName = name();
             final boolean matchesService = record.name().equalsIgnoreCase(serviceName);
             final boolean matchesHost = record.name().equalsIgnoreCase(hostname);
             if (record.type() == TYPE_A && matchesHost) {
