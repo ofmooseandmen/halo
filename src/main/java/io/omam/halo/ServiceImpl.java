@@ -240,16 +240,25 @@ final class ServiceImpl implements Service, ResponseListener {
         final String serviceName = serviceName();
 
         /* look for a cached SRV record. */
-        halo.cachedRecord(serviceName, TYPE_SRV, CLASS_IN).ifPresent(c -> update(halo, c));
+        final Optional<DnsRecord> cachedSrv = halo.cachedRecord(serviceName, TYPE_SRV, CLASS_IN);
+        cachedSrv.ifPresent(c -> update(halo, c));
 
         /* look for a cached TXT record. */
-        halo.cachedRecord(serviceName, TYPE_TXT, CLASS_IN).ifPresent(c -> update(halo, c));
+        final Optional<DnsRecord> cachedTxt = halo.cachedRecord(serviceName, TYPE_TXT, CLASS_IN);
+        cachedTxt.ifPresent(c -> update(halo, c));
 
+        final Optional<DnsRecord> cachedIpV4;
+        final Optional<DnsRecord> cachedIpV6;
         if (hostname != null) {
             /* look for a cached A record. */
-            halo.cachedRecord(hostname, TYPE_A, CLASS_IN).ifPresent(c -> update(halo, c));
+            cachedIpV4 = halo.cachedRecord(hostname, TYPE_A, CLASS_IN);
+            cachedIpV4.ifPresent(c -> update(halo, c));
             /* look for a cached AAAA record. */
-            halo.cachedRecord(hostname, TYPE_AAAA, CLASS_IN).ifPresent(c -> update(halo, c));
+            cachedIpV6 = halo.cachedRecord(hostname, TYPE_AAAA, CLASS_IN);
+            cachedIpV6.ifPresent(c -> update(halo, c));
+        } else {
+            cachedIpV4 = Optional.empty();
+            cachedIpV6 = Optional.empty();
         }
 
         if (resolved()) {
@@ -263,16 +272,16 @@ final class ServiceImpl implements Service, ResponseListener {
                 final Optional<Instant> now = Optional.of(halo.now());
                 final DnsMessage.Builder b = DnsMessage.query();
                 b.addQuestion(new DnsQuestion(serviceName, TYPE_SRV, CLASS_IN));
-                halo.cachedRecord(serviceName, TYPE_SRV, CLASS_IN).ifPresent(r -> b.addAnswer(r, now));
+                cachedSrv.ifPresent(r -> b.addAnswer(r, now));
 
                 b.addQuestion(new DnsQuestion(serviceName, TYPE_TXT, CLASS_IN));
-                halo.cachedRecord(serviceName, TYPE_TXT, CLASS_IN).ifPresent(r -> b.addAnswer(r, now));
+                cachedTxt.ifPresent(r -> b.addAnswer(r, now));
 
                 if (hostname != null) {
                     b.addQuestion(new DnsQuestion(hostname, TYPE_A, CLASS_IN));
-                    halo.cachedRecord(hostname, TYPE_A, CLASS_IN).ifPresent(r -> b.addAnswer(r, now));
+                    cachedIpV4.ifPresent(r -> b.addAnswer(r, now));
                     b.addQuestion(new DnsQuestion(hostname, TYPE_AAAA, CLASS_IN));
-                    halo.cachedRecord(hostname, TYPE_AAAA, CLASS_IN).ifPresent(r -> b.addAnswer(r, now));
+                    cachedIpV6.ifPresent(r -> b.addAnswer(r, now));
                 }
                 halo.sendMessage(b.get());
                 awaitingResolution(delays.poll());
