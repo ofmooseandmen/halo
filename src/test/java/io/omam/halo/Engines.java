@@ -110,7 +110,7 @@ public final class Engines {
     }
 
     @After
-    public final void after() throws IOException {
+    public final void after() throws Exception {
         try {
             if (jmdns != null) {
                 jmdns.close();

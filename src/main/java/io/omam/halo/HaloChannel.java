@@ -37,7 +37,6 @@ import static io.omam.halo.MulticastDns.IPV6_SOA;
 import static io.omam.halo.MulticastDns.MAX_DNS_MESSAGE_SIZE;
 import static io.omam.halo.MulticastDns.MDNS_PORT;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
@@ -73,7 +72,7 @@ import java.util.logging.Logger;
 /**
  * {@link DatagramChannel}(s) to send and receive {@link DnsMessage DNS message}s.
  */
-final class HaloChannel implements Closeable {
+final class HaloChannel implements AutoCloseable {
 
     /**
      * DNS message receiver.

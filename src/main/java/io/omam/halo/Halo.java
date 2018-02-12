@@ -32,7 +32,6 @@ package io.omam.halo;
 
 import static io.omam.halo.MulticastDns.TTL;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.net.NetworkInterface;
 import java.time.Clock;
@@ -127,7 +126,7 @@ import java.util.Optional;
  * </pre>
  *
  */
-public interface Halo extends Closeable {
+public interface Halo extends AutoCloseable {
 
     /**
      * Returns a new {@link Halo} instance sending/receiving mDNS messages on all network interfaces on this
