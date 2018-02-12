@@ -36,14 +36,14 @@ package io.omam.halo;
 public interface ServiceBrowserListener {
 
     /**
-     * Invoked when a named service of a target registration type has been cancelled.
+     * Invoked when a previously discovered named service of the target registration type has become unavailable.
      *
      * @param service the service
      */
     void down(final Service service);
 
     /**
-     * Invoked when a new named service of a target registration type has been discovered.
+     * Invoked when a new named service of the target registration type has been discovered.
      *
      * @param service the service
      */

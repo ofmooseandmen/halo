@@ -40,6 +40,7 @@ import static io.omam.halo.MulticastDns.TYPE_TXT;
 
 import java.net.Inet4Address;
 import java.net.Inet6Address;
+import java.net.InetAddress;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
@@ -76,10 +77,10 @@ final class ServiceImpl implements Service, ResponseListener {
     private final String instanceName;
 
     /** service IPv4 address. */
-    private Optional<Inet4Address> ipv4Address;
+    private Optional<InetAddress> ipv4Address;
 
     /** service IPv6 address. */
-    private Optional<Inet6Address> ipv6Address;
+    private Optional<InetAddress> ipv6Address;
 
     /** lock (see #resolved condition). */
     private final Lock lock;
@@ -177,12 +178,12 @@ final class ServiceImpl implements Service, ResponseListener {
     }
 
     @Override
-    public final Optional<Inet4Address> ipv4Address() {
+    public final Optional<InetAddress> ipv4Address() {
         return ipv4Address;
     }
 
     @Override
-    public final Optional<Inet6Address> ipv6Address() {
+    public final Optional<InetAddress> ipv6Address() {
         return ipv6Address;
     }
 

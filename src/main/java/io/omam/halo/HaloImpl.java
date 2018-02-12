@@ -43,8 +43,7 @@ import static io.omam.halo.MulticastDns.TYPE_TXT;
 import static io.omam.halo.MulticastDns.uniqueClass;
 
 import java.io.IOException;
-import java.net.Inet4Address;
-import java.net.Inet6Address;
+import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.time.Clock;
 import java.time.Duration;
@@ -319,7 +318,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
             .filter(s -> s.hostname().equalsIgnoreCase(question.name()))
             .filter(h -> h.ipv4Address().isPresent())
             .forEach(s -> {
-                final Inet4Address addr = s.ipv4Address().get();
+                final InetAddress addr = s.ipv4Address().get();
                 builder.addAnswer(query,
                         new AddressRecord(question.name(), uniqueClass(CLASS_IN), TTL, now, addr));
             });
@@ -341,7 +340,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
             .filter(s -> s.hostname().equalsIgnoreCase(question.name()))
             .filter(h -> h.ipv6Address().isPresent())
             .forEach(s -> {
-                final Inet6Address addr = s.ipv6Address().get();
+                final InetAddress addr = s.ipv6Address().get();
                 builder.addAnswer(query,
                         new AddressRecord(question.name(), uniqueClass(CLASS_IN), TTL, now, addr));
             });

@@ -1,4 +1,4 @@
-# halo
+# Halo
 
 [![travis build status](https://img.shields.io/travis/ofmooseandmen/halo/master.svg?label=travis+build)](https://travis-ci.org/ofmooseandmen/halo)
 [![appveyor build status](https://ci.appveyor.com/api/projects/status/wugjgsm3gs4jothg?svg=true)](https://ci.appveyor.com/project/ofmooseandmen/halo)

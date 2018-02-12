@@ -191,20 +191,24 @@ public interface Service {
     /**
      * Returns the IPv4 address of the service if any.
      * <p>
-     * A service has at least on IP address (v4 or v6 or both).
-     *
-     * @return the IPv4 address of the service if any
-     */
-    Optional<Inet4Address> ipv4Address();
-
-    /**
-     * Returns the IPv4 address of the service if any.
+     * The returned address is guaranteed to be instance of {@link Inet4Address}.
      * <p>
      * A service has at least on IP address (v4 or v6 or both).
      *
      * @return the IPv4 address of the service if any
      */
-    Optional<Inet6Address> ipv6Address();
+    Optional<InetAddress> ipv4Address();
+
+    /**
+     * Returns the IPv4 address of the service if any.
+     * <p>
+     * The returned address is guaranteed to be instance of {@link Inet6Address}.
+     * <p>
+     * A service has at least on IP address (v4 or v6 or both).
+     *
+     * @return the IPv4 address of the service if any
+     */
+    Optional<InetAddress> ipv6Address();
 
     /**
      * @return the port number of the service
