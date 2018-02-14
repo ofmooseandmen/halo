@@ -60,7 +60,7 @@ ext.eclipsePrefs = { p ->
     p.put("org.eclipse.jdt.core.compiler.problem.pessimisticNullAnalysisForFreeTypeVariables", "error")
     p.put("org.eclipse.jdt.core.compiler.problem.possibleAccidentalBooleanAssignment", "error")
     p.put("org.eclipse.jdt.core.compiler.problem.potentialNullReference", "error")
-    p.put("org.eclipse.jdt.core.compiler.problem.potentiallyUnclosedCloseable", "error")
+    p.put("org.eclipse.jdt.core.compiler.problem.potentiallyUnclosedCloseable", "ignore")
     p.put("org.eclipse.jdt.core.compiler.problem.rawTypeReference", "error")
     p.put("org.eclipse.jdt.core.compiler.problem.redundantNullAnnotation", "error")
     p.put("org.eclipse.jdt.core.compiler.problem.redundantNullCheck", "error")

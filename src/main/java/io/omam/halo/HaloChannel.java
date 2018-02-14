@@ -88,7 +88,7 @@ final class HaloChannel implements AutoCloseable {
             // empty.
         }
 
-        @SuppressWarnings({ "synthetic-access", "resource" })
+        @SuppressWarnings("synthetic-access")
         @Override
         public final void run() {
             final ByteBuffer buf = ByteBuffer.allocate(MAX_DNS_MESSAGE_SIZE);
@@ -399,7 +399,6 @@ final class HaloChannel implements AutoCloseable {
      * @param family the protocol family
      * @return a new datagram channel
      */
-    @SuppressWarnings("resource")
     private Optional<DatagramChannel> openChannel(final ProtocolFamily family) {
         try {
             final DatagramChannel channel = DatagramChannel.open(family);
