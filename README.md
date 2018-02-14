@@ -13,7 +13,7 @@ An implementation of [Multicast DNS Service Discovery](https://en.wikipedia.org/
 
 ## Building from Source
 
-You need [JDK-8](http://openjdk.java.net/projects/jdk8/) or higher to build Halo.
+You need [JDK-8](http://jdk.java.net/8) or higher to build Halo.
 Halo can be built with Gradle using the following command:
 
 ```

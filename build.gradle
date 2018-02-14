@@ -47,6 +47,34 @@ jacocoTestReport {
     }
 }
 
+if (Integer.valueOf(JavaVersion.current().getMajorVersion()) > 8) {
+    // --release 8: configures the compiler to produce class files that will link against version 8
+    compileJava.options.compilerArgs += ['--release', 8]
+}
+
+compileJava.options.encoding = 'UTF-8'
+// See: https://docs.oracle.com/javase/9/tools/javac.htm#JSWOR627
+compileJava.options.compilerArgs += [
+    '-Xlint:cast',
+    '-Xlint:classfile',
+    '-Xlint:deprecation',
+    '-Xlint:dep-ann',
+    '-Xlint:divzero',
+    '-Xlint:empty',
+    '-Xlint:fallthrough',
+    '-Xlint:finally',
+    '-Xlint:overrides',
+    '-Xlint:path',
+    '-Xlint:processing',
+    '-Xlint:rawtypes',
+    '-Xlint:serial',
+    '-Xlint:static',
+    '-Xlint:unchecked',
+    '-Xlint:varargs',
+    '-Xlint:-options',
+    '-Werror'
+]
+
 jar {
     /* include source */
     from (sourceSets.main.allSource.getSrcDirTrees())
@@ -109,7 +137,7 @@ nexus {
 }
 
 task wrapper(type: Wrapper) {
-	description = 'Generates gradlew and gradlew.bat scripts'
-	gradleVersion = '4.5.1'
-	distributionType = Wrapper.DistributionType.BIN
+    description = 'Generates gradlew and gradlew.bat scripts'
+    gradleVersion = '4.5.1'
+    distributionType = Wrapper.DistributionType.BIN
 }
