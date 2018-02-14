@@ -193,7 +193,7 @@ public interface Service {
      * <p>
      * The returned address is guaranteed to be instance of {@link Inet4Address}.
      * <p>
-     * A service has at least on IP address (v4 or v6 or both).
+     * A service has at least one IP address (v4 or v6 or both).
      *
      * @return the IPv4 address of the service if any
      */
@@ -204,11 +204,18 @@ public interface Service {
      * <p>
      * The returned address is guaranteed to be instance of {@link Inet6Address}.
      * <p>
-     * A service has at least on IP address (v4 or v6 or both).
+     * A service has at least one IP address (v4 or v6 or both).
      *
      * @return the IPv4 address of the service if any
      */
     Optional<InetAddress> ipv6Address();
+
+    /**
+     * Returns the service qualified name, e.g. 'Living Room Printer._music._udp.local.'.
+     *
+     * @return the service qualified name
+     */
+    String name();
 
     /**
      * @return the port number of the service
@@ -228,12 +235,5 @@ public interface Service {
      * @return the registration type of the service
      */
     String registrationType();
-
-    /**
-     * Returns the service qualified name, e.g. 'Living Room Printer._music._udp.local.'.
-     *
-     * @return the service qualified name
-     */
-    String name();
 
 }
