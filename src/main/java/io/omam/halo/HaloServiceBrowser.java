@@ -180,7 +180,7 @@ final class HaloServiceBrowser extends HaloBrowser {
     }
 
     @Override
-    protected final void doStop() {
+    protected final void doClose() {
         res.shutdownNow();
     }
 

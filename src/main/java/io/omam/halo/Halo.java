@@ -96,7 +96,7 @@ import java.util.Optional;
  *     // Wait for some services to be registered on the network...
  *     Thread.sleep(5000);
  *
- *     browser.stop();
+ *     browser.close();
  * }
  *
  * // browse services for a given registration type.
@@ -119,7 +119,7 @@ import java.util.Optional;
  *     // Wait for some services to be registered on the network...
  *     Thread.sleep(5000);
  *
- *     browser.stop();
+ *     browser.close();
  *
  * }
  * </code>
@@ -170,7 +170,7 @@ public interface Halo extends AutoCloseable {
      * Browses for registration types on the <strong>local</strong> domain.
      *
      * @param listener the listener
-     * @return a {@code Browser} to stop browsing
+     * @return a {@code Browser} to terminate the browsing operation
      */
     Browser browse(final RegistrationTypeBrowserListener listener);
 
@@ -183,7 +183,7 @@ public interface Halo extends AutoCloseable {
      * @param registrationType service type (IANA) and transport protocol (udp or tcp), e.g. {@code _ftp._tcp.} or
      *            {@code _http._udp.}
      * @param listener the listener
-     * @return a {@code Browser} to stop browsing
+     * @return a {@code Browser} to terminate the browsing operation
      */
     Browser browse(final String registrationType, final ServiceBrowserListener listener);
 

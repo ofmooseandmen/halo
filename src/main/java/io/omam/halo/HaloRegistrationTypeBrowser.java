@@ -108,7 +108,7 @@ final class HaloRegistrationTypeBrowser extends HaloBrowser {
     }
 
     @Override
-    protected final void doStop() {
+    protected final void doClose() {
         // empty.
     }
 

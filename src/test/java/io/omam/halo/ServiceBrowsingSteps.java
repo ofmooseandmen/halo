@@ -142,14 +142,14 @@ public final class ServiceBrowsingSteps {
     public final void after() {
         hls.clear();
         jls.clear();
-        hbs.values().forEach(Browser::stop);
+        hbs.values().forEach(Browser::close);
         hbs.clear();
         browsedBy = null;
     }
 
     @Given("the browser associated with the listener \"([^\"]*)\" has been stopped")
     public final void givenBrowserStopped(final String listener) {
-        hbs.remove(listener).stop();
+        hbs.remove(listener).close();
     }
 
     @Given("^the following registration types are being browsed with \"([^\"]*)\":$")

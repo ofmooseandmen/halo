@@ -82,7 +82,7 @@ try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
     // Wait for some services to be registered on the network...
     Thread.sleep(5000);
 
-    browser.stop();
+    browser.close();
 }
 ```
 
@@ -95,6 +95,6 @@ try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
     // Wait for some services to be registered on the network...
     Thread.sleep(5000);
 
-    browser.stop();
+    browser.close();
 }
 ```

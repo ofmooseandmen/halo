@@ -41,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Periodically removes expired DNS records from the cache.
  */
-final class Reaper {
+final class Reaper implements AutoCloseable {
 
     /** cache. */
     private final Cache cache;
@@ -68,22 +68,23 @@ final class Reaper {
     }
 
     /**
-     * Starts a background task to remove expired records.
+     * Cancel the background task that removes expired records and shuts down the associated executor.
      */
-    final void start() {
-        f = ses.scheduleAtFixedRate(() -> cache.clean(clock.instant()), REAPING_INTERVAL.toMillis(),
-                REAPING_INTERVAL.toMillis(), TimeUnit.MILLISECONDS);
-    }
-
-    /**
-     * Stops the background task that removes expired records.
-     */
-    final void stop() {
+    @Override
+    public final void close() {
         if (f != null) {
             f.cancel(true);
             f = null;
         }
         ses.shutdownNow();
+    }
+
+    /**
+     * Starts a background task to remove expired records.
+     */
+    final void start() {
+        f = ses.scheduleAtFixedRate(() -> cache.clean(clock.instant()), REAPING_INTERVAL.toMillis(),
+                REAPING_INTERVAL.toMillis(), TimeUnit.MILLISECONDS);
     }
 
 }

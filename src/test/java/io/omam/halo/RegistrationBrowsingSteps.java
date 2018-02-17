@@ -119,7 +119,7 @@ public final class RegistrationBrowsingSteps {
     public final void after() {
         hl = Optional.empty();
         jl = Optional.empty();
-        hb.ifPresent(Browser::stop);
+        hb.ifPresent(Browser::close);
         hb = Optional.empty();
         browsedBy = null;
     }

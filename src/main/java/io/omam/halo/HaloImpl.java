@@ -48,6 +48,7 @@ import java.net.NetworkInterface;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -57,9 +58,11 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import io.omam.halo.DnsMessage.Builder;
 
@@ -192,23 +195,27 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     }
 
     @Override
-    public final void close() throws IOException {
-        /* stop browsers. */
-        sBrowser.stop();
-        rBrowser.stop();
+    public final void close() {
+        /* close browsers. */
+        sBrowser.close();
+        rBrowser.close();
 
-        /* stop cache reaper. */
-        reaper.stop();
+        /* close cache reaper. */
+        reaper.close();
 
-        /* de-register all services. */
-        dergisterAll();
-
-        /* stop service background threads. */
-        announcer.close();
-        canceller.close();
-        channel.close();
-        cache.clear();
-        rls.clear();
+        try {
+            /* de-register all services. */
+            dergisterAll();
+        } catch (final IOException e) {
+            LOGGER.log(Level.WARNING, "I/O error when de-registering all services", e);
+        } finally {
+            /* close service background threads. */
+            announcer.close();
+            canceller.close();
+            channel.close();
+            cache.clear();
+            rls.clear();
+        }
     }
 
     @Override
@@ -224,8 +231,16 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
 
     @Override
     public final void dergisterAll() throws IOException {
+        final List<String> messages = new ArrayList<>();
         for (final Service service : services.values()) {
-            deregister(service);
+            try {
+                deregister(service);
+            } catch (final IOException e) {
+                messages.add(e.getMessage());
+            }
+        }
+        if (!messages.isEmpty()) {
+            throw new IOException(messages.stream().collect(Collectors.joining(",")));
         }
     }
 

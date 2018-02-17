@@ -48,6 +48,7 @@ import java.net.StandardProtocolFamily;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.MulticastChannel;
@@ -111,6 +112,8 @@ final class HaloChannel implements AutoCloseable {
                             listener.accept(msg);
                         }
                     }
+                } catch (final ClosedByInterruptException e) {
+                    LOGGER.log(Level.FINE, "Interrupted while waiting to receive DNS message", e);
                 } catch (final IOException e) {
                     LOGGER.log(Level.WARNING, "I/O error while receiving DNS message", e);
                 }
@@ -149,7 +152,7 @@ final class HaloChannel implements AutoCloseable {
                     ipv4.forEach(ni -> send(ni, buf, IPV4_SOA));
                     ipv6.forEach(ni -> send(ni, buf, IPV6_SOA));
                 } catch (final InterruptedException e) {
-                    LOGGER.log(Level.FINE, "Interrupted while waiting to DNS message", e);
+                    LOGGER.log(Level.FINE, "Interrupted while waiting to send DNS message", e);
                     Thread.currentThread().interrupt();
                 }
             }
@@ -277,16 +280,13 @@ final class HaloChannel implements AutoCloseable {
     }
 
     @Override
-    public final synchronized void close() throws IOException {
+    public final synchronized void close() {
         LOGGER.fine("Closing channel");
         selector.wakeup();
         disable();
         es.shutdownNow();
-        try {
-            close(ipv4);
-        } finally {
-            close(ipv6);
-        }
+        close(ipv4);
+        close(ipv6);
     }
 
     /**
@@ -314,19 +314,14 @@ final class HaloChannel implements AutoCloseable {
      * Closes the given {@link SelectionKey}(s).
      *
      * @param keys selection keys
-     * @throws IOException in case of I/O error
      */
-    private void close(final List<SelectionKey> keys) throws IOException {
-        IOException ex = null;
+    private void close(final List<SelectionKey> keys) {
         for (final SelectionKey key : keys) {
             try {
                 key.channel().close();
             } catch (final IOException e) {
-                ex = e;
+                LOGGER.log(Level.WARNING, "I/O error when closing channel", e);
             }
-        }
-        if (ex != null) {
-            throw ex;
         }
     }
 

@@ -33,11 +33,16 @@ package io.omam.halo;
 /**
  * A browser represents an active browsing operation (for named services or registration types).
  */
-public interface Browser {
+public interface Browser extends AutoCloseable {
 
     /**
-     * Stops browsing.
+     * Closes this browser. The browsing operation will be terminated and the associated listener will no longer
+     * receive events.
+     *
+     * @see Halo#browse(RegistrationTypeBrowserListener)
+     * @see Halo#browse(String, ServiceBrowserListener)
      */
-    void stop();
+    @Override
+    void close();
 
 }

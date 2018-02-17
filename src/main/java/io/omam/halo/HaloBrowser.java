@@ -40,7 +40,7 @@ import java.util.concurrent.Future;
 /**
  * Base class for browsing.
  */
-abstract class HaloBrowser implements ResponseListener {
+abstract class HaloBrowser implements ResponseListener, AutoCloseable {
 
     /** halo helper. */
     private final HaloHelper halo;
@@ -64,39 +64,40 @@ abstract class HaloBrowser implements ResponseListener {
     }
 
     /**
-     * Starts browsing.
-     * <p>
-     * If this browser is already started this method has no effect.
-     */
-    public final void start() {
-        if (qFuture == null) {
-            halo.addResponseListener(this);
-            qFuture = ses.scheduleBatches(queryTask(), QUERY_NUM, QUERYING_DELAY, QUERYING_INTERVAL);
-        }
-    }
-
-    /**
-     * Stops browsing for services.
+     * Closes this browser.
      * <p>
      * If this browser is not started this method has no effect.
      */
-    public final void stop() {
+    @Override
+    public final void close() {
         halo.removeResponseListener(this);
         if (qFuture != null) {
             qFuture.cancel(true);
         }
         ses.shutdownNow();
-        doStop();
+        doClose();
     }
 
     /**
-     * Called at the end of {@link #stop()}.
+     * Called at the end of {@link #close()}.
      */
-    protected abstract void doStop();
+    protected abstract void doClose();
 
     /**
      * @return the query task to execute.
      */
     protected abstract Callable<Void> queryTask();
+
+    /**
+     * Starts browsing.
+     * <p>
+     * If this browser is already started this method has no effect.
+     */
+    final void start() {
+        if (qFuture == null) {
+            halo.addResponseListener(this);
+            qFuture = ses.scheduleBatches(queryTask(), QUERY_NUM, QUERYING_DELAY, QUERYING_INTERVAL);
+        }
+    }
 
 }
