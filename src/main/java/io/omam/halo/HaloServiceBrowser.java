@@ -32,12 +32,12 @@ package io.omam.halo;
 
 import static io.omam.halo.MulticastDns.CLASS_IN;
 import static io.omam.halo.MulticastDns.DOMAIN;
+import static io.omam.halo.MulticastDns.RESOLUTION_TIMEOUT;
 import static io.omam.halo.MulticastDns.TYPE_PTR;
 import static io.omam.halo.ServiceImpl.instanceNameOf;
 import static io.omam.halo.ServiceImpl.registrationTypeOf;
 import static java.util.stream.Collectors.groupingBy;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -113,7 +113,7 @@ final class HaloServiceBrowser extends HaloBrowser {
         @SuppressWarnings("synthetic-access")
         @Override
         public final void run() {
-            final boolean resolved = s.resolve(halo, Duration.ofSeconds(6));
+            final boolean resolved = s.resolve(halo, RESOLUTION_TIMEOUT);
             final String skey = s.name().toLowerCase();
             rFutures.remove(skey);
             if (resolved) {

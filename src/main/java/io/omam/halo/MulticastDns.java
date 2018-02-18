@@ -31,9 +31,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package io.omam.halo;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.time.Duration;
+import java.util.Properties;
 
 /**
  * Multicast-DNS constants.
@@ -56,7 +58,7 @@ final class MulticastDns {
     static final InetAddress IPV6_ADDR;
 
     /** mDNS port. */
-    static final int MDNS_PORT = 5353;
+    static final int MDNS_PORT;
 
     /** IPV4 socket address. */
     static final InetSocketAddress IPV4_SOA;
@@ -64,52 +66,44 @@ final class MulticastDns {
     /** IPV6 socket address. */
     static final InetSocketAddress IPV6_SOA;
 
-    static {
-        try {
-            IPV4_ADDR = InetAddress.getByName("224.0.0.251");
-            IPV6_ADDR = InetAddress.getByName("FF02::FB");
-            IPV4_SOA = new InetSocketAddress(IPV4_ADDR, MDNS_PORT);
-            IPV6_SOA = new InetSocketAddress(IPV6_ADDR, MDNS_PORT);
-        } catch (final IOException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
     /** interval between probe message. */
-    static final Duration PROBING_INTERVAL = Duration.ofMillis(250);
+    static final Duration PROBING_INTERVAL;
 
     /** probing timeout. */
-    static final Duration PROBING_TIMEOUT = Duration.ofSeconds(6);
+    static final Duration PROBING_TIMEOUT;
 
     /** number of probes before announcing a registered service. */
-    static final int PROBE_NUM = 3;
+    static final int PROBE_NUM;
 
     /** interval between goodbyes messages. */
-    static final Duration CANCELLING_INTERVAL = Duration.ofMillis(250);
+    static final Duration CANCELLING_INTERVAL;
 
     /** number of cancel message sent when de-registering a service. */
-    static final int CANCEL_NUM = 3;
+    static final int CANCEL_NUM;
 
     /** cache record reaper interval. */
-    static final Duration REAPING_INTERVAL = Duration.ofSeconds(10);
+    static final Duration REAPING_INTERVAL;
+
+    /** default resolution timeout. */
+    static final Duration RESOLUTION_TIMEOUT;
 
     /** interval between resolution question. */
-    static final Duration RESOLVING_INTERVAL = Duration.ofMillis(200);
+    static final Duration RESOLUTION_INTERVAL;
 
     /** number of queries. */
-    static final int QUERY_NUM = 3;
+    static final int QUERY_NUM;
 
     /** interval between browsing query. */
-    static final Duration QUERYING_DELAY = Duration.ofMillis(120);
+    static final Duration QUERYING_DELAY;
 
     /** interval between browsing query. */
-    static final Duration QUERYING_INTERVAL = Duration.ofMinutes(20);
+    static final Duration QUERYING_INTERVAL;
 
     /** time to live: 1 hour. */
-    static final Duration TTL = Duration.ofHours(1);
+    static final Duration TTL;
 
     /** time to live after expiry: 1 second. */
-    static final Duration EXPIRY_TTL = Duration.ofSeconds(1);
+    static final Duration EXPIRY_TTL;
 
     /** query or response mask (unsigned). */
     static final short FLAGS_QR_MASK = (short) 0x8000;
@@ -153,6 +147,40 @@ final class MulticastDns {
     /** unique class (unsigned). */
     private static final short CLASS_UNIQUE = (short) 0x8000;
 
+    static {
+        try (final InputStream is = MulticastDns.class.getClassLoader().getResourceAsStream("halo.properties")) {
+            final Properties props = new Properties();
+            props.load(is);
+            IPV4_ADDR = InetAddress.getByName(stringProp("io.omam.wire.mdns.ipv4", props));
+            IPV6_ADDR = InetAddress.getByName(stringProp("io.omam.wire.mdns.ipv6", props));
+            MDNS_PORT = intProp("io.omam.wire.mdns.port", props);
+            IPV4_SOA = new InetSocketAddress(IPV4_ADDR, MDNS_PORT);
+            IPV6_SOA = new InetSocketAddress(IPV6_ADDR, MDNS_PORT);
+
+            RESOLUTION_TIMEOUT = durationProp("io.omam.wire.resolution.timeout", props);
+            RESOLUTION_INTERVAL = durationProp("io.omam.wire.resolution.interval", props);
+
+            PROBING_TIMEOUT = durationProp("io.omam.wire.probing.timeout", props);
+            PROBING_INTERVAL = durationProp("io.omam.wire.probing.interval", props);
+            PROBE_NUM = intProp("io.omam.wire.probing.number", props);
+
+            QUERYING_DELAY = durationProp("io.omam.wire.querying.delay", props);
+            QUERYING_INTERVAL = durationProp("io.omam.wire.querying.interval", props);
+            QUERY_NUM = intProp("io.omam.wire.querying.number", props);
+
+            CANCELLING_INTERVAL = durationProp("io.omam.wire.cancellation.interval", props);
+            CANCEL_NUM = intProp("io.omam.wire.cancellation.number", props);
+
+            REAPING_INTERVAL = durationProp("io.omam.wire.reaper.interval", props);
+
+            TTL = durationProp("io.omam.wire.ttl.default", props);
+            EXPIRY_TTL = durationProp("io.omam.wire.ttl.expiry", props);
+
+        } catch (final IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     /**
      * Constructor.
      */
@@ -191,6 +219,39 @@ final class MulticastDns {
      */
     static short uniqueClass(final short classIndex) {
         return (short) (classIndex | CLASS_UNIQUE);
+    }
+
+    /**
+     * Returns the {@code Duration} corresponding to the given key.
+     *
+     * @param key property key
+     * @param props properties default values
+     * @return value
+     */
+    private static Duration durationProp(final String key, final Properties props) {
+        return Duration.ofMillis(Long.parseLong(stringProp(key, props)));
+    }
+
+    /**
+     * Returns the {@code int} corresponding to the given key.
+     *
+     * @param key property key
+     * @param props properties default values
+     * @return value
+     */
+    private static int intProp(final String key, final Properties props) {
+        return Integer.parseInt(stringProp(key, props));
+    }
+
+    /**
+     * Returns the {@code String} corresponding to the given key.
+     *
+     * @param key property key
+     * @param props properties default values
+     * @return value
+     */
+    private static String stringProp(final String key, final Properties props) {
+        return System.getProperty(key, props.getProperty(key));
     }
 
 }

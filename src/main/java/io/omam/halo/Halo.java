@@ -30,6 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
+import static io.omam.halo.MulticastDns.RESOLUTION_TIMEOUT;
 import static io.omam.halo.MulticastDns.TTL;
 
 import java.io.IOException;
@@ -125,6 +126,95 @@ import java.util.Optional;
  * </code>
  * </pre>
  *
+ * <h3>Configuration</h3> The following parameters can be configured by system properties: <table BORDER
+ * CELLPADDING=3 CELLSPACING=1> <caption>Summary of Halo system properties</caption>
+ * <tr>
+ * <td ALIGN=CENTER><b>Property Key</b></td>
+ * <td ALIGN=CENTER><b>Description</b></td>
+ * <td ALIGN=CENTER><b>Default</b></td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.wire.mdns.ipv4</td>
+ * <td>mDNS IPV4 address</td>
+ * <td>224.0.0.251</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.wire.mdns.ipv6</td>
+ * <td>mDNS IPV6 address</td>
+ * <td>FF02::FB</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.wire.mdns.port</td>
+ * <td>mDNS port</td>
+ * <td>5353</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.wire.resolution.timeout</td>
+ * <td>resolution timeout in milliseconds</td>
+ * <td>6000</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.wire.resolution.interval</td>
+ * <td>interval between resolution questions in milliseconds</td>
+ * <td>200</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.wire.probing.timeout</td>
+ * <td>probing timeout in milliseconds</td>
+ * <td>6000</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.wire.probing.interval</td>
+ * <td>interval between probe messages in milliseconds</td>
+ * <td>250</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.wire.probing.number</td>
+ * <td>number of probing messages before announcing a registered service</td>
+ * <td>3</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.wire.querying.delay</td>
+ * <td>delay before transmitting a browsing query in milliseconds</td>
+ * <td>120</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.wire.querying.interval</td>
+ * <td>interval between browsing queries in milliseconds</td>
+ * <td>1200000</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.wire.querying.number</td>
+ * <td>number of browsing queries</td>
+ * <td>3</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.wire.cancellation.interval</td>
+ * <td>interval between goodbye messages in milliseconds</td>
+ * <td>250</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.wire.cancellation.number</td>
+ * <td>number of goodbye messages sent when de-registering a service</td>
+ * <td>3</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.wire.reaper.interval</td>
+ * <td>cache record reaper interval in milliseconds</td>
+ * <td>10000</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.wire.ttl.default</td>
+ * <td>DNS record default time to live in milliseconds</td>
+ * <td>3600000</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.wire.ttl.expiry</td>
+ * <td>DNS record time to live after expiry in milliseconds</td>
+ * <td>1000</td>
+ * </tr>
+ * </table>
+ *
  */
 public interface Halo extends AutoCloseable {
 
@@ -206,9 +296,11 @@ public interface Halo extends AutoCloseable {
     void dergisterAll() throws IOException;
 
     /**
-     * Registers the given service on the <strong>local</strong> domain with a TTL of 1 hour.
+     * Registers the given service on the <strong>local</strong> domain with the default TTL.
      * <p>
      * The {@link Service#instanceName() instance name} of the service will be changed to be unique if possible.
+     * <p>
+     * The TTL value is given by {@code io.omam.wire.ttl.default}, typically 1 hour.
      *
      * @see #register(Service, Duration, boolean)
      * @param service service to register
@@ -220,10 +312,12 @@ public interface Halo extends AutoCloseable {
     }
 
     /**
-     * Registers the given service on the <strong>local</strong> domain with a TTL of 1 hour.
+     * Registers the given service on the <strong>local</strong> domain with the default TTL.
      * <p>
      * If {@code allowNameChange} is {@code true} the {@link Service#instanceName() instance name} of the service
      * will be changed to be unique if possible.
+     * <p>
+     * The TTL value is given by {@code io.omam.wire.ttl.default}, typically 1 hour.
      *
      * @see #register(Service, Duration, boolean)
      * @param service service to register
@@ -255,7 +349,7 @@ public interface Halo extends AutoCloseable {
      * Resolves a service of the <strong>local</strong> domain by its instance name and registration type to a
      * target host, port and text record if it exits.
      * <p>
-     * Resolution will timeout after 6 seconds.
+     * Resolution will timeout after {@code io.omam.wire.resolution.timeout}, typically 6 seconds.
      *
      * @see #resolve(String, String, Duration)
      * @param instanceName the service instance name, a human-readable string, e.g. {@code Living Room Printer}
@@ -264,7 +358,7 @@ public interface Halo extends AutoCloseable {
      * @return the resolved service unless the timeout expired
      */
     default Optional<Service> resolve(final String instanceName, final String registrationType) {
-        return resolve(instanceName, registrationType, Duration.ofSeconds(6));
+        return resolve(instanceName, registrationType, RESOLUTION_TIMEOUT);
     }
 
     /**

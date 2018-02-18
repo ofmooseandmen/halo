@@ -32,7 +32,7 @@ package io.omam.halo;
 
 import static io.omam.halo.MulticastDns.CLASS_IN;
 import static io.omam.halo.MulticastDns.DOMAIN;
-import static io.omam.halo.MulticastDns.RESOLVING_INTERVAL;
+import static io.omam.halo.MulticastDns.RESOLUTION_INTERVAL;
 import static io.omam.halo.MulticastDns.TYPE_A;
 import static io.omam.halo.MulticastDns.TYPE_AAAA;
 import static io.omam.halo.MulticastDns.TYPE_SRV;
@@ -374,7 +374,7 @@ final class ServiceImpl implements Service, ResponseListener {
     /**
      * Computes delays covering the given timeout.
      * <p>
-     * First delay is always {@link #RESOLVING_INTERVAL}, following are twice the previous delay (in order to space
+     * First delay is always {@link #RESOLUTION_INTERVAL}, following are twice the previous delay (in order to space
      * more and more the sent messages and avoid over-flooding receiver).
      *
      * @param timeout timeout
@@ -382,17 +382,17 @@ final class ServiceImpl implements Service, ResponseListener {
      */
     private Queue<Duration> delays(final Duration timeout) {
         final Queue<Duration> q = new ArrayDeque<>();
-        if (timeout.compareTo(RESOLVING_INTERVAL) <= 0) {
+        if (timeout.compareTo(RESOLUTION_INTERVAL) <= 0) {
             return q;
         }
         int factor = 1;
-        Duration delay = RESOLVING_INTERVAL;
+        Duration delay = RESOLUTION_INTERVAL;
         Duration total = Duration.ZERO;
         do {
             q.add(delay);
             total = total.plus(delay);
             factor = factor * 2;
-            delay = RESOLVING_INTERVAL.multipliedBy(factor);
+            delay = RESOLUTION_INTERVAL.multipliedBy(factor);
         } while (total.plus(delay).compareTo(timeout) <= 0);
         delay = timeout.minus(total);
         if (!delay.isZero()) {
