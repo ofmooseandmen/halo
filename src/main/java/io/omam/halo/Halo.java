@@ -126,8 +126,8 @@ import java.util.Optional;
  * </code>
  * </pre>
  *
- * <h3>Configuration</h3> The following parameters can be configured by system properties: <table BORDER
- * CELLPADDING=3 CELLSPACING=1> <caption>Summary of Halo system properties</caption>
+ * <h3 id="configuration">Configuration</h3> The following parameters can be configured by system properties:
+ * <table BORDER CELLPADDING=3 CELLSPACING=1> <caption>Summary of Halo system properties</caption>
  * <tr>
  * <td ALIGN=CENTER><b>Property Key</b></td>
  * <td ALIGN=CENTER><b>Description</b></td>
@@ -258,6 +258,13 @@ public interface Halo extends AutoCloseable {
 
     /**
      * Browses for registration types on the <strong>local</strong> domain.
+     * <p>
+     * This method relies on the following <a href="#configuration">properties</a>:
+     * <ul>
+     * <li>{@code io.omam.wire.querying.delay}
+     * <li>{@code io.omam.wire.querying.interval}
+     * <li>{@code io.omam.wire.querying.number}
+     * </ul>
      *
      * @param listener the listener
      * @return a {@code Browser} to terminate the browsing operation
@@ -269,6 +276,15 @@ public interface Halo extends AutoCloseable {
      * <p>
      * The given listener is invoked whenever changes in the availability of service having the given registration
      * type are discovered.
+     * <p>
+     * This method relies on the following <a href="#configuration">properties</a>:
+     * <ul>
+     * <li>{@code io.omam.wire.resolution.timeout}
+     * <li>{@code io.omam.wire.resolution.interval}
+     * <li>{@code io.omam.wire.querying.delay}
+     * <li>{@code io.omam.wire.querying.interval}
+     * <li>{@code io.omam.wire.querying.number}
+     * </ul>
      *
      * @param registrationType service type (IANA) and transport protocol (udp or tcp), e.g. {@code _ftp._tcp.} or
      *            {@code _http._udp.}
@@ -282,6 +298,13 @@ public interface Halo extends AutoCloseable {
      * <p>
      * This method performs no function, nor does it throw an exception, if the given service was not previously
      * registered or has already been de-registered.
+     * <p>
+     * This method relies on the following <a href="#configuration">properties</a>:
+     * <ul>
+     * <li>{@code io.omam.wire.cancellation.interval}
+     * <li>{@code io.omam.wire.cancellation.number}
+     * <li>{@code io.omam.wire.ttl.expiry}
+     * </ul>
      *
      * @param service service to de-register
      * @throws IOException if the service cannot be de-registered for any reason
@@ -290,6 +313,13 @@ public interface Halo extends AutoCloseable {
 
     /**
      * De-registers all services.
+     * <p>
+     * This method relies on the following <a href="#configuration">properties</a>:
+     * <ul>
+     * <li>{@code io.omam.wire.cancellation.interval}
+     * <li>{@code io.omam.wire.cancellation.number}
+     * <li>{@code io.omam.wire.ttl.expiry}
+     * </ul>
      *
      * @throws IOException if any service cannot be de-registered for any reason
      */
@@ -300,7 +330,13 @@ public interface Halo extends AutoCloseable {
      * <p>
      * The {@link Service#instanceName() instance name} of the service will be changed to be unique if possible.
      * <p>
-     * The TTL value is given by {@code io.omam.wire.ttl.default}, typically 1 hour.
+     * This method relies on the following <a href="#configuration">properties</a>:
+     * <ul>
+     * <li>{@code io.omam.wire.probing.timeout}
+     * <li>{@code io.omam.wire.probing.interval}
+     * <li>{@code io.omam.wire.probing.number}
+     * <li>{@code io.omam.wire.ttl.default}
+     * </ul>
      *
      * @see #register(Service, Duration, boolean)
      * @param service service to register
@@ -317,7 +353,13 @@ public interface Halo extends AutoCloseable {
      * If {@code allowNameChange} is {@code true} the {@link Service#instanceName() instance name} of the service
      * will be changed to be unique if possible.
      * <p>
-     * The TTL value is given by {@code io.omam.wire.ttl.default}, typically 1 hour.
+     * This method relies on the following <a href="#configuration">properties</a>:
+     * <ul>
+     * <li>{@code io.omam.wire.probing.timeout}
+     * <li>{@code io.omam.wire.probing.interval}
+     * <li>{@code io.omam.wire.probing.number}
+     * <li>{@code io.omam.wire.ttl.default}
+     * </ul>
      *
      * @see #register(Service, Duration, boolean)
      * @param service service to register
@@ -335,6 +377,13 @@ public interface Halo extends AutoCloseable {
      * <p>
      * If {@code allowNameChange} is {@code true} the {@link Service#instanceName() instance name} of the service
      * will be changed to be unique if possible.
+     * <p>
+     * This method relies on the following <a href="#configuration">properties</a>:
+     * <ul>
+     * <li>{@code io.omam.wire.probing.timeout}
+     * <li>{@code io.omam.wire.probing.interval}
+     * <li>{@code io.omam.wire.probing.number}
+     * </ul>
      *
      * @param service service to register
      * @param ttl service time-to-live
@@ -349,7 +398,11 @@ public interface Halo extends AutoCloseable {
      * Resolves a service of the <strong>local</strong> domain by its instance name and registration type to a
      * target host, port and text record if it exits.
      * <p>
-     * Resolution will timeout after {@code io.omam.wire.resolution.timeout}, typically 6 seconds.
+     * This method relies on the following <a href="#configuration">properties</a>:
+     * <ul>
+     * <li>{@code io.omam.wire.resolution.timeout}
+     * <li>{@code io.omam.wire.resolution.interval}
+     * </ul>
      *
      * @see #resolve(String, String, Duration)
      * @param instanceName the service instance name, a human-readable string, e.g. {@code Living Room Printer}
@@ -364,6 +417,11 @@ public interface Halo extends AutoCloseable {
     /**
      * Resolves a service of the <strong>local</strong> domain by its instance name and registration type to a
      * target host, port and text record if it exits.
+     * <p>
+     * This method relies on the following <a href="#configuration">properties</a>:
+     * <ul>
+     * <li>{@code io.omam.wire.resolution.interval}
+     * </ul>
      *
      * @param instanceName the service instance name, a human-readable string, e.g. {@code Living Room Printer}
      * @param registrationType service type (IANA) and transport protocol (udp or tcp), e.g. {@code _ftp._tcp.} or
