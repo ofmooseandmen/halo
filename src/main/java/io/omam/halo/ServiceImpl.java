@@ -284,7 +284,7 @@ final class ServiceImpl implements Service, ResponseListener {
                     cachedIpV6.ifPresent(r -> b.addAnswer(r, now));
                 }
                 halo.sendMessage(b.get());
-                awaitingResolution(delays.poll());
+                awaitResolution(delays.poll());
             }
         } finally {
             halo.removeResponseListener(this);
@@ -349,7 +349,7 @@ final class ServiceImpl implements Service, ResponseListener {
      *
      * @param dur timeout
      */
-    private void awaitingResolution(final Duration dur) {
+    private void awaitResolution(final Duration dur) {
         lock.lock();
         awaitingResolution = true;
         boolean response = false;

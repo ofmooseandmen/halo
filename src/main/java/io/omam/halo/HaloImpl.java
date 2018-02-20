@@ -205,7 +205,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
 
         try {
             /* de-register all services. */
-            dergisterAll();
+            deregisterAll();
         } catch (final IOException e) {
             LOGGER.log(Level.WARNING, "I/O error when de-registering all services", e);
         } finally {
@@ -230,7 +230,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     }
 
     @Override
-    public final void dergisterAll() throws IOException {
+    public final void deregisterAll() throws IOException {
         final List<String> messages = new ArrayList<>();
         for (final Service service : services.values()) {
             try {

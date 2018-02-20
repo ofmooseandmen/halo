@@ -46,8 +46,6 @@ import java.util.Optional;
  * A multicast DNS Service Discovery, supporting {@link Service named service} registration, resolution and
  * browsing.
  * <p>
- * All registered services are {@link #dergisterAll() de-registered} upon {@link #close()}, the behaviour of any
- * methods after this is undefined.
  * <h3>Registration</h3>
  *
  * <pre>
@@ -294,6 +292,13 @@ public interface Halo extends AutoCloseable {
     Browser browse(final String registrationType, final ServiceBrowserListener listener);
 
     /**
+     * Closes {@code Halo}: {@link #deregisterAll() de-register all services} and closes the datagram channel. Once
+     * an instance of {@code Halo} has been closed it is not available for further processing.
+     */
+    @Override
+    void close();
+
+    /**
      * De-registers the given service.
      * <p>
      * This method performs no function, nor does it throw an exception, if the given service was not previously
@@ -323,7 +328,7 @@ public interface Halo extends AutoCloseable {
      *
      * @throws IOException if any service cannot be de-registered for any reason
      */
-    void dergisterAll() throws IOException;
+    void deregisterAll() throws IOException;
 
     /**
      * Registers the given service on the <strong>local</strong> domain with the default TTL.
