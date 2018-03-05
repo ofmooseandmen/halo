@@ -45,7 +45,7 @@ import cucumber.api.junit.Cucumber;
  */
 @RunWith(Cucumber.class)
 @CucumberOptions(monochrome = true, dryRun = false, strict = true, tags = {}, plugin = {}, features = {})
-public final class HaloTest {
+public final class HaloTestSuite {
 
     /**
      * Reads 'logging.properties' and configures all Loggers.
