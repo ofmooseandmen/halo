@@ -30,7 +30,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -87,7 +86,6 @@ final class AttributesCodec {
      * @param attributes attributes
      * @param os stream of bytes
      */
-    @SuppressWarnings("unused")
     static void encode(final Attributes attributes, final MessageOutputStream os) {
         final Set<String> keys = attributes.keys();
         for (final String key : keys) {
@@ -102,8 +100,6 @@ final class AttributesCodec {
                 }
                 os.writeByte(attos.size());
                 os.writeBytes(attos.toByteArray());
-            } catch (final IOException e) {
-                /* not actually thrown by MessageOutputStream */
             }
         }
     }

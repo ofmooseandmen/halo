@@ -60,6 +60,17 @@ final class MessageInputStream extends ByteArrayInputStream {
     }
 
     /**
+     * Closing a {@code MessageInputStream} has no effect. The methods in this class can be called after the stream
+     * has been closed without generating an {@code IOException}.
+     *
+     * @see ByteArrayInputStream#close()
+     */
+    @Override
+    public final void close() {
+        // empty.
+    }
+
+    /**
      * Reads the next byte of data from this input stream.
      *
      * @see ByteArrayInputStream#read()

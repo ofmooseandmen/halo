@@ -45,7 +45,6 @@ import java.util.Optional;
 /**
  * A multicast DNS Service Discovery, supporting {@link Service named service} registration, resolution and
  * browsing.
- * <p>
  * <h3>Registration</h3>
  *
  * <pre>

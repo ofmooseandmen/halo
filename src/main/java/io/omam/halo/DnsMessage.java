@@ -492,9 +492,6 @@ final class DnsMessage {
             answers.forEach(a -> write(a.record(), a.stamp(), mos));
 
             return mos.toByteArray();
-        } catch (final IOException e) {
-            /* not possible. */
-            throw new IllegalStateException(e);
         }
     }
 

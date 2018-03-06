@@ -59,6 +59,17 @@ final class MessageOutputStream extends ByteArrayOutputStream {
     }
 
     /**
+     * Closing a {@code MessageOutputStream} has no effect. The methods in this class can be called after the
+     * stream has been closed without generating an {@code IOException}.
+     *
+     * @see ByteArrayOutputStream#close()
+     */
+    @Override
+    public final void close() {
+        // empty.
+    }
+
+    /**
      * @return the number of valid bytes in the buffer.
      */
     final int position() {

@@ -58,6 +58,8 @@ public final class DecodingSteps {
 
     private final DnsFactory factory;
 
+    private final Exceptions exceptions;
+
     private Attributes attributes;
 
     private DnsMessage msg;
@@ -66,8 +68,9 @@ public final class DecodingSteps {
 
     private byte[] packet;
 
-    public DecodingSteps(final DnsFactory aFactory) {
+    public DecodingSteps(final DnsFactory aFactory, final Exceptions someExceptions) {
         factory = aFactory;
+        exceptions = someExceptions;
     }
 
     @After
@@ -127,15 +130,19 @@ public final class DecodingSteps {
     }
 
     @When("^the packet is decoded into attributes$")
-    public final void whenDecodePacketAttributes() throws IOException {
+    public final void whenDecodePacketAttributes() {
         try (final MessageInputStream is = new MessageInputStream(packet)) {
             attributes = AttributesCodec.decode(is, packet.length);
         }
     }
 
     @When("^the packet is decoded into a DNS message$")
-    public final void whenDecodePacketDnsMessage() throws IOException {
+    public final void whenDecodePacketDnsMessage() {
         now = Clock.systemUTC().instant();
-        msg = DnsMessage.decode(packet, now);
+        try {
+            msg = DnsMessage.decode(packet, now);
+        } catch (final IOException e) {
+            exceptions.thrown(e);
+        }
     }
 }

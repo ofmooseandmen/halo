@@ -32,8 +32,6 @@ package io.omam.halo;
 
 import static org.junit.Assert.assertArrayEquals;
 
-import java.io.IOException;
-
 import cucumber.api.DataTable;
 import cucumber.api.java.After;
 import cucumber.api.java.en.Then;
@@ -65,7 +63,7 @@ public final class EncodingSteps {
     }
 
     @When("^the attributes are encoded$")
-    public final void whenAttributesEncoded() throws IOException {
+    public final void whenAttributesEncoded() {
         try (final MessageOutputStream os = new MessageOutputStream()) {
             AttributesCodec.encode(factory.attributes(), os);
             packet = os.toByteArray();
