@@ -51,6 +51,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.omam.halo.DnsMessage.Builder;
@@ -113,16 +114,21 @@ final class HaloServiceBrowser extends HaloBrowser {
         @SuppressWarnings("synthetic-access")
         @Override
         public final void run() {
-            final boolean resolved = s.resolve(halo, RESOLUTION_TIMEOUT);
-            final String skey = s.name().toLowerCase();
-            rFutures.remove(skey);
-            if (resolved) {
-                LOGGER.fine(() -> "Resolved " + s);
-                services.get(rpn).put(skey, s);
-                final Collection<ServiceBrowserListener> rlisteners = listeners.get(rpn);
-                rlisteners.forEach(l -> l.up(s));
-            } else {
-                LOGGER.warning(() -> "Could not resolve " + s);
+            try {
+                final boolean resolved = s.resolve(halo, RESOLUTION_TIMEOUT);
+                final String skey = s.name().toLowerCase();
+                rFutures.remove(skey);
+                if (resolved) {
+                    LOGGER.fine(() -> "Resolved " + s);
+                    services.get(rpn).put(skey, s);
+                    final Collection<ServiceBrowserListener> rlisteners = listeners.get(rpn);
+                    rlisteners.forEach(l -> l.up(s));
+                } else {
+                    LOGGER.warning(() -> "Could not resolve " + s);
+                }
+            } catch (final InterruptedException e) {
+                LOGGER.log(Level.WARNING, "Interrupted while waiting for response", e);
+                Thread.currentThread().interrupt();
             }
         }
 
@@ -181,6 +187,7 @@ final class HaloServiceBrowser extends HaloBrowser {
 
     @Override
     protected final void doClose() {
+        rFutures.values().forEach(f -> f.cancel(true));
         res.shutdownNow();
     }
 
@@ -229,6 +236,27 @@ final class HaloServiceBrowser extends HaloBrowser {
     }
 
     /**
+     * Handles an expired PTR record.
+     *
+     * @param rservices already resolved services for the registration type
+     * @param rlisteners listeners for the registration type
+     * @param serviceName service name associated to the expired PTR record
+     */
+    private void handlePtrExpiry(final Map<String, ServiceImpl> rservices,
+            final Collection<ServiceBrowserListener> rlisteners, final String serviceName) {
+        LOGGER.fine(() -> "Service [" + serviceName + "] is down");
+        final String skey = serviceName.toLowerCase();
+        final Future<?> f = rFutures.remove(skey);
+        if (f != null) {
+            f.cancel(true);
+        }
+        final ServiceImpl s = rservices.remove(skey);
+        if (s != null) {
+            rlisteners.forEach(l -> l.down(s));
+        }
+    }
+
+    /**
      * Handles answers for the given registration pointer name.
      *
      * @param rpn registration pointer name
@@ -242,27 +270,9 @@ final class HaloServiceBrowser extends HaloBrowser {
             final String serviceName = ptr.target();
             final String skey = serviceName.toLowerCase();
             if (ptr.isExpired(now)) {
-                LOGGER.fine(() -> "Service [" + serviceName + "] is down");
-                final Future<?> f = rFutures.remove(skey);
-                if (f != null) {
-                    f.cancel(true);
-                }
-                final ServiceImpl s = rservices.remove(skey);
-                if (s != null) {
-                    rlisteners.forEach(l -> l.down(s));
-                }
-            } else if (!rservices.containsKey(skey)) {
-                LOGGER.fine(() -> "Discovered [" + serviceName + "]");
-                final Optional<String> instanceName = instanceNameOf(serviceName);
-                final Optional<String> registrationType = registrationTypeOf(serviceName);
-
-                if (instanceName.isPresent() && registrationType.isPresent()) {
-                    final ServiceImpl s = new ServiceImpl(instanceName.get(), registrationType.get());
-                    final Future<?> f = res.submit(new ResolveTask(rpn, s));
-                    rFutures.put(s.name().toLowerCase(), f);
-                } else {
-                    LOGGER.warning(() -> "Could not decode service name [" + serviceName + "]");
-                }
+                handlePtrExpiry(rservices, rlisteners, serviceName);
+            } else if (!rservices.containsKey(skey) && !rFutures.containsKey(skey)) {
+                submitResolution(rpn, serviceName);
             }
         }
     }
@@ -281,6 +291,26 @@ final class HaloServiceBrowser extends HaloBrowser {
             .filter(r -> r.type() == TYPE_PTR && rpns.contains(r.name().toLowerCase()))
             .map(r -> (PtrRecord) r)
             .collect(groupingBy(r -> r.name().toLowerCase()));
+    }
+
+    /**
+     * Submits a task to resolve the given service
+     *
+     * @param rpn registration pointer name
+     * @param serviceName service name
+     */
+    private void submitResolution(final String rpn, final String serviceName) {
+        /* only resolve if service has not already been resolved and no running resolving tasks exits. */
+        final Optional<String> instanceName = instanceNameOf(serviceName);
+        final Optional<String> registrationType = registrationTypeOf(serviceName);
+        if (instanceName.isPresent() && registrationType.isPresent()) {
+            LOGGER.fine(() -> "Discovered [" + serviceName + "]");
+            final ServiceImpl s = new ServiceImpl(instanceName.get(), registrationType.get());
+            final Future<?> f = res.submit(new ResolveTask(rpn, s));
+            rFutures.put(serviceName.toLowerCase(), f);
+        } else {
+            LOGGER.warning(() -> "Could not decode service name [" + serviceName + "]");
+        }
     }
 
 }

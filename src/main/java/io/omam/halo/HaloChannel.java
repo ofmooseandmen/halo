@@ -48,7 +48,6 @@ import java.net.StandardProtocolFamily;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.MulticastChannel;
@@ -112,8 +111,9 @@ final class HaloChannel implements AutoCloseable {
                             listener.accept(msg);
                         }
                     }
-                } catch (final ClosedByInterruptException e) {
-                    LOGGER.log(Level.FINE, "Interrupted while waiting to receive DNS message", e);
+                } catch (final ClosedChannelException e) {
+                    LOGGER.log(Level.FINE, "Channel closed while waiting to receive DNS message", e);
+                    Thread.currentThread().interrupt();
                 } catch (final IOException e) {
                     LOGGER.log(Level.WARNING, "I/O error while receiving DNS message", e);
                 }

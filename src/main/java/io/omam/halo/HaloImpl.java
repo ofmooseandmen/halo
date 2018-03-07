@@ -269,9 +269,15 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
         cache.clean(now());
         final ServiceImpl si = new ServiceImpl(instanceName, registrationType);
         LOGGER.fine(() -> "Resolving " + si.toString() + ON_DOMAIN);
-        if (si.resolve(this, timeout)) {
-            LOGGER.info(() -> "Resolved " + si.toString() + ON_DOMAIN);
-            return Optional.of(si);
+        try {
+            final boolean resolved = si.resolve(this, timeout);
+            if (resolved) {
+                LOGGER.info(() -> "Resolved " + si.toString() + ON_DOMAIN);
+                return Optional.of(si);
+            }
+        } catch (final InterruptedException e) {
+            LOGGER.log(Level.FINE, "Interrupted while waiting for response", e);
+            Thread.currentThread().interrupt();
         }
         LOGGER.info(() -> "Could not resolve " + si.toString() + ON_DOMAIN);
         return Optional.empty();

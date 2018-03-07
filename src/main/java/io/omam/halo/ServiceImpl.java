@@ -50,7 +50,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -188,6 +187,11 @@ final class ServiceImpl implements Service, ResponseListener {
     }
 
     @Override
+    public final String name() {
+        return instanceName + "." + registrationPointerName();
+    }
+
+    @Override
     public final short port() {
         return port;
     }
@@ -219,11 +223,6 @@ final class ServiceImpl implements Service, ResponseListener {
     }
 
     @Override
-    public final String name() {
-        return instanceName + "." + registrationPointerName();
-    }
-
-    @Override
     public final String toString() {
         return "Service [instance name=" + instanceName + "; registration type=" + registrationType + "]";
     }
@@ -235,8 +234,9 @@ final class ServiceImpl implements Service, ResponseListener {
      * @param halo halo helper
      * @param timeout resolution timeout
      * @return {@code true} iff service has been resolved
+     * @throws InterruptedException if interrupted while waiting for resolution
      */
-    final boolean resolve(final HaloHelper halo, final Duration timeout) {
+    final boolean resolve(final HaloHelper halo, final Duration timeout) throws InterruptedException {
         final String serviceName = name();
 
         /* look for a cached SRV record. */
@@ -348,8 +348,9 @@ final class ServiceImpl implements Service, ResponseListener {
      * Awaits until this service is resolved or the given timeout has elapsed whichever occurs first.
      *
      * @param dur timeout
+     * @throws InterruptedException if interrupted while waiting for resolution
      */
-    private void awaitResolution(final Duration dur) {
+    private void awaitResolution(final Duration dur) throws InterruptedException {
         lock.lock();
         awaitingResolution = true;
         boolean response = false;
@@ -360,9 +361,6 @@ final class ServiceImpl implements Service, ResponseListener {
                 response = resolved.await(remaining.toMillis(), TimeUnit.MILLISECONDS);
                 remaining = timeout.remaining();
             }
-        } catch (final InterruptedException e) {
-            LOGGER.log(Level.WARNING, "Interrupted while waiting for response", e);
-            Thread.currentThread().interrupt();
         } finally {
             lock.unlock();
         }
@@ -374,8 +372,8 @@ final class ServiceImpl implements Service, ResponseListener {
     /**
      * Computes delays covering the given timeout.
      * <p>
-     * First delay is always {@link #RESOLUTION_INTERVAL}, following are twice the previous delay (in order to space
-     * more and more the sent messages and avoid over-flooding receiver).
+     * First delay is always {@link #RESOLUTION_INTERVAL}, following are twice the previous delay (in order to
+     * space more and more the sent messages and avoid over-flooding receiver).
      *
      * @param timeout timeout
      * @return delays

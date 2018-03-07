@@ -119,7 +119,7 @@ final class Canceller implements AutoCloseable {
      */
     Canceller(final HaloHelper haloHelper) {
         halo = haloHelper;
-        ses = new HaloScheduledExecutorService("canceler");
+        ses = new HaloScheduledExecutorService("canceller");
     }
 
     @Override
