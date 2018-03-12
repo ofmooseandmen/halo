@@ -119,7 +119,7 @@ final class HaloServiceBrowser extends HaloBrowser {
                 final String skey = s.name().toLowerCase();
                 rFutures.remove(skey);
                 if (resolved) {
-                    LOGGER.fine(() -> "Resolved " + s);
+                    LOGGER.info(() -> "Resolved " + s);
                     services.get(rpn).put(skey, s);
                     final Collection<ServiceBrowserListener> rlisteners = listeners.get(rpn);
                     rlisteners.forEach(l -> l.up(s));
@@ -226,12 +226,12 @@ final class HaloServiceBrowser extends HaloBrowser {
         Objects.requireNonNull(listener);
         final String rpn = toRpn(registrationType);
         final Collection<ServiceBrowserListener> rls = listeners.get(rpn);
-        if (rls != null && rls.size() > 1) {
-            rls.remove(listener);
-        } else if (rls != null && rls.size() == 1) {
+        if (rls == null) {
+            LOGGER.warning(() -> registrationType + " is not being browsed.");
+        } else if (rls.size() == 1) {
             listeners.remove(rpn);
         } else {
-            LOGGER.warning(() -> registrationType + " is not being browsed.");
+            rls.remove(listener);
         }
     }
 
@@ -244,7 +244,7 @@ final class HaloServiceBrowser extends HaloBrowser {
      */
     private void handlePtrExpiry(final Map<String, ServiceImpl> rservices,
             final Collection<ServiceBrowserListener> rlisteners, final String serviceName) {
-        LOGGER.fine(() -> "Service [" + serviceName + "] is down");
+        LOGGER.info(() -> "Service [" + serviceName + "] is down");
         final String skey = serviceName.toLowerCase();
         final Future<?> f = rFutures.remove(skey);
         if (f != null) {

@@ -151,30 +151,30 @@ final class MulticastDns {
         try (final InputStream is = MulticastDns.class.getClassLoader().getResourceAsStream("halo.properties")) {
             final Properties props = new Properties();
             props.load(is);
-            IPV4_ADDR = InetAddress.getByName(stringProp("io.omam.wire.mdns.ipv4", props));
-            IPV6_ADDR = InetAddress.getByName(stringProp("io.omam.wire.mdns.ipv6", props));
-            MDNS_PORT = intProp("io.omam.wire.mdns.port", props);
+            IPV4_ADDR = InetAddress.getByName(stringProp("io.omam.halo.mdns.ipv4", props));
+            IPV6_ADDR = InetAddress.getByName(stringProp("io.omam.halo.mdns.ipv6", props));
+            MDNS_PORT = intProp("io.omam.halo.mdns.port", props);
             IPV4_SOA = new InetSocketAddress(IPV4_ADDR, MDNS_PORT);
             IPV6_SOA = new InetSocketAddress(IPV6_ADDR, MDNS_PORT);
 
-            RESOLUTION_TIMEOUT = durationProp("io.omam.wire.resolution.timeout", props);
-            RESOLUTION_INTERVAL = durationProp("io.omam.wire.resolution.interval", props);
+            RESOLUTION_TIMEOUT = durationProp("io.omam.halo.resolution.timeout", props);
+            RESOLUTION_INTERVAL = durationProp("io.omam.halo.resolution.interval", props);
 
-            PROBING_TIMEOUT = durationProp("io.omam.wire.probing.timeout", props);
-            PROBING_INTERVAL = durationProp("io.omam.wire.probing.interval", props);
-            PROBE_NUM = intProp("io.omam.wire.probing.number", props);
+            PROBING_TIMEOUT = durationProp("io.omam.halo.probing.timeout", props);
+            PROBING_INTERVAL = durationProp("io.omam.halo.probing.interval", props);
+            PROBE_NUM = intProp("io.omam.halo.probing.number", props);
 
-            QUERYING_DELAY = durationProp("io.omam.wire.querying.delay", props);
-            QUERYING_INTERVAL = durationProp("io.omam.wire.querying.interval", props);
-            QUERY_NUM = intProp("io.omam.wire.querying.number", props);
+            QUERYING_DELAY = durationProp("io.omam.halo.querying.delay", props);
+            QUERYING_INTERVAL = durationProp("io.omam.halo.querying.interval", props);
+            QUERY_NUM = intProp("io.omam.halo.querying.number", props);
 
-            CANCELLING_INTERVAL = durationProp("io.omam.wire.cancellation.interval", props);
-            CANCEL_NUM = intProp("io.omam.wire.cancellation.number", props);
+            CANCELLING_INTERVAL = durationProp("io.omam.halo.cancellation.interval", props);
+            CANCEL_NUM = intProp("io.omam.halo.cancellation.number", props);
 
-            REAPING_INTERVAL = durationProp("io.omam.wire.reaper.interval", props);
+            REAPING_INTERVAL = durationProp("io.omam.halo.reaper.interval", props);
 
-            TTL = durationProp("io.omam.wire.ttl.default", props);
-            EXPIRY_TTL = durationProp("io.omam.wire.ttl.expiry", props);
+            TTL = durationProp("io.omam.halo.ttl.default", props);
+            EXPIRY_TTL = durationProp("io.omam.halo.ttl.expiry", props);
 
         } catch (final IOException e) {
             throw new IllegalStateException(e);

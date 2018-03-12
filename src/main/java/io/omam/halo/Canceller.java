@@ -136,7 +136,7 @@ final class Canceller implements AutoCloseable {
      * @throws IOException if an exception occurs while probing
      */
     final void cancel(final Service service) throws IOException {
-        LOGGER.fine(() -> "Canceling " + service);
+        LOGGER.fine(() -> "Cancelling " + service);
         try {
             final CancelTask task = new CancelTask(service, halo);
             final Collection<ScheduledFuture<Void>> cancels =
@@ -144,11 +144,11 @@ final class Canceller implements AutoCloseable {
             for (final Future<?> cancel : cancels) {
                 cancel.get();
             }
-            LOGGER.info(() -> "Canceled " + service);
+            LOGGER.info(() -> "Cancelled " + service);
         } catch (final ExecutionException e) {
             throw new IOException(e);
         } catch (final InterruptedException e) {
-            LOGGER.log(Level.FINE, "Interrupted while probing service", e);
+            LOGGER.log(Level.FINE, "Interrupted while cancelling service", e);
             Thread.currentThread().interrupt();
         }
 

@@ -150,7 +150,7 @@ final class HaloRegistrationTypeBrowser extends HaloBrowser {
         if (end != -1) {
             final String rt = p.target().substring(0, end);
             if (!rts.contains(rt)) {
-                LOGGER.fine(() -> "Discovered new registration type [" + p.target() + "]");
+                LOGGER.info(() -> "Discovered new registration type [" + p.target() + "]");
                 rts.add(rt);
                 listeners.forEach(l -> l.registrationTypeDiscovered(rt));
             }

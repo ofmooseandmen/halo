@@ -104,19 +104,19 @@ The following parameters can be configured by system properties:
 
 | Property Key                       | Description                                                       | Default     |
 | ---------------------------------- | ----------------------------------------------------------------- | ----------- |
-| io.omam.wire.mdns.ipv4             | mDNS IPV4 address                                                 | 224.0.0.251 |
-| io.omam.wire.mdns.ipv6             | mDNS IPV6 address                                                 | FF02::FB    |
-| io.omam.wire.mdns.port             | mDNS port                                                         | 5353        |
-| io.omam.wire.resolution.timeout    | resolution timeout in milliseconds                                | 6000        |
-| io.omam.wire.resolution.interval   | interval between resolution questions in milliseconds             | 200         |
-| io.omam.wire.probing.timeout       | probing timeout in milliseconds                                   | 6000        |
-| io.omam.wire.probing.interval      | interval between probe messages in milliseconds                   | 250         |
-| io.omam.wire.probing.number        | number of probing messages before announcing a registered service | 3           |
-| io.omam.wire.querying.delay        | delay before transmitting a browsing query in milliseconds        | 120         |
-| io.omam.wire.querying.interval     | interval between browsing queries in milliseconds                 | 1200000     |
-| io.omam.wire.querying.number       | number of browsing queries                                        | 3           |
-| io.omam.wire.cancellation.interval | interval between goodbye messages in milliseconds                 | 250         |
-| io.omam.wire.cancellation.number   | number of goodbye messages sent when de-registering a service     | 3           |
-| io.omam.wire.reaper.interval       | cache record reaper interval in milliseconds                      | 10000       |
-| io.omam.wire.ttl.default           | DNS record default time to live in milliseconds                   | 3600000     |
-| io.omam.wire.ttl.expiry            | DNS record time to live after expiry in milliseconds              | 1000        |
+| io.omam.halo.mdns.ipv4             | mDNS IPV4 address                                                 | 224.0.0.251 |
+| io.omam.halo.mdns.ipv6             | mDNS IPV6 address                                                 | FF02::FB    |
+| io.omam.halo.mdns.port             | mDNS port                                                         | 5353        |
+| io.omam.halo.resolution.timeout    | resolution timeout in milliseconds                                | 6000        |
+| io.omam.halo.resolution.interval   | interval between resolution questions in milliseconds             | 200         |
+| io.omam.halo.probing.timeout       | probing timeout in milliseconds                                   | 6000        |
+| io.omam.halo.probing.interval      | interval between probe messages in milliseconds                   | 250         |
+| io.omam.halo.probing.number        | number of probing messages before announcing a registered service | 3           |
+| io.omam.halo.querying.delay        | delay before transmitting a browsing query in milliseconds        | 120         |
+| io.omam.halo.querying.interval     | interval between browsing queries in milliseconds                 | 1200000     |
+| io.omam.halo.querying.number       | number of browsing queries                                        | 3           |
+| io.omam.halo.cancellation.interval | interval between goodbye messages in milliseconds                 | 250         |
+| io.omam.halo.cancellation.number   | number of goodbye messages sent when de-registering a service     | 3           |
+| io.omam.halo.reaper.interval       | cache record reaper interval in milliseconds                      | 10000       |
+| io.omam.halo.ttl.default           | DNS record default time to live in milliseconds                   | 3600000     |
+| io.omam.halo.ttl.expiry            | DNS record time to live after expiry in milliseconds              | 1000        |
