@@ -1,9 +1,9 @@
 ext.libraries = [
 
     cucumber: [
-        'io.cucumber:cucumber-java:2.3.1',
-        'io.cucumber:cucumber-junit:2.3.1',
-        'io.cucumber:cucumber-picocontainer:2.3.1'
+        'io.cucumber:cucumber-java:2.4.0',
+        'io.cucumber:cucumber-junit:2.4.0',
+        'io.cucumber:cucumber-picocontainer:2.4.0'
     ],
 
     junit: [
