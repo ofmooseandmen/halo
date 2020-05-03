@@ -45,7 +45,8 @@ import java.util.Optional;
 /**
  * A multicast DNS Service Discovery, supporting {@link Service named service} registration, resolution and
  * browsing.
- * <h3>Registration</h3>
+ * <p>
+ * <strong>Registration</strong>
  *
  * <pre>
  * <code>
@@ -66,7 +67,8 @@ import java.util.Optional;
  * </code>
  * </pre>
  *
- * <h3>Resolution</h3>
+ * <p>
+ * <strong>Resolution</strong>
  *
  * <pre>
  * <code>
@@ -83,7 +85,8 @@ import java.util.Optional;
  * </code>
  * </pre>
  *
- * <h3>Browsing</h3>
+ * <p>
+ * <strong>Browsing</strong>
  *
  * <pre>
  * <code>
@@ -123,7 +126,9 @@ import java.util.Optional;
  * </code>
  * </pre>
  *
- * <h3 id="configuration">Configuration</h3> The following parameters can be configured by system properties:
+ * <p id="configuration">
+ * <strong>Configuration</strong> <br>
+ * The following parameters can be configured by system properties:
  * <table>
  * <caption>Summary of Halo system properties</caption>
  * <tr>
