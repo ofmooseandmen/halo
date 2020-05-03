@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Cedric Liegeois
+Copyright 2018 - 2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -42,10 +42,11 @@ import java.util.List;
 
 import javax.jmdns.ServiceInfo;
 
-import cucumber.api.java.After;
-import cucumber.api.java.en.Given;
-import cucumber.api.java.en.Then;
-import cucumber.api.java.en.When;
+import io.cucumber.datatable.DataTable;
+import io.cucumber.java.After;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 
 /**
  * Steps to tests service registration/de-registration.
@@ -78,19 +79,20 @@ public final class RegistrationSteps {
         registeredBy = null;
     }
 
-    @Given("^the following services have been registered with \"(Halo|JmDNS)\":$")
-    public final void givenServicesRegistered(final String engine, final List<ServiceDetails> service)
-            throws IOException {
-        whenServicesRegistered(engine, service);
+    @Given("the following services have been registered with {string}:")
+    public final void givenServicesRegistered(final String engine, final DataTable data) throws IOException {
+        whenServicesRegistered(engine, data);
     }
 
-    @When("the service \"([^\"]*)\" is de-registered$")
+    @When("the service {string} is de-registered")
     public final void thenDeregisterService(final String service) throws IOException {
         assertNotNull(registeredBy);
         if (registeredBy.equals("Halo")) {
-            final Service s =
-                    hss.stream().filter(hs -> hs.name().equals(service + "local.")).findFirst().orElseThrow(
-                            AssertionError::new);
+            final Service s = hss
+                .stream()
+                .filter(hs -> hs.name().equals(service + "local."))
+                .findFirst()
+                .orElseThrow(AssertionError::new);
             engines.halo().deregister(s);
             hss.remove(s);
         } else {
@@ -104,48 +106,67 @@ public final class RegistrationSteps {
         }
     }
 
-    @Then("^the following registered services shall be returned:$")
-    public final void thenServicesReturned(final List<ServiceDetails> service) {
+    @Then("the following registered services shall be returned:")
+    public final void thenServicesReturned(final DataTable data) {
+        final List<ServiceDetails> services = Parser.parse(data, ServiceDetails::new);
         assertNotNull(registeredBy);
         if (registeredBy.equals("Halo")) {
-            assertEquals(service.size(), hss.size());
+            assertEquals(services.size(), hss.size());
             for (int i = 0; i < hss.size(); i++) {
-                assertServiceEquals(service.get(i), hss.get(i));
+                assertServiceEquals(services.get(i), hss.get(i));
             }
         } else {
-            assertEquals(service.size(), jss.size());
+            assertEquals(services.size(), jss.size());
             for (int i = 0; i < jss.size(); i++) {
-                assertServiceEquals(service.get(i), jss.get(i));
+                assertServiceEquals(services.get(i), jss.get(i));
             }
         }
     }
 
-    @When("^the following service is registered with \"Halo\"( not)? allowing instance name change:$")
-    public final void whenServiceRegistered(final String nameChangeNotAllowed,
-            final List<ServiceDetails> services) {
+    @When("the following service is registered with \"Halo\" not allowing instance name change:")
+    public final void whenServiceRegistered(final DataTable data) {
+        final List<ServiceDetails> services = Parser.parse(data, ServiceDetails::new);
         try {
-            final boolean allowNameChange = nameChangeNotAllowed == null;
             for (final ServiceDetails service : services) {
-                hss.add(engines.halo().register(toHalo(service), allowNameChange));
+                hss.add(engines.halo().register(toHalo(service), false));
             }
         } catch (final IOException e) {
             exceptions.thrown(e);
         }
     }
 
-    @When("^the following services are registered with \"(Halo|JmDNS)\":$")
-    public final void whenServicesRegistered(final String engine, final List<ServiceDetails> services)
-            throws IOException {
+    @When("the following service is registered with \"Halo\" allowing instance name change:")
+    public final void whenServiceRegisteredAllowingNameChange(final DataTable data) {
+        final List<ServiceDetails> services = Parser.parse(data, ServiceDetails::new);
+        try {
+            for (final ServiceDetails service : services) {
+                hss.add(engines.halo().register(toHalo(service), true));
+            }
+        } catch (final IOException e) {
+            exceptions.thrown(e);
+        }
+    }
+
+    @When("the following services are registered with {string}:")
+    public final void whenServicesRegistered(final String engine, final DataTable data) throws IOException {
+        final List<ServiceDetails> services = Parser.parse(data, ServiceDetails::new);
         if (engine.equals("Halo")) {
             for (final ServiceDetails service : services) {
                 hss.add(engines.halo().register(toHalo(service), false));
             }
-        } else {
+        } else if (engine.equals("JmDNS")) {
             for (final ServiceDetails service : services) {
                 final ServiceInfo s = toJmdns(service);
                 engines.jmdns().registerService(s);
+                /*
+                 * since JmDNS 3.5.5, registerService no longer waits for the service to be registered before
+                 * returning.
+                 */
+                engines.jmdns().getServiceInfo(s.getType(), s.getName());
                 jss.add(s);
             }
+        } else {
+            throw new AssertionError("Unsupported engine " + engine);
         }
         registeredBy = engine;
     }

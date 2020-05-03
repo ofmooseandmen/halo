@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Cedric Liegeois
+Copyright 2018 - 2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -30,10 +30,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import static io.omam.halo.Assert.assertServiceEquals;
+import static io.omam.halo.Assert.assertContainsAllServiceInfos;
+import static io.omam.halo.Assert.assertContainsAllServices;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
-import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
@@ -41,15 +41,17 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.jmdns.ServiceEvent;
 import javax.jmdns.ServiceInfo;
 import javax.jmdns.ServiceListener;
 
-import cucumber.api.java.After;
-import cucumber.api.java.en.Given;
-import cucumber.api.java.en.Then;
-import cucumber.api.java.en.When;
+import io.cucumber.datatable.DataTable;
+import io.cucumber.java.After;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 
 /**
  * Steps to tests browsing by registration type.
@@ -64,17 +66,17 @@ public final class ServiceBrowsingSteps {
         private final List<Service> downs;
 
         CollectingBrowserListener() {
-            ups = new ArrayList<>();
-            downs = new ArrayList<>();
+            ups = new CopyOnWriteArrayList<>();
+            downs = new CopyOnWriteArrayList<>();
         }
 
         @Override
-        public final void down(final Service service) {
+        public final void serviceDown(final Service service) {
             downs.add(service);
         }
 
         @Override
-        public final void up(final Service service) {
+        public final void serviceUp(final Service service) {
             ups.add(service);
         }
 
@@ -93,7 +95,7 @@ public final class ServiceBrowsingSteps {
         private final List<ServiceInfo> ups;
 
         CollectingServiceListener() {
-            ups = new ArrayList<>();
+            ups = new CopyOnWriteArrayList<>();
         }
 
         @Override
@@ -108,10 +110,11 @@ public final class ServiceBrowsingSteps {
 
         @Override
         public final void serviceResolved(final ServiceEvent event) {
-            /* for some reason JmDNS sometimes notified several times for the same service. */
-            if (!ups.contains(event.getInfo())) {
-                ups.add(event.getInfo());
-            }
+            /*
+             * Note, for some reason JmDNS sometimes notified several times for the same service with updated
+             * information.
+             */
+            ups.add(event.getInfo());
         }
 
         final List<ServiceInfo> ups() {
@@ -147,19 +150,19 @@ public final class ServiceBrowsingSteps {
         browsedBy = null;
     }
 
-    @Given("the browser associated with the listener \"([^\"]*)\" has been stopped")
+    @Given("the browser associated with the listener {string} has been stopped")
     public final void givenBrowserStopped(final String listener) {
         hbs.remove(listener).close();
     }
 
-    @Given("^the following registration types are being browsed with \"([^\"]*)\":$")
-    public final void givenRegistrationTypesBrowsed(final String engine, final List<RegistrationType> types) {
-        whenRegistrationTypesBrowsed(engine, types);
+    @Given("the following registration types are being browsed with {string}:")
+    public final void givenRegistrationTypesBrowsed(final String engine, final DataTable data) {
+        whenRegistrationTypesBrowsed(engine, data);
     }
 
-    @Then("^the listener \"([^\"]*)\" shall be notified of the following \"([^\"]*)\" services:$")
-    public final void thenListenerNotified(final String listener, final String eventType,
-            final List<ServiceDetails> services) {
+    @Then("the listener {string} shall be notified of the following {string} services:")
+    public final void thenListenerNotified(final String listener, final String eventType, final DataTable data) {
+        final List<ServiceDetails> services = Parser.parse(data, ServiceDetails::new);
         /* sort expecteds and actuals by instance name. */
         final List<ServiceDetails> expecteds = new ArrayList<>(services);
         Collections.sort(expecteds, (s1, s2) -> s1.instanceName().compareTo(s2.instanceName()));
@@ -169,28 +172,21 @@ public final class ServiceBrowsingSteps {
         final long timeout = services.size() * 6000;
         if (browsedBy.equals("Halo")) {
             final CollectingBrowserListener l = hls.get(listener);
-            final List<Service> actuals = up ? l.ups() : l.downs();
-            /* await for listener to have received expected number of events. */
-            await().atMost(timeout, SECONDS).until(() -> actuals.size(), equalTo(expecteds.size()));
-            Collections.sort(actuals, (s1, s2) -> s1.instanceName().compareTo(s2.instanceName()));
-            for (int i = 0; i < expecteds.size(); i++) {
-                assertServiceEquals(expecteds.get(i), actuals.get(i));
-            }
+            await()
+                .atMost(timeout, SECONDS)
+                .untilAsserted(() -> assertContainsAllServices(expecteds, up ? l.ups() : l.downs()));
         } else {
             assertTrue(up);
             final CollectingServiceListener l = jls.get(listener);
-            final List<ServiceInfo> actuals = l.ups();
-            /* await for listener to have received expected number of events. */
-            await().atMost(timeout, SECONDS).until(() -> actuals.size(), equalTo(expecteds.size()));
-            Collections.sort(actuals, (s1, s2) -> s1.getName().compareTo(s2.getName()));
-            for (int i = 0; i < expecteds.size(); i++) {
-                assertServiceEquals(expecteds.get(i), actuals.get(i));
-            }
+            await()
+                .atMost(timeout, SECONDS)
+                .untilAsserted(() -> assertContainsAllServiceInfos(expecteds, l.ups()));
         }
     }
 
-    @When("^the following registration types are browsed with \"([^\"]*)\":$")
-    public final void whenRegistrationTypesBrowsed(final String engine, final List<RegistrationType> types) {
+    @When("the following registration types are browsed with {string}:")
+    public final void whenRegistrationTypesBrowsed(final String engine, final DataTable data) {
+        final List<RegistrationType> types = Parser.parse(data, RegistrationType::new);
         if (engine.equals("Halo")) {
             for (final RegistrationType rt : types) {
                 final CollectingBrowserListener l = new CollectingBrowserListener();

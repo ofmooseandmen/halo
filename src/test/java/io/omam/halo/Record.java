@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Cedric Liegeois
+Copyright 2018 - 2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -30,30 +30,46 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
+import java.util.Map;
+
 @SuppressWarnings("javadoc")
-public final class Record {
+final class Record {
 
-    private String address;
+    private final String address;
 
-    private short port;
+    private final short port;
 
-    private short priority;
+    private final short priority;
 
-    private String recordClass;
+    private final String recordClass;
 
-    private String recordType;
+    private final String recordType;
 
-    private String server;
+    private final String server;
 
-    private String serviceName;
+    private final String serviceName;
 
-    private String target;
+    private final String target;
 
-    private String text;
+    private final String text;
 
-    private String ttl;
+    private final String ttl;
 
-    private short weight;
+    private final short weight;
+
+    Record(final Map<String, String> row) {
+        address = row.get("address");
+        port = Parser.parseShort(row.get("port"));
+        priority = Parser.parseShort(row.get("priority"));
+        recordClass = row.get("recordClass");
+        recordType = row.get("recordType");
+        server = row.get("server");
+        serviceName = row.get("serviceName");
+        target = row.get("target");
+        text = row.get("text");
+        ttl = row.get("ttl");
+        weight = Parser.parseShort(row.get("weight"));
+    }
 
     final String address() {
         return address;

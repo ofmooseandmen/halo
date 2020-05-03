@@ -122,7 +122,7 @@ final class HaloServiceBrowser extends HaloBrowser {
                     LOGGER.info(() -> "Resolved " + s);
                     services.get(rpn).put(skey, s);
                     final Collection<ServiceBrowserListener> rlisteners = listeners.get(rpn);
-                    rlisteners.forEach(l -> l.up(s));
+                    rlisteners.forEach(l -> l.serviceUp(s));
                 } else {
                     LOGGER.warning(() -> "Could not resolve " + s);
                 }
@@ -185,17 +185,6 @@ final class HaloServiceBrowser extends HaloBrowser {
         pointers(response).forEach((rpn, ptr) -> handleResponse(rpn, ptr, now));
     }
 
-    @Override
-    protected final void doClose() {
-        rFutures.values().forEach(f -> f.cancel(true));
-        res.shutdownNow();
-    }
-
-    @Override
-    protected final Callable<Void> queryTask() {
-        return new QueryTask();
-    }
-
     /**
      * Adds the given listener for the given service registration type.
      * <p>
@@ -211,7 +200,7 @@ final class HaloServiceBrowser extends HaloBrowser {
         final Collection<ServiceBrowserListener> rls =
                 listeners.computeIfAbsent(rpn, k -> new CopyOnWriteArrayList<>());
         final Map<String, ServiceImpl> rs = services.computeIfAbsent(rpn, k -> new ConcurrentHashMap<>());
-        rs.values().forEach(listener::up);
+        rs.values().forEach(listener::serviceUp);
         rls.add(listener);
     }
 
@@ -235,6 +224,17 @@ final class HaloServiceBrowser extends HaloBrowser {
         }
     }
 
+    @Override
+    protected final void doClose() {
+        rFutures.values().forEach(f -> f.cancel(true));
+        res.shutdownNow();
+    }
+
+    @Override
+    protected final Callable<Void> queryTask() {
+        return new QueryTask();
+    }
+
     /**
      * Handles an expired PTR record.
      *
@@ -252,7 +252,7 @@ final class HaloServiceBrowser extends HaloBrowser {
         }
         final ServiceImpl s = rservices.remove(skey);
         if (s != null) {
-            rlisteners.forEach(l -> l.down(s));
+            rlisteners.forEach(l -> l.serviceDown(s));
         }
     }
 

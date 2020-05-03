@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Cedric Liegeois
+Copyright 2018 - 2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -403,8 +403,9 @@ final class HaloChannel implements AutoCloseable {
             channel.bind(new InetSocketAddress(MDNS_PORT));
             return Optional.of(channel);
         } catch (final UnsupportedOperationException e) {
-            LOGGER.log(Level.FINE, e,
-                    () -> "Protocol Family [" + family.name() + "] not supported on this machine.");
+            LOGGER
+                .log(Level.FINE, e,
+                        () -> "Protocol Family [" + family.name() + "] not supported on this machine.");
             return Optional.empty();
         } catch (final IOException e) {
             LOGGER.log(Level.WARNING, "Fail to create channel", e);

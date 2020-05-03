@@ -4,15 +4,18 @@ matrix:
     include:
         - os: linux
           jdk: openjdk8
-          env: COVERAGE='false'
         - os: linux
-          jdk: oraclejdk8
-          env: COVERAGE='false'
+          jdk: openjdk11
+          env: JACOCO='-PenableJaCoCo'
         - os: linux
-          jdk: oraclejdk9
-          env: COVERAGE='true'
+          jdk: openjdk14
+        - os: linux
+          jdk: openjdk-ea
         - os: osx
-          env: COVERAGE='false'
+          jdk: openjdk11
+    allow_failures:
+        - jdk: openjdk14
+        - jdk: openjdk-ea  
 
 script:
   - ./gradlew -version

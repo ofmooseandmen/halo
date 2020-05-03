@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Cedric Liegeois
+Copyright 2018 - 2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -81,7 +81,7 @@ final class AttributesCodec {
     }
 
     /**
-     * Writes the given {@code Attributes} to the given stram.
+     * Writes the given {@code Attributes} to the given stream.
      *
      * @param attributes attributes
      * @param os stream of bytes
@@ -96,10 +96,10 @@ final class AttributesCodec {
                     attos.writeString("=");
                     final byte[] bytes = new byte[value.get().remaining()];
                     value.get().get(bytes);
-                    attos.writeBytes(bytes);
+                    attos.writeAllBytes(bytes);
                 }
                 os.writeByte(attos.size());
-                os.writeBytes(attos.toByteArray());
+                os.writeAllBytes(attos.toByteArray());
             }
         }
     }

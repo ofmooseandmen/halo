@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Cedric Liegeois
+Copyright 2018 - 2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -145,13 +145,14 @@ final class Cache {
      * @return an Optional describing the matching DNS record or empty
      */
     final Optional<DnsRecord> get(final String name, final short type, final short clazz) {
-        LOGGER.fine(() -> "Searching cache for DNS record matching [Name="
-            + name
-            + "; type="
-            + type
-            + "; class="
-            + clazz
-            + "]");
+        LOGGER
+            .fine(() -> "Searching cache for DNS record matching [Name="
+                + name
+                + "; type="
+                + type
+                + "; class="
+                + clazz
+                + "]");
         final Optional<DnsRecord> result =
                 entries(name).stream().filter(r -> isSameType(r, type) && isSameClass(r, clazz)).findFirst();
         logResult(result);

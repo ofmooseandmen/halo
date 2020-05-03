@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Cedric Liegeois
+Copyright 2018 - 2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -86,6 +86,16 @@ final class MessageOutputStream extends ByteArrayOutputStream {
     }
 
     /**
+     * Writes the given byte array to this output stream.
+     *
+     * @see ByteArrayOutputStream#write(byte[], int, int)
+     * @param bytes bytes
+     */
+    final void writeAllBytes(final byte[] bytes) {
+        write(bytes, 0, bytes.length);
+    }
+
+    /**
      * Writes the given byte to this output stream.
      *
      * @see ByteArrayOutputStream#write(int)
@@ -93,16 +103,6 @@ final class MessageOutputStream extends ByteArrayOutputStream {
      */
     final void writeByte(final int b) {
         write(b & 0xFF);
-    }
-
-    /**
-     * Writes the given byte array to this output stream.
-     *
-     * @see ByteArrayOutputStream#write(byte[], int, int)
-     * @param bytes bytes
-     */
-    final void writeBytes(final byte[] bytes) {
-        write(bytes, 0, bytes.length);
     }
 
     /**
@@ -176,7 +176,7 @@ final class MessageOutputStream extends ByteArrayOutputStream {
      */
     final void writeString(final String str) {
         final byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
-        writeBytes(bytes);
+        writeAllBytes(bytes);
     }
 
     /**
@@ -188,7 +188,7 @@ final class MessageOutputStream extends ByteArrayOutputStream {
     private void writeCharacterString(final String str) {
         final byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
         writeByte(bytes.length);
-        writeBytes(bytes);
+        writeAllBytes(bytes);
     }
 
 }

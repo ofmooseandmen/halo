@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Cedric Liegeois
+Copyright 2018 - 2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -45,10 +45,11 @@ import java.util.concurrent.Callable;
 
 import javax.jmdns.ServiceInfo;
 
-import cucumber.api.java.After;
-import cucumber.api.java.en.Given;
-import cucumber.api.java.en.Then;
-import cucumber.api.java.en.When;
+import io.cucumber.datatable.DataTable;
+import io.cucumber.java.After;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 
 /**
  * Steps to tests service resolution.
@@ -78,26 +79,28 @@ public final class ResolutionSteps {
         resolvedBy = null;
     }
 
-    @Given("^the service \"([^\"]*)\" has been resolved by \"Halo\"$")
+    @Given("the service {string} has been resolved by \"Halo\"")
     public final void givenServiceResolved(final String service) {
         final String[] split = split(service);
         assertNotNull(engines.halo().resolve(split[0], split[1]));
     }
 
-    @Then("after at least \"([^\"]*)\", the service \"([^\"]*)\" cannot resolved by \"(Halo|JmDNS)\"$")
+    @Then("after at least {string}, the service {string} cannot resolved by {string}")
     public final void thenServiceEventuallyNotResolved(final String dur, final String service,
             final String engine) {
         final String[] split = split(service);
         final Callable<Boolean> c;
         if (engine.equals("Halo")) {
             c = () -> !engines.halo().resolve(split[0], split[1]).isPresent();
-        } else {
+        } else if (engine.equals("JmDNS")) {
             c = () -> engines.jmdns().getServiceInfo(split[1] + "local.", split[0]) == null;
+        } else {
+            throw new AssertionError("Unsupported engine " + engine);
         }
         await().atLeast(Duration.parse(dur).toMillis(), MILLISECONDS).until(c);
     }
 
-    @Then("^no resolved service shall be returned$")
+    @Then("no resolved service shall be returned")
     public final void thenServiceNotResolved() {
         assertNotNull(resolvedBy);
         if (resolvedBy.equals("Halo")) {
@@ -107,39 +110,42 @@ public final class ResolutionSteps {
         }
     }
 
-    @Then("^the service \"([^\"]*)\" shall be resolved by \"JmDNS\"$")
+    @Then("the service {string} shall be resolved by \"JmDNS\"")
     public final void thenServiceResolved(final String service) {
         final String[] split = split(service);
         assertNotNull(engines.jmdns().getServiceInfo(split[1] + "local.", split[0]));
     }
 
-    @Then("^the following resolved services shall be returned:$")
-    public final void thenServiceReturned(final List<ServiceDetails> service) {
+    @Then("the following resolved services shall be returned:")
+    public final void thenServiceReturned(final DataTable data) {
+        final List<ServiceDetails> services = Parser.parse(data, ServiceDetails::new);
         assertNotNull(resolvedBy);
         if (resolvedBy.equals("Halo")) {
-            assertEquals(service.size(), hss.size());
+            assertEquals(services.size(), hss.size());
             for (int i = 0; i < hss.size(); i++) {
-                assertServiceEquals(service.get(i), hss.get(i));
+                assertServiceEquals(services.get(i), hss.get(i));
             }
         } else {
-            assertEquals(service.size(), jss.size());
+            assertEquals(services.size(), jss.size());
             for (int i = 0; i < jss.size(); i++) {
-                assertServiceEquals(service.get(i), jss.get(i));
+                assertServiceEquals(services.get(i), jss.get(i));
             }
         }
     }
 
-    @When("^the service \"([^\"]*)\" is resolved by \"(Halo|JmDNS)\"$")
+    @When("the service {string} is resolved by {string}")
     public final void whenServiceResolved(final String service, final String engine) {
         final String[] split = split(service);
         final String instanceName = split[0];
         final String registrationType = split[1];
         if (engine.equals("Halo")) {
             engines.halo().resolve(instanceName, registrationType).ifPresent(hss::add);
-        } else {
+        } else if (engine.equals("JmDNS")) {
             Optional
                 .ofNullable(engines.jmdns().getServiceInfo(registrationType + "local.", instanceName))
                 .ifPresent(jss::add);
+        } else {
+            throw new AssertionError("Unsupported engine " + engine);
         }
         resolvedBy = engine;
     }

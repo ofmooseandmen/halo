@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Cedric Liegeois
+Copyright 2018 - 2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -308,9 +308,10 @@ final class DnsMessage {
                 final DnsQuestion question = new DnsQuestion(name, type, clazz);
                 questions.add(question);
             }
-            final List<DnsAnswer> answers =
-                    readRecords(is, numAnswers, now).stream().map(DnsAnswer::unstamped).collect(
-                            Collectors.toList());
+            final List<DnsAnswer> answers = readRecords(is, numAnswers, now)
+                .stream()
+                .map(DnsAnswer::unstamped)
+                .collect(Collectors.toList());
             final List<DnsRecord> authorities = readRecords(is, numAuthorities, now);
             final List<DnsRecord> additional = readRecords(is, numAdditional, now);
             return new DnsMessage(flags, questions, answers, authorities, additional);
@@ -456,8 +457,11 @@ final class DnsMessage {
     public final String toString() {
         final StringBuilder sb = new StringBuilder("DNS ");
         if (isQuery()) {
-            sb.append("query with ").append(questions.size()).append(" question(s): ").append(
-                    questions.toString());
+            sb
+                .append("query with ")
+                .append(questions.size())
+                .append(" question(s): ")
+                .append(questions.toString());
         } else {
             sb.append("response with ").append(answers.size()).append(" answer(s): ").append(answers.toString());
         }

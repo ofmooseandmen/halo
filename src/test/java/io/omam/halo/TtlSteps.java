@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Cedric Liegeois
+Copyright 2018 - 2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -37,9 +37,9 @@ import static org.junit.Assert.assertTrue;
 import java.time.Duration;
 import java.time.Instant;
 
-import cucumber.api.java.After;
-import cucumber.api.java.en.Then;
-import cucumber.api.java.en.When;
+import io.cucumber.java.After;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 
 /**
  * Steps to tests DNS record TTL.
@@ -60,21 +60,22 @@ public final class TtlSteps {
         now = null;
     }
 
-    @Then("^the DNS record is (not expired|expired)$")
-    public final void thenDnsRecordExpired(final String expired) {
-        if (expired.startsWith("not")) {
-            assertFalse(factory.record().isExpired(now));
-        } else {
-            assertTrue(factory.record().isExpired(now));
-        }
+    @Then("the DNS record is expired")
+    public final void thenDnsRecordExpired() {
+        assertTrue(factory.record().isExpired(now));
     }
 
-    @Then("^the DNS record remaining TTL shall be '(.+)'$")
+    @Then("the DNS record is not expired")
+    public final void thenDnsRecordNotExpired() {
+        assertFalse(factory.record().isExpired(now));
+    }
+
+    @Then("the DNS record remaining TTL shall be '{word}'")
     public final void thenRemainingTtlIs(final String ttl) {
         assertEquals(Duration.parse(ttl), factory.record().remainingTtl(now));
     }
 
-    @When("^the time is '(.+)'$")
+    @When("the time is '{word}'")
     public final void whenTimeIs(final String time) {
         now = Instant.parse(time);
     }

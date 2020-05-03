@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Cedric Liegeois
+Copyright 2018 - 2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -251,7 +251,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
         final Service rservice = checkInstanceName(service, allowNameChange);
         add(rservice);
 
-        final boolean announced = announcer.announce(rservice);
+        final boolean announced = announcer.announce(rservice, ttl);
         if (!announced) {
             remove(rservice);
             final String msg = "Found conflicts while announcing " + rservice + " on network";
@@ -324,7 +324,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     }
 
     /**
-     * Adds a DNS record type A corresponding to an answer the given question if it exits.
+     * Adds a DNS record type A corresponding to an answer to the given question if it exits.
      *
      * @param query query being answered
      * @param question host IPv4 question (from the query)
@@ -340,13 +340,13 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
             .filter(h -> h.ipv4Address().isPresent())
             .forEach(s -> {
                 final InetAddress addr = s.ipv4Address().get();
-                builder.addAnswer(query,
-                        new AddressRecord(question.name(), uniqueClass(CLASS_IN), TTL, now, addr));
+                builder
+                    .addAnswer(query, new AddressRecord(question.name(), uniqueClass(CLASS_IN), TTL, now, addr));
             });
     }
 
     /**
-     * Adds a DNS record type AAAA corresponding to an answer the given question if it exits.
+     * Adds a DNS record type AAAA corresponding to an answer to the given question if it exits.
      *
      * @param query query being answered
      * @param question host IPv6 question (from the query)
@@ -362,13 +362,13 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
             .filter(h -> h.ipv6Address().isPresent())
             .forEach(s -> {
                 final InetAddress addr = s.ipv6Address().get();
-                builder.addAnswer(query,
-                        new AddressRecord(question.name(), uniqueClass(CLASS_IN), TTL, now, addr));
+                builder
+                    .addAnswer(query, new AddressRecord(question.name(), uniqueClass(CLASS_IN), TTL, now, addr));
             });
     }
 
     /**
-     * Adds a DNS record type PTR corresponding to an answer the given question if it exits.
+     * Adds a DNS record type PTR corresponding to an answer to the given question if it exits.
      *
      * @param query query being answered
      * @param question discovery or service registration pointer question (from the query)
@@ -382,17 +382,18 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
                 builder.addAnswer(query, new PtrRecord(RT_DISCOVERY, CLASS_IN, TTL, now, rpn));
             }
         } else {
-            for (final Service s : services.values()) {
-                if (question.name().equalsIgnoreCase(s.registrationPointerName())) {
-                    builder.addAnswer(query,
-                            new PtrRecord(s.registrationPointerName(), CLASS_IN, TTL, now, s.name()));
+            for (final Service service : services.values()) {
+                if (question.name().equalsIgnoreCase(service.registrationPointerName())) {
+                    builder
+                        .addAnswer(query, new PtrRecord(service.registrationPointerName(), CLASS_IN, TTL, now,
+                                                        service.name()));
                 }
             }
         }
     }
 
     /**
-     * Adds DNS record types SRV, TXT, A and AAAA corresponding to an answer the given question if it exits.
+     * Adds DNS record types SRV, TXT, A and AAAA corresponding to an answer to the given question if it exits.
      *
      * @param query query being answered
      * @param question service resolution question (from the query)
@@ -413,10 +414,12 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
         }
 
         if (question.type() == TYPE_SRV) {
-            service.ipv4Address().ifPresent(
-                    a -> builder.addAnswer(query, new AddressRecord(hostname, unique, TTL, now, a)));
-            service.ipv6Address().ifPresent(
-                    a -> builder.addAnswer(query, new AddressRecord(hostname, unique, TTL, now, a)));
+            service
+                .ipv4Address()
+                .ifPresent(a -> builder.addAnswer(query, new AddressRecord(hostname, unique, TTL, now, a)));
+            service
+                .ipv6Address()
+                .ifPresent(a -> builder.addAnswer(query, new AddressRecord(hostname, unique, TTL, now, a)));
         }
     }
 

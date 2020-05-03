@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Cedric Liegeois
+Copyright 2018 - 2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -61,7 +61,7 @@ final class Canceller implements AutoCloseable {
     private static final class CancelTask implements Callable<Void> {
 
         /** the service to cancel. */
-        private final Service s;
+        private final Service service;
 
         /** halo helper. */
         private final HaloHelper halo;
@@ -69,33 +69,35 @@ final class Canceller implements AutoCloseable {
         /**
          * Constructor.
          *
-         * @param service service to cancel
+         * @param aService service to cancel
          * @param haloHelper halo helper
          */
-        CancelTask(final Service service, final HaloHelper haloHelper) {
-            s = service;
+        CancelTask(final Service aService, final HaloHelper haloHelper) {
+            service = aService;
             halo = haloHelper;
         }
 
         @Override
         public final Void call() throws Exception {
             final Instant now = halo.now();
-            final String hostname = s.hostname();
-            final Attributes attributes = s.attributes();
-            final String serviceName = s.name();
+            final String hostname = service.hostname();
+            final Attributes attributes = service.attributes();
+            final String serviceName = service.name();
             final short unique = uniqueClass(CLASS_IN);
             final Builder b = DnsMessage
                 .response(FLAGS_AA)
-                .addAnswer(new PtrRecord(s.registrationPointerName(), CLASS_IN, ZERO, now, s.instanceName()),
+                .addAnswer(new PtrRecord(service.registrationPointerName(), CLASS_IN, ZERO, now, serviceName),
                         Optional.empty())
-                .addAnswer(new SrvRecord(serviceName, unique, ZERO, now, s.port(), hostname), Optional.empty())
+                .addAnswer(new SrvRecord(serviceName, unique, ZERO, now, service.port(), hostname), Optional.empty())
                 .addAnswer(new TxtRecord(serviceName, unique, ZERO, now, attributes), Optional.empty());
 
-            s.ipv4Address().ifPresent(
-                    a -> b.addAnswer(new AddressRecord(hostname, unique, ZERO, now, a), Optional.empty()));
+            service
+                .ipv4Address()
+                .ifPresent(a -> b.addAnswer(new AddressRecord(hostname, unique, ZERO, now, a), Optional.empty()));
 
-            s.ipv6Address().ifPresent(
-                    a -> b.addAnswer(new AddressRecord(hostname, unique, ZERO, now, a), Optional.empty()));
+            service
+                .ipv6Address()
+                .ifPresent(a -> b.addAnswer(new AddressRecord(hostname, unique, ZERO, now, a), Optional.empty()));
 
             halo.sendMessage(b.get());
             return null;

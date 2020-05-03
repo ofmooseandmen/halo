@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Cedric Liegeois
+Copyright 2018 - 2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -46,8 +46,8 @@ import java.util.Optional;
 import javax.jmdns.JmDNS;
 import javax.jmdns.ServiceInfo;
 
-import cucumber.api.java.After;
-import cucumber.api.java.en.Given;
+import io.cucumber.java.After;
+import io.cucumber.java.en.Given;
 
 /**
  * Steps pertaining to the creation of the JmDNS or Halo engine.
@@ -91,15 +91,15 @@ public final class Engines {
         return s.get();
     }
 
-    static Attributes toHalo(final String attributes) {
+    static Attributes toHalo(final String attributeKey) {
         /* for some reason JmDNS returns true if the attribute has no value. */
-        return Attributes.create().with(attributes, "true", StandardCharsets.UTF_8).get();
+        return Attributes.create().with(attributeKey, "true", StandardCharsets.UTF_8).get();
     }
 
     static ServiceInfo toJmdns(final ServiceDetails sd) {
         assertFalse(sd.hostname().isPresent());
-        return ServiceInfo.create(sd.registrationType() + "local.", sd.instanceName(), sd.port(), 0, 0,
-                toJmdns(sd.text()));
+        return ServiceInfo
+            .create(sd.registrationType() + "local.", sd.instanceName(), sd.port(), 0, 0, toJmdns(sd.text()));
     }
 
     static Map<String, String> toJmdns(final String attributes) {
@@ -122,18 +122,20 @@ public final class Engines {
         }
     }
 
-    @Given("^a \"(Halo|JmDNS)\" instance has been created$")
+    @Given("a {string} instance has been created")
     public final void givenInstanceCreated(final String engine) throws IOException {
         if (engine.equals("Halo")) {
             if (halo != null) {
                 throw new AssertionError("Halo already created");
             }
             halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone());
-        } else {
+        } else if (engine.equals("JmDNS")) {
             if (jmdns != null) {
                 throw new AssertionError("JmDNS already created");
             }
             jmdns = JmDNS.create();
+        } else {
+            throw new AssertionError("Unsupported engine " + engine);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Cedric Liegeois
+Copyright 2018 - 2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -30,14 +30,22 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
+import java.util.Map;
+
 @SuppressWarnings("javadoc")
-public final class Question {
+final class Question {
 
-    private String serviceName;
+    private final String serviceName;
 
-    private String recordType;
+    private final String recordType;
 
-    private String recordClass;
+    private final String recordClass;
+
+    Question(final Map<String, String> row) {
+        serviceName = row.get("serviceName");
+        recordType = row.get("recordType");
+        recordClass = row.get("recordClass");
+    }
 
     final String clazz() {
         return recordClass;

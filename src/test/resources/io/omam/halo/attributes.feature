@@ -9,7 +9,7 @@ Feature: Service attributes
   - Empty keys are ignored
 
   Scenario: Attributes encoding
-    Given attributes are created with the following key/value pairs:
+    Given attributes are created with the following key and value pairs:
       | Foo=thing   |
       | Bar=bar     |
       | =ignored    |

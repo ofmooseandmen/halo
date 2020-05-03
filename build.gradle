@@ -1,8 +1,6 @@
 apply plugin: 'base'
 apply plugin: 'eclipse'
-apply plugin: 'org.sonarqube'
 apply plugin: 'com.bmuschko.nexus'
-apply from: 'libraries.gradle'
 apply from: 'gradle/eclipse-prefs/eclipse.gradle'
 
 buildscript {
@@ -12,7 +10,6 @@ buildscript {
     
     dependencies {
         classpath 'com.bmuschko:gradle-nexus-plugin:2.3.1'
-        classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.6.2'
     }
 }
 
@@ -21,19 +18,24 @@ repositories {
 }
 
 apply plugin: 'jacoco'
-jacoco { toolVersion = '0.8.0' }
+jacoco { toolVersion = '0.8.5' }
 
-apply plugin: 'java'
+apply plugin: 'java-library'
 apply plugin: 'eclipse'
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
 
 dependencies {
-    testCompile libraries.awaitility
-    testCompile libraries.cucumber
-    testCompile libraries.jmdns
-    testCompile libraries.junit
+    testImplementation(
+        'io.cucumber:cucumber-java:5.6.0',
+        'io.cucumber:cucumber-junit:5.6.0',
+        'io.cucumber:cucumber-picocontainer:5.6.0',
+        'org.junit.vintage:junit-vintage-engine:5.6.1',
+        'org.awaitility:awaitility:4.0.2',
+        'org.jmdns:jmdns:3.5.5',
+        'org.slf4j:slf4j-jdk14:1.7.30'
+    )
 }
 
 test {
@@ -53,25 +55,8 @@ if (Integer.valueOf(JavaVersion.current().getMajorVersion()) > 8) {
 }
 
 compileJava.options.encoding = 'UTF-8'
-// See: https://docs.oracle.com/javase/9/tools/javac.htm#JSWOR627
 compileJava.options.compilerArgs += [
-    '-Xlint:cast',
-    '-Xlint:classfile',
-    '-Xlint:deprecation',
-    '-Xlint:dep-ann',
-    '-Xlint:divzero',
-    '-Xlint:empty',
-    '-Xlint:fallthrough',
-    '-Xlint:finally',
-    '-Xlint:overrides',
-    '-Xlint:path',
-    '-Xlint:processing',
-    '-Xlint:rawtypes',
-    '-Xlint:serial',
-    '-Xlint:static',
-    '-Xlint:unchecked',
-    '-Xlint:varargs',
-    '-Xlint:-options',
+    '-Xlint:all',
     '-Werror'
 ]
 
@@ -104,7 +89,7 @@ modifyPom {
         name 'halo'
         description 'An implementation of Multicast DNS Service Discovery in Java.'
         url 'https://github.com/ofmooseandmen/halo'
-        inceptionYear '2018'
+        inceptionYear '2020'
 
         scm {
             url 'https://github.com/ofmooseandmen/halo'
@@ -136,8 +121,3 @@ nexus {
     snapshotRepositoryUrl = 'https://oss.sonatype.org/content/repositories/snapshots/'
 }
 
-task wrapper(type: Wrapper) {
-    description = 'Generates gradlew and gradlew.bat scripts'
-    gradleVersion = '4.6'
-    distributionType = Wrapper.DistributionType.BIN
-}

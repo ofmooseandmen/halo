@@ -101,14 +101,14 @@ Feature: Services browsing by registration type
   Scenario: Halo supports service browsing queries
     Given a "Halo" instance has been created
     And the following services have been registered with "Halo":
-      | instanceName        | registrationType | port | text      |
-      | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
-      | Bedroom Speaker     | _music._tcp.     | 9010 | Some Text |
+      | instanceName        | registrationType | port | text                       |
+      | Bedroom Speaker     | _music._tcp.     | 9010 | Hello from the bedroom     |
+      | Living Room Speaker | _music._tcp.     | 9011 | Hello from the living room |
     And a "JmDNS" instance has been created
     When the following registration types are browsed with "JmDNS":
       | registrationType | listenerName |
       | _music._tcp.     | music        |
     Then the listener "music" shall be notified of the following "up" services:
-      | instanceName        | registrationType | port | text      |
-      | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
-      | Bedroom Speaker     | _music._tcp.     | 9010 | Some Text |
+      | instanceName        | registrationType | port | text                       |
+      | Bedroom Speaker     | _music._tcp.     | 9010 | Hello from the bedroom     |
+      | Living Room Speaker | _music._tcp.     | 9011 | Hello from the living room |

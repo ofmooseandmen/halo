@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Cedric Liegeois
+Copyright 2018 - 2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -49,8 +49,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
-import cucumber.api.java.After;
-import cucumber.api.java.en.Given;
+import io.cucumber.datatable.DataTable;
+import io.cucumber.java.After;
+import io.cucumber.java.en.Given;
 import io.omam.halo.DnsMessage.Builder;
 
 /**
@@ -82,20 +83,23 @@ public final class DnsFactory {
         record = null;
     }
 
-    @Given("^the following additional have been added:$")
-    public final void givenAdditionalAdded(final List<Record> records) {
+    @Given("the following additional have been added:")
+    public final void givenAdditionalAdded(final DataTable data) {
+        final List<Record> records = Parser.parse(data, Record::new);
         final Instant now = Instant.now();
         records.forEach(r -> builder.addAdditional(newRecord(r, now)));
     }
 
-    @Given("^the following answers have been added:$")
-    public final void givenAnswersAdded(final List<Record> records) {
+    @Given("the following answers have been added:")
+    public final void givenAnswersAdded(final DataTable data) {
+        final List<Record> records = Parser.parse(data, Record::new);
         final Instant now = Instant.now();
         records.forEach(r -> builder.addAnswer(null, newRecord(r, now)));
     }
 
-    @Given("^attributes are created with the following key/value pairs:$")
-    public final void givenAttributesCreated(final List<String> pairs) {
+    @Given("attributes are created with the following key and value pairs:")
+    public final void givenAttributesCreated(final DataTable data) {
+        final List<String> pairs = data.asList();
         final Attributes.Builder b = Attributes.create();
         pairs.stream().map(Pair::parse).forEach(e -> {
             final String key = e.key().trim();
@@ -114,24 +118,26 @@ public final class DnsFactory {
         attributes = b.get();
     }
 
-    @Given("^the following authorities have been added:$")
-    public final void givenAuthoritiesAdded(final List<Record> records) {
+    @Given("the following authorities have been added:")
+    public final void givenAuthoritiesAdded(final DataTable data) {
+        final List<Record> records = Parser.parse(data, Record::new);
         final Instant now = Instant.now();
         records.forEach(r -> builder.addAuthority(newRecord(r, now)));
     }
 
-    @Given("^a DNS query has been created$")
+    @Given("a DNS query has been created")
     public final void givenDnsQueryCreated() {
         builder = DnsMessage.query();
     }
 
-    @Given("^the following DNS record has been created:$")
-    public final void givenDnsRecordCreated(final List<Record> rec) {
-        assertEquals(1, rec.size());
-        record = newRecord(rec.get(0), Instant.now());
+    @Given("the following DNS record has been created:")
+    public final void givenDnsRecordCreated(final DataTable data) {
+        final List<Record> records = Parser.parse(data, Record::new);
+        assertEquals(1, records.size());
+        record = newRecord(records.get(0), Instant.now());
     }
 
-    @Given("^a DNS (\\w+) record has been created at '(.+)' with a ttl of '(.+)'$")
+    @Given("a DNS {word} record has been created at '{word}' with a ttl of '{word}'")
     public final void givenDnsRecordCreated(final String type, final String when, final String ttl) {
         final String name = "foo.bar.";
         final short clazz = CLASS_ANY;
@@ -168,19 +174,21 @@ public final class DnsFactory {
         }
     }
 
-    @Given("^a DNS response has been created$")
+    @Given("a DNS response has been created")
     public final void givenDnsResponseCreated() {
         builder = DnsMessage.response();
     }
 
-    @Given("^the following other DNS record has been created:$")
-    public final void givenOtherDnsRecordCreated(final List<Record> rec) {
-        assertEquals(1, rec.size());
-        otherRecord = newRecord(rec.get(0), Instant.now());
+    @Given("the following other DNS record has been created:")
+    public final void givenOtherDnsRecordCreated(final DataTable data) {
+        final List<Record> records = Parser.parse(data, Record::new);
+        assertEquals(1, records.size());
+        otherRecord = newRecord(records.get(0), Instant.now());
     }
 
-    @Given("^the following questions have been added:$")
-    public final void givenQuestionsAdded(final List<Question> questions) {
+    @Given("the following questions have been added:")
+    public final void givenQuestionsAdded(final DataTable data) {
+        final List<Question> questions = Parser.parse(data, Question::new);
         questions.forEach(q -> builder.addQuestion(newQuestion(q)));
     }
 

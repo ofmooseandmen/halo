@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Cedric Liegeois
+Copyright 2018 - 2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -102,12 +102,12 @@ import java.util.Optional;
  *     final ServiceBrowserListener l = new ServiceBrowserListener() {
  *
  *         &#64;Override
- *         public final void down(final Service service) {
+ *         public final void serviceDown(final Service service) {
  *             System.err.println(service + " is down!!!!!");
  *         }
  *
  *         &#64;Override
- *         public final void up(final Service service) {
+ *         public final void serviceUp(final Service service) {
  *             System.err.println(service + " is up!!!!!");
  *         }
  *     };
@@ -124,11 +124,12 @@ import java.util.Optional;
  * </pre>
  *
  * <h3 id="configuration">Configuration</h3> The following parameters can be configured by system properties:
- * <table BORDER CELLPADDING=3 CELLSPACING=1> <caption>Summary of Halo system properties</caption>
+ * <table>
+ * <caption>Summary of Halo system properties</caption>
  * <tr>
- * <td ALIGN=CENTER><b>Property Key</b></td>
- * <td ALIGN=CENTER><b>Description</b></td>
- * <td ALIGN=CENTER><b>Default</b></td>
+ * <td><b>Property Key</b></td>
+ * <td><b>Description</b></td>
+ * <td><b>Default</b></td>
  * </tr>
  * <tr>
  * <td>io.omam.halo.mdns.ipv4</td>

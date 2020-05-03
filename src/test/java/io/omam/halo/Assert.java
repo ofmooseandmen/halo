@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Cedric Liegeois
+Copyright 2018 - 2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -38,6 +38,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.List;
+import java.util.function.BiPredicate;
 
 import javax.jmdns.ServiceInfo;
 
@@ -51,6 +52,35 @@ final class Assert {
      */
     private Assert() {
         // empty.
+    }
+
+    /**
+     * Asserts that all expected services are present in the actual services.
+     *
+     * @param expecteds expected services
+     * @param actuals actual services
+     */
+    static void assertContainsAllServiceInfos(final List<ServiceDetails> expecteds,
+            final List<ServiceInfo> actuals) {
+        final BiPredicate<ServiceDetails, ServiceInfo> match = (sd, si) -> sd.instanceName().equals(si.getName())
+            && (sd.registrationType() + "local.").equals(si.getType())
+            && sd.port() == si.getPort()
+            && toJmdns(sd.text()).equals(attributes(si));
+        assertTrue(expecteds.stream().allMatch(sd -> actuals.stream().anyMatch(si -> match.test(sd, si))));
+    }
+
+    /**
+     * Asserts that all expected services are present in the actual services.
+     *
+     * @param expecteds expected services
+     * @param actuals actual services
+     */
+    static void assertContainsAllServices(final List<ServiceDetails> expecteds, final List<Service> actuals) {
+        final BiPredicate<ServiceDetails, Service> match = (sd, s) -> sd.instanceName().equals(s.instanceName())
+            && sd.registrationType().equals(s.registrationType())
+            && sd.port() == s.port()
+            && attributesEquals(toHalo(sd.text()), s.attributes());
+        assertTrue(expecteds.stream().allMatch(sd -> actuals.stream().anyMatch(s -> match.test(sd, s))));
     }
 
     /**
@@ -171,6 +201,25 @@ final class Assert {
         for (final String key : expected.keys()) {
             assertEquals(expected.value(key), actual.value(key));
         }
+    }
+
+    /**
+     * Returns true iff expected equals actual
+     *
+     * @param expected attributes
+     * @param actual attributes
+     * @return true iff expected equals actual
+     */
+    private static boolean attributesEquals(final Attributes expected, final Attributes actual) {
+        if (!expected.keys().equals(actual.keys())) {
+            return false;
+        }
+        for (final String key : expected.keys()) {
+            if (!expected.value(key).equals(actual.value(key))) {
+                return false;
+            }
+        }
+        return true;
     }
 
 }

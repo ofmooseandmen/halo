@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Cedric Liegeois
+Copyright 2018 - 2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -37,8 +37,8 @@ import static org.junit.Assert.assertTrue;
 import java.util.ArrayDeque;
 import java.util.Queue;
 
-import cucumber.api.java.After;
-import cucumber.api.java.en.Then;
+import io.cucumber.java.After;
+import io.cucumber.java.en.Then;
 
 /**
  * Steps pertaining to testing whether expected {@link Exception} have been thrown.
@@ -60,7 +60,7 @@ public final class Exceptions {
         assertTrue("Unasserted exceptions: " + exs, exs.isEmpty());
     }
 
-    @Then("^a \"([^\\\"]*)\" shall be thrown with message containing \"([^\"]*)\"$")
+    @Then("a {string} shall be thrown with message containing {string}")
     public final void thenExceptionThrow(final String exceptionClass, final String exceptionMessage) {
         final Exception ex = exs.poll();
         assertNotNull(ex);

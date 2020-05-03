@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Cedric Liegeois
+Copyright 2018 - 2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -30,20 +30,29 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
+import java.util.Map;
 import java.util.Optional;
 
 @SuppressWarnings("javadoc")
 final class ServiceDetails {
 
-    private String instanceName;
+    private final String instanceName;
 
-    private String registrationType;
+    private final String registrationType;
 
-    private short port;
+    private final short port;
 
-    private String text;
+    private final String text;
 
-    private String hostname;
+    private final String hostname;
+
+    ServiceDetails(final Map<String, String> row) {
+        instanceName = row.get("instanceName");
+        registrationType = row.get("registrationType");
+        port = Parser.parseShort(row.get("port"));
+        text = row.get("text");
+        hostname = row.get("hostname");
+    }
 
     final Optional<String> hostname() {
         return Optional.ofNullable(hostname);

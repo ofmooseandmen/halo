@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Cedric Liegeois
+Copyright 2018 - 2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -42,9 +42,10 @@ import java.util.Optional;
 import javax.jmdns.ServiceEvent;
 import javax.jmdns.ServiceTypeListener;
 
-import cucumber.api.java.After;
-import cucumber.api.java.en.Then;
-import cucumber.api.java.en.When;
+import io.cucumber.datatable.DataTable;
+import io.cucumber.java.After;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 
 /**
  * Steps to tests browsing by registration type.
@@ -124,8 +125,9 @@ public final class RegistrationBrowsingSteps {
         browsedBy = null;
     }
 
-    @Then("^the listener shall be notified of the following registration types:$")
-    public final void thenListenerNotified(final List<String> expecteds) {
+    @Then("the listener shall be notified of the following registration types:")
+    public final void thenListenerNotified(final DataTable data) {
+        final List<String> expecteds = data.asList();
         final List<String> actuals;
         if (browsedBy.equals("Halo")) {
             final CollectingBrowserListener l = hl.orElseThrow(AssertionError::new);
@@ -139,22 +141,26 @@ public final class RegistrationBrowsingSteps {
          * expected ones.
          */
         for (final String expected : expecteds) {
-            await().atMost(5, SECONDS).untilAsserted(() -> assertTrue(
-                    "Expected to contain [" + expected + "] but was " + actuals, actuals.contains(expected)));
+            await()
+                .atMost(5, SECONDS)
+                .untilAsserted(() -> assertTrue("Expected to contain [" + expected + "] but was " + actuals,
+                        actuals.contains(expected)));
         }
     }
 
-    @When("^the registration types are browsed with \"([^\"]*)\"$")
+    @When("the registration types are browsed with {string}")
     public final void whenTypesBrowsed(final String engine) throws IOException {
         if (engine.equals("Halo")) {
             final CollectingBrowserListener l = new CollectingBrowserListener();
             hl = Optional.of(l);
             final Browser b = engines.halo().browse(l);
             hb = Optional.of(b);
-        } else {
+        } else if (engine.equals("JmDNS")) {
             final CollectingTypeListener l = new CollectingTypeListener();
             jl = Optional.of(l);
             engines.jmdns().addServiceTypeListener(l);
+        } else {
+            throw new AssertionError("Unsupported engine " + engine);
         }
         browsedBy = engine;
     }

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Cedric Liegeois
+Copyright 2018 - 2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -33,9 +33,9 @@ package io.omam.halo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import cucumber.api.java.After;
-import cucumber.api.java.en.Then;
-import cucumber.api.java.en.When;
+import io.cucumber.java.After;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 
 /**
  * Steps to tests DNS record suppression.
@@ -56,22 +56,23 @@ public final class SuppressionSteps {
         suppression = null;
     }
 
-    @Then("^the DNS record (shall|shall not) be suppressed$")
-    public final void thenDnsRecordSuppressedByOtherRecord(final String suppressed) {
-        if (suppressed.endsWith("not")) {
-            assertFalse(suppression);
-        } else {
-            assertTrue(suppression);
-        }
+    @Then("the DNS record shall not be suppressed")
+    public final void thenDnsRecordNotSuppressedByOtherRecord() {
+        assertFalse(suppression);
     }
 
-    @When("^the record to message suppression check is performed$")
-    public void whenRecordToMessageSuppression() {
+    @Then("the DNS record shall be suppressed")
+    public final void thenDnsRecordSuppressedByOtherRecord() {
+        assertTrue(suppression);
+    }
+
+    @When("the record to message suppression check is performed")
+    public final void whenRecordToMessageSuppression() {
         suppression = factory.record().suppressedBy(factory.message());
     }
 
-    @When("^the record to record suppression check is performed$")
-    public void whenRecordToRecordSuppression() {
+    @When("the record to record suppression check is performed")
+    public final void whenRecordToRecordSuppression() {
         suppression = factory.record().suppressedBy(factory.otherRecord());
     }
 

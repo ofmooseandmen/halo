@@ -1,10 +1,5 @@
-build: off
+image: Visual Studio 2019 Preview
 
-install:
-  - cinst jdk9 -version 9.0.4.11 -params 'installdir=C:\\jdk9'
-  - SET JAVA_HOME=C:\jdk9
-  - SET PATH=C:\jdk9\bin;%PATH%
-
-test_script:
+build_script:
   - gradlew --no-daemon -version
-  - gradlew --no-daemon --stacktrace build
+  - gradlew --stacktrace --warning-mode=all build

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Cedric Liegeois
+Copyright 2018 - 2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -30,7 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import cucumber.api.DataTable;
+import io.cucumber.datatable.DataTable;
 
 /**
  * Transforms {@link DataTable} into {@code byte[]}.
@@ -59,10 +59,10 @@ final class Bytes {
      */
     public static byte[] parse(final DataTable data) {
         final Integer[] bytes = data
-            .raw()
+            .asLists()
             .stream()
             .flatMap(l -> l.stream())
-            .filter(s -> !s.isEmpty())
+            .filter(s -> s != null)
             .map(s -> Integer.decode(s))
             .toArray(Integer[]::new);
         int i = 0;

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Cedric Liegeois
+Copyright 2018 - 2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -32,10 +32,10 @@ package io.omam.halo;
 
 import static org.junit.Assert.assertArrayEquals;
 
-import cucumber.api.DataTable;
-import cucumber.api.java.After;
-import cucumber.api.java.en.Then;
-import cucumber.api.java.en.When;
+import io.cucumber.datatable.DataTable;
+import io.cucumber.java.After;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 
 /**
  * Steps to tests DNS message encoding.
@@ -56,13 +56,13 @@ public final class EncodingSteps {
         packet = null;
     }
 
-    @Then("^the packet shall contain the following bytes:$")
+    @Then("the packet shall contain the following bytes:")
     public final void thenPacketBytes(final DataTable data) {
         final byte[] bytes = Bytes.parse(data);
         assertArrayEquals(bytes, packet);
     }
 
-    @When("^the attributes are encoded$")
+    @When("the attributes are encoded")
     public final void whenAttributesEncoded() {
         try (final MessageOutputStream os = new MessageOutputStream()) {
             AttributesCodec.encode(factory.attributes(), os);
@@ -70,7 +70,7 @@ public final class EncodingSteps {
         }
     }
 
-    @When("^the DNS message is encoded$")
+    @When("the DNS message is encoded")
     public final void whenDnsMessageEncoded() {
         packet = factory.message().encode();
     }

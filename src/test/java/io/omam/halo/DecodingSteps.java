@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Cedric Liegeois
+Copyright 2018 - 2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -44,11 +44,11 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import cucumber.api.DataTable;
-import cucumber.api.java.After;
-import cucumber.api.java.en.Given;
-import cucumber.api.java.en.Then;
-import cucumber.api.java.en.When;
+import io.cucumber.datatable.DataTable;
+import io.cucumber.java.After;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 
 /**
  * Steps to tests DNS message decoding.
@@ -81,26 +81,31 @@ public final class DecodingSteps {
         packet = null;
     }
 
-    @Given("^the following packet has been received:$")
+    @Given("the following packet has been received:")
     public final void givenPacketReceived(final DataTable data) {
         packet = Bytes.parse(data);
     }
 
-    @Then("^the following attributes shall be returned:$")
-    public final void thenAttributes(final List<String> pairs) {
+    @Then("the following attributes shall be returned:")
+    public final void thenAttributes(final DataTable data) {
+        final List<String> pairs = data.asList();
         assertEquals(pairs.size(), attributes.keys().size());
-        pairs.stream().map(Pair::parse).forEach(pair -> assertEquals("for key: " + pair.key(), pair.value(),
-                attributes.value(pair.key(), StandardCharsets.UTF_8)));
+        pairs
+            .stream()
+            .map(Pair::parse)
+            .forEach(pair -> assertEquals("for key: " + pair.key(), pair.value(),
+                    attributes.value(pair.key(), StandardCharsets.UTF_8)));
     }
 
-    @Then("^it contains the following answers:$")
-    public final void thenContainsAnswers(final List<Record> records) {
+    @Then("it contains the following answers:")
+    public final void thenContainsAnswers(final DataTable data) {
+        final List<Record> records = Parser.parse(data, Record::new);
         final List<DnsRecord> expecteds =
                 records.stream().map(r -> factory.newRecord(r, now)).collect(Collectors.toList());
         assertDnsRecordsEquals(expecteds, msg.answers());
     }
 
-    @Then("^it contains no answer$")
+    @Then("it contains no answer")
     public final void thenContainsNoAnswer() {
         assertTrue(msg.answers().isEmpty());
     }
@@ -110,33 +115,36 @@ public final class DecodingSteps {
         assertTrue(msg.questions().isEmpty());
     }
 
-    @Then("^it contains the following questions:$")
-    public final void thenContainsQuestions(final List<Question> questions) {
+    @Then("it contains the following questions:")
+    public final void thenContainsQuestions(final DataTable data) {
+        final List<Question> questions = Parser.parse(data, Question::new);
         final List<DnsQuestion> expecteds =
                 questions.stream().map(factory::newQuestion).collect(Collectors.toList());
         assertDnsQuestionsEquals(expecteds, msg.questions());
     }
 
-    @Then("^a DNS (response|query) with \"(.+)\" flags shall be returned$")
+    @Then("a DNS {word} with {string} flags shall be returned")
     public final void thenDnsMessage(final String type, final String flags) {
         if (type.equals("response")) {
             assertTrue(msg.isResponse());
             assertFalse(msg.isQuery());
-        } else {
+        } else if (type.equals("query")) {
             assertTrue(msg.isQuery());
             assertFalse(msg.isResponse());
+        } else {
+            throw new AssertionError("Expected response or query, got: " + type);
         }
         assertEquals(flagsForName(flags), msg.flags());
     }
 
-    @When("^the packet is decoded into attributes$")
+    @When("the packet is decoded into attributes")
     public final void whenDecodePacketAttributes() {
         try (final MessageInputStream is = new MessageInputStream(packet)) {
             attributes = AttributesCodec.decode(is, packet.length);
         }
     }
 
-    @When("^the packet is decoded into a DNS message$")
+    @When("the packet is decoded into a DNS message")
     public final void whenDecodePacketDnsMessage() {
         now = Clock.systemUTC().instant();
         try {

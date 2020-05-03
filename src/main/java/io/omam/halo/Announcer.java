@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Cedric Liegeois
+Copyright 2018 - 2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -69,7 +69,10 @@ final class Announcer implements AutoCloseable {
     private static final class AnnounceTask implements Callable<Void> {
 
         /** the service to announce. */
-        private final Service s;
+        private final Service service;
+
+        /** service time to live; */
+        private final Duration ttl;
 
         /** halo helper. */
         private final HaloHelper halo;
@@ -77,32 +80,39 @@ final class Announcer implements AutoCloseable {
         /**
          * Constructor.
          *
-         * @param service service to announce
+         * @param aService service to announce
+         * @param aTtl service time to live
          * @param haloHelper halo helper
          */
-        AnnounceTask(final Service service, final HaloHelper haloHelper) {
-            s = service;
+        AnnounceTask(final Service aService, final Duration aTtl, final HaloHelper haloHelper) {
+            service = aService;
+            ttl = aTtl;
             halo = haloHelper;
         }
 
         @Override
         public final Void call() throws Exception {
             final Instant now = halo.now();
-            final String hostname = s.hostname();
-            final Attributes attributes = s.attributes();
-            final String serviceName = s.name();
+            final String hostname = service.hostname();
+            final Attributes attributes = service.attributes();
+            final String serviceName = service.name();
             final short unique = uniqueClass(CLASS_IN);
             /* no stamp when announcing, TTL will be the one given. */
             final Optional<Instant> stamp = Optional.empty();
             final Builder b = DnsMessage
                 .response(FLAGS_AA)
-                .addAnswer(new PtrRecord(s.registrationPointerName(), CLASS_IN, TTL, now, s.instanceName()), stamp)
-                .addAnswer(new SrvRecord(serviceName, unique, TTL, now, s.port(), hostname), stamp)
-                .addAnswer(new TxtRecord(serviceName, unique, TTL, now, attributes), stamp);
+                .addAnswer(new PtrRecord(service.registrationPointerName(), CLASS_IN, ttl, now, serviceName),
+                        stamp)
+                .addAnswer(new SrvRecord(serviceName, unique, ttl, now, service.port(), hostname), stamp)
+                .addAnswer(new TxtRecord(serviceName, unique, ttl, now, attributes), stamp);
 
-            s.ipv4Address().ifPresent(a -> b.addAnswer(new AddressRecord(hostname, unique, TTL, now, a), stamp));
+            service
+                .ipv4Address()
+                .ifPresent(a -> b.addAnswer(new AddressRecord(hostname, unique, ttl, now, a), stamp));
 
-            s.ipv6Address().ifPresent(a -> b.addAnswer(new AddressRecord(hostname, unique, TTL, now, a), stamp));
+            service
+                .ipv6Address()
+                .ifPresent(a -> b.addAnswer(new AddressRecord(hostname, unique, ttl, now, a), stamp));
 
             halo.sendMessage(b.get());
             return null;
@@ -124,15 +134,15 @@ final class Announcer implements AutoCloseable {
         private final AtomicBoolean match;
 
         /** the service being probed. */
-        private final Service s;
+        private final Service service;
 
         /**
          * Constructor.
          *
-         * @param service the service being probed
+         * @param aService the service being probed
          */
-        ProbeListener(final Service service) {
-            s = service;
+        ProbeListener(final Service aService) {
+            service = aService;
             match = new AtomicBoolean(false);
             lock = new ReentrantLock();
             cdt = lock.newCondition();
@@ -144,8 +154,10 @@ final class Announcer implements AutoCloseable {
             lock.lock();
             LOGGER.fine(() -> "Handling " + response);
             try {
-                if (response.answers().stream().anyMatch(
-                        a -> a.name().equalsIgnoreCase(s.name()) && a.type() == TYPE_SRV)) {
+                if (response
+                    .answers()
+                    .stream()
+                    .anyMatch(a -> a.name().equalsIgnoreCase(service.name()) && a.type() == TYPE_SRV)) {
                     match.set(true);
                     LOGGER.fine("Received matching response");
                     cdt.signalAll();
@@ -158,8 +170,8 @@ final class Announcer implements AutoCloseable {
         /**
          * Awaits for a response matching the probe query.
          * <p>
-         * A response matches the probe query iff it relates to the {@link Service#name() service} being
-         * probed and it contains a {@link SrvRecord SRV record}.
+         * A response matches the probe query iff it relates to the {@link Service#name() service} being probed and
+         * it contains a {@link SrvRecord SRV record}.
          *
          * @return {@code true} iff a response matching the probe query has been received before the
          *         {@link MulticastDns#PROBING_TIMEOUT probing timeout} has elapsed
@@ -195,7 +207,7 @@ final class Announcer implements AutoCloseable {
     private static final class ProbeTask implements Callable<Void> {
 
         /** the service being probed. */
-        private final Service s;
+        private final Service service;
 
         /** halo helper. */
         private final HaloHelper halo;
@@ -203,27 +215,31 @@ final class Announcer implements AutoCloseable {
         /**
          * Constructor.
          *
-         * @param service the service being probed
+         * @param aService the service being probed
          * @param haloHelper halo helper
          */
-        ProbeTask(final Service service, final HaloHelper haloHelper) {
-            s = service;
+        ProbeTask(final Service aService, final HaloHelper haloHelper) {
+            service = aService;
             halo = haloHelper;
         }
 
         @Override
         public final Void call() throws Exception {
             final Instant now = halo.now();
-            final String hostname = s.hostname();
-            final String serviceName = s.name();
+            final String hostname = service.hostname();
+            final String serviceName = service.name();
             final Builder b = DnsMessage
                 .query()
                 .addQuestion(new DnsQuestion(hostname, TYPE_ANY, CLASS_IN))
                 .addQuestion(new DnsQuestion(serviceName, TYPE_ANY, CLASS_IN))
-                .addAuthority(new SrvRecord(serviceName, CLASS_IN, TTL, now, s.port(), hostname));
+                .addAuthority(new SrvRecord(serviceName, CLASS_IN, TTL, now, service.port(), hostname));
 
-            s.ipv4Address().ifPresent(a -> b.addAuthority(new AddressRecord(hostname, CLASS_IN, TTL, now, a)));
-            s.ipv6Address().ifPresent(a -> b.addAuthority(new AddressRecord(hostname, CLASS_IN, TTL, now, a)));
+            service
+                .ipv4Address()
+                .ifPresent(a -> b.addAuthority(new AddressRecord(hostname, CLASS_IN, TTL, now, a)));
+            service
+                .ipv6Address()
+                .ifPresent(a -> b.addAuthority(new AddressRecord(hostname, CLASS_IN, TTL, now, a)));
 
             halo.sendMessage(b.get());
             return null;
@@ -262,11 +278,12 @@ final class Announcer implements AutoCloseable {
      * This method does not check whether the service has already been announced.
      *
      * @param service service
+     * @param ttl the service time-to-live
      * @return {@code true} iff no conflicts have been discovered while probing and the service was successfully
      *         announced on the network
      * @throws IOException if an exception occurs while probing
      */
-    final boolean announce(final Service service) throws IOException {
+    final boolean announce(final Service service, final Duration ttl) throws IOException {
         LOGGER.fine(() -> "Start probing for " + service);
         final ProbeListener listener = new ProbeListener(service);
         halo.addResponseListener(listener);
@@ -279,7 +296,7 @@ final class Announcer implements AutoCloseable {
             if (conflictFree) {
                 /* announce */
                 LOGGER.fine(() -> "Announcing " + service);
-                ses.submit(new AnnounceTask(service, halo)).get();
+                ses.submit(new AnnounceTask(service, ttl, halo)).get();
                 LOGGER.info(() -> "Announced " + service);
             }
             return conflictFree;

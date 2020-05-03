@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Cedric Liegeois
+Copyright 2018 - 2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -33,9 +33,9 @@ package io.omam.halo;
 import java.time.Instant;
 import java.util.logging.Logger;
 
-import cucumber.api.Scenario;
-import cucumber.api.java.After;
-import cucumber.api.java.Before;
+import io.cucumber.java.After;
+import io.cucumber.java.Before;
+import io.cucumber.java.Scenario;
 
 /**
  * Steps to log start/end of scenario.
@@ -52,12 +52,13 @@ public final class ScenarioSteps {
      */
     @After
     public final void after(final Scenario scenario) {
-        LOGGER.info(() -> "Scenario '"
-            + scenario.getName()
-            + "' ended @ "
-            + Instant.now()
-            + " with status "
-            + scenario.getStatus());
+        LOGGER
+            .info(() -> "Scenario '"
+                + scenario.getName()
+                + "' ended @ "
+                + Instant.now()
+                + " with status "
+                + scenario.getStatus());
     }
 
     /**

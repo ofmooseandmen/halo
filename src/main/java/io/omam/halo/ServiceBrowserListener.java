@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Cedric Liegeois
+Copyright 2018 - 2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -40,13 +40,13 @@ public interface ServiceBrowserListener {
      *
      * @param service the service
      */
-    void down(final Service service);
+    void serviceDown(final Service service);
 
     /**
      * Invoked when a new named service of the target registration type has been discovered.
      *
      * @param service the service
      */
-    void up(final Service service);
+    void serviceUp(final Service service);
 
 }

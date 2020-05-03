@@ -1,5 +1,5 @@
 /*
-Copyright 2018 - 2020 Cedric Liegeois
+Copyright 2020-2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -30,62 +30,45 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import static io.omam.halo.MulticastDns.REAPING_INTERVAL;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
-import java.time.Clock;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import io.cucumber.datatable.DataTable;
 
 /**
- * Periodically removes expired DNS records from the cache.
+ * Parse {@link DataTable}.
  */
-final class Reaper implements AutoCloseable {
-
-    /** cache. */
-    private final Cache cache;
-
-    /** clock. */
-    private final Clock clock;
-
-    /** scheduled executor service. */
-    private final ScheduledExecutorService ses;
-
-    /** future to cancel the background reaping task. */
-    private Future<?> f;
+final class Parser {
 
     /**
      * Constructor.
+     */
+    private Parser() {
+        // empty.
+    }
+
+    /**
+     * Invokes {@code f} for each row of the given datatable.
      *
-     * @param aCache cache
-     * @param aClock clock
+     * @param <T> type of the returned elements
+     * @param data datatable
+     * @param f function to map one row into an elements
+     * @return parsed elements
      */
-    Reaper(final Cache aCache, final Clock aClock) {
-        cache = aCache;
-        clock = aClock;
-        ses = Executors.newSingleThreadScheduledExecutor(new HaloThreadFactory("reaper"));
+    static <T> List<T> parse(final DataTable data, final Function<Map<String, String>, T> f) {
+        return data.asMaps().stream().map(f).collect(Collectors.toList());
     }
 
     /**
-     * Cancel the background task that removes expired records and shuts down the associated executor.
+     * Parse short or returns -1 if string is null.
+     *
+     * @param string string to parse
+     * @return parsed short or -1
      */
-    @Override
-    public final void close() {
-        if (f != null) {
-            f.cancel(true);
-            f = null;
-        }
-        ses.shutdownNow();
-    }
-
-    /**
-     * Starts a background task to remove expired records.
-     */
-    final void start() {
-        f = ses
-            .scheduleAtFixedRate(() -> cache.clean(clock.instant()), REAPING_INTERVAL.toMillis(),
-                    REAPING_INTERVAL.toMillis(), TimeUnit.MILLISECONDS);
+    static short parseShort(final String string) {
+        return string == null ? (short) -1 : Short.parseShort(string);
     }
 
 }

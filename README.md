@@ -67,12 +67,12 @@ try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
     final ServiceBrowserListener l = new ServiceBrowserListener() {
 
         @Override
-        public final void down(final Service service) {
+        public final void serviceDown(final Service service) {
             System.err.println(service + " is down!!!!!");
         }
 
         @Override
-        public final void up(final Service service) {
+        public final void serviceUp(final Service service) {
             System.err.println(service + " is up!!!!!");
         }
     };
