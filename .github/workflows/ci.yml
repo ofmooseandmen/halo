@@ -16,8 +16,12 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 11
-      - name: Build with Gradle
-        run: ./gradlew build
+      - name: 'Build with Gradle'
+        run: ./gradlew --warning-mode=all build jacocoTestReport
+      - name: 'Code coverage'
+        uses: codecov/codecov-action@v1
+        with:
+          fail_ci_if_error: true
 
   windows:
     name: 'Windows'
@@ -28,8 +32,8 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 11
-      - name: Build with Gradle
-        run: ./gradlew build
+      - name: 'Build with Gradle'
+        run: ./gradlew --warning-mode=all build
 
   macos:
     name: 'Mac OS'
@@ -40,5 +44,5 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 11
-      - name: Build with Gradle
-        run: ./gradlew build
+      - name: 'Build with Gradle'
+        run: ./gradlew --warning-mode=all build
