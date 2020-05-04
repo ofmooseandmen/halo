@@ -41,9 +41,6 @@ final class HaloThreadFactory implements ThreadFactory {
     /** pool number. */
     private static final AtomicInteger POOL_NUMBER = new AtomicInteger(1);
 
-    /** thread group. */
-    private final ThreadGroup group;
-
     /** thread number. */
     private final AtomicInteger threadNumber;
 
@@ -58,15 +55,13 @@ final class HaloThreadFactory implements ThreadFactory {
      * @param suffix thread suffix
      */
     HaloThreadFactory(final String suffix) {
-        final SecurityManager s = System.getSecurityManager();
         threadNumber = new AtomicInteger(1);
-        group = s != null ? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
         namePrefix = "halo-" + suffix + "-" + POOL_NUMBER.getAndIncrement() + "-thread-";
     }
 
     @Override
     public final Thread newThread(final Runnable r) {
-        final Thread t = new Thread(group, r, namePrefix + threadNumber.getAndIncrement(), 0);
+        final Thread t = new Thread(r, namePrefix + threadNumber.getAndIncrement());
         t.setDaemon(true);
         t.setPriority(Thread.NORM_PRIORITY);
         return t;
