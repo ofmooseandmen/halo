@@ -22,24 +22,57 @@ targetCompatibility = JavaVersion.VERSION_1_8
 dependencies {
     testImplementation(
         'io.cucumber:cucumber-java:5.6.0',
-        'io.cucumber:cucumber-junit:5.6.0',
         'io.cucumber:cucumber-picocontainer:5.6.0',
-        'org.junit.vintage:junit-vintage-engine:5.6.1',
+        'org.junit.jupiter:junit-jupiter-api:5.6.1',
         'org.awaitility:awaitility:4.0.2',
         'org.jmdns:jmdns:3.5.5',
         'org.slf4j:slf4j-jdk14:1.7.30'
     )
 }
 
+// use cucumberTest instead
 test {
-    testLogging.showStandardStreams = true
+    exclude '**'
+}
+
+task cucumberTest(type: JavaExec, dependsOn: [compileTestJava]) {
+    group 'Verification'
+    description 'Runs the cucumber tests.'
+
+    outputs.upToDateWhen { false }
+
+    classpath = sourceSets.test.runtimeClasspath
+
+    main = 'io.cucumber.core.cli.Main'
+
+    jvmArgs("-Djava.util.logging.config.file=${projectDir}/src/test/resources/logging.properties") 
+    
+    args = [
+        '--strict',
+        '--glue', 'io.omam.halo',
+        '--plugin', 'pretty',
+        '--plugin', 'json:' + "${buildDir}" + '/reports/cucumberTests/halo-tests.json',
+        "${projectDir}/src/test/resources/io/"
+    ]
+
 }
 
 if (project.hasProperty('enableJaCoCo')) {
-    jacocoTestReport {
+    jacoco {
+        applyTo cucumberTest
+    }
+
+    task jacocoCucumberTestReport(type: JacocoReport) {
+        group 'Verification'
+        description 'Generates code coverage report for the cucumberTest task.'
+
+        outputs.upToDateWhen { false }
+
+        executionData(files("${buildDir}/jacoco/cucumberTest.exec"))
+
         reports {
-            xml.enabled true
-            html.enabled true
+            html.enabled = true
+            xml.enabled = true
         }
     }
 }

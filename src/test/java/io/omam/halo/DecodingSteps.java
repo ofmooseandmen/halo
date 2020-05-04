@@ -33,9 +33,9 @@ package io.omam.halo;
 import static io.omam.halo.Assert.assertDnsQuestionsEquals;
 import static io.omam.halo.Assert.assertDnsRecordsEquals;
 import static io.omam.halo.MulticastDnsHelper.flagsForName;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -93,8 +93,8 @@ public final class DecodingSteps {
         pairs
             .stream()
             .map(Pair::parse)
-            .forEach(pair -> assertEquals("for key: " + pair.key(), pair.value(),
-                    attributes.value(pair.key(), StandardCharsets.UTF_8)));
+            .forEach(pair -> assertEquals(pair.value(), attributes.value(pair.key(), StandardCharsets.UTF_8),
+                    "for key: " + pair.key()));
     }
 
     @Then("it contains the following answers:")

@@ -32,7 +32,7 @@ package io.omam.halo;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -143,8 +143,8 @@ public final class RegistrationBrowsingSteps {
         for (final String expected : expecteds) {
             await()
                 .atMost(5, SECONDS)
-                .untilAsserted(() -> assertTrue("Expected to contain [" + expected + "] but was " + actuals,
-                        actuals.contains(expected)));
+                .untilAsserted(() -> assertTrue(actuals.contains(expected),
+                        "Expected to contain [" + expected + "] but was " + actuals));
         }
     }
 

@@ -34,7 +34,7 @@ import static io.omam.halo.Assert.assertContainsAllServiceInfos;
 import static io.omam.halo.Assert.assertContainsAllServices;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Collections;

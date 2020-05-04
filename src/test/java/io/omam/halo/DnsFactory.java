@@ -39,7 +39,7 @@ import static io.omam.halo.MulticastDns.TYPE_SRV;
 import static io.omam.halo.MulticastDns.TYPE_TXT;
 import static io.omam.halo.MulticastDnsHelper.classForName;
 import static io.omam.halo.MulticastDnsHelper.typeForName;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;

@@ -30,9 +30,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -57,7 +57,7 @@ public final class Exceptions {
 
     @After
     public final void after() {
-        assertTrue("Unasserted exceptions: " + exs, exs.isEmpty());
+        assertTrue(exs.isEmpty(), "Unasserted exceptions: " + exs);
     }
 
     @Then("a {string} shall be thrown with message containing {string}")
@@ -68,8 +68,8 @@ public final class Exceptions {
         final String[] sequences = exceptionMessage.split("\\(\\.\\.\\.\\)");
         for (final String sequence : sequences) {
             final String s = sequence.trim();
-            assertTrue("Expected message to contain [" + s + "] but was [" + ex.getMessage() + "]",
-                    ex.getMessage().contains(s));
+            assertTrue(ex.getMessage().contains(s),
+                    "Expected message to contain [" + s + "] but was [" + ex.getMessage() + "]");
         }
     }
 
