@@ -21,4 +21,4 @@ jobs:
         with:
           java-version: ${{ matrix.jdk }}
       - name: 'Build with Gradle'
-        run: ./gradlew --warning-mode=all build
+        run: ./gradlew --warning-mode=all assemble cucumberTest
