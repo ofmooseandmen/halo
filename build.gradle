@@ -1,17 +1,8 @@
 apply plugin: 'base'
 apply plugin: 'eclipse'
-apply plugin: 'com.bmuschko.nexus'
+apply plugin: 'maven'
+apply plugin: 'signing'
 apply from: 'gradle/eclipse-prefs/eclipse.gradle'
-
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-    
-    dependencies {
-        classpath 'com.bmuschko:gradle-nexus-plugin:2.3.1'
-    }
-}
 
 repositories {
     mavenCentral()
@@ -64,11 +55,6 @@ compileJava.options.compilerArgs += [
     '-Werror'
 ]
 
-jar {
-    /* include source */
-    from (sourceSets.main.allSource.getSrcDirTrees())
-}
-
 javadoc {
    options.memberLevel = JavadocMemberLevel.PUBLIC
 }
@@ -76,52 +62,95 @@ javadoc {
 /* Modify the Eclipse project settings. */
 eclipse { jdt { file { withProperties eclipsePrefs } } }
 
-task ('copyEclipsePrefs', type: Copy) {
+task copyEclipsePrefs(type: Copy) {
     from rootProject.file('gradle/eclipse-prefs/org.eclipse.jdt.ui.prefs')
     into "${projectDir}/.settings"
 }
 tasks.eclipse.finalizedBy copyEclipsePrefs
 
-extraArchive {
-    sources = true
-    tests = true
-    javadoc = true
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allSource
+    archiveClassifier = 'sources'
 }
 
-modifyPom {
-    project {
-        name 'halo'
-        description 'An implementation of Multicast DNS Service Discovery in Java.'
-        url 'https://github.com/ofmooseandmen/halo'
-        inceptionYear '2020'
+task testSourcesJar(type: Jar) {
+    from sourceSets.test.allSource
+    archiveClassifier = 'test-sources'
+}
 
-        scm {
-            url 'https://github.com/ofmooseandmen/halo'
-            connection 'scm:https://ofmooseandmen@github.com/ofmooseandmen/halo.git'
-            developerConnection 'scm:git://github.com/ofmooseandmen/halo.git'
-        }
+task javadocJar(type: Jar) {
+    from javadoc
+    archiveClassifier = 'javadoc'
+}
 
-        licenses {
-            license {
-                name 'The 3-Clause BSD License'
-                url 'https://opensource.org/licenses/BSD-3-Clause'
-                distribution 'repo'
+artifacts {
+    archives javadocJar, sourcesJar, testSourcesJar
+}
+
+// Requirements:
+//
+// - Get public key ID `gpg --list-keys --keyid-format SHORT`
+// - Export key `gpg --keyring secring.gpg --export-secret-keys > ~/.gnupg/secring.gpg`
+// - Add the following properties to ~/.gradle/gradle.properties
+//      signing.keyId=0ABCDEF
+//      signing.password=password
+//      signing.secretKeyRingFile=/absolute/path/to/.gnupg/secring.gpg
+//
+signing {
+    required { !version.endsWith("-SNAPSHOT") }
+    sign configurations.archives
+}
+
+// Requirements:
+//
+// - Add the following properties to ~/.gradle/gradle.properties
+//     ossrhUsername=<username>
+//     ossrhPassword=<password>
+// - Or pass the credentials as command line parameters
+//     ./gradlew uploadArchives -PossrhUsername=<my-username> -PossrhPassword=<my-password>
+//
+uploadArchives {
+    repositories {
+        mavenDeployer {
+
+            def sonatypeUser = findProperty("ossrhUsername")
+            def sonatypePass = findProperty("ossrhPassword")
+
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: sonatypeUser, password: sonatypePass)
             }
-        }
 
-        developers {
-            developer {
-                id 'ofmooseandmen'
-                name 'Cedric Liegeois'
-                email 'ofmooseandmen@yahoo.com'
+            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                authentication(userName: sonatypeUser, password: sonatypePass)
+            }
+
+            // Generate Sonatype conform .pom for Bintray Maven-sync, see https://central.sonatype.org/pages/requirements.html
+            pom.project {
+                name = project.name
+                description = "An implementation of Multicast DNS Service Discovery in Java"
+                url = 'https://github.com/ofmooseandmen/halo'
+                inceptionYear  ='2018'
+                licenses {
+                    license {
+                        name = 'The 3-Clause BSD License'
+                        url = 'https://opensource.org/licenses/BSD-3-Clause'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'ofmooseandmen'
+                        name = 'Cedric Liegeois'
+                        email = 'ofmooseandmen@yahoo.com'
+                    }
+                }
+                scm {
+                    connection 'scm:https://ofmooseandmen@github.com/ofmooseandmen/halo.git'
+                    developerConnection 'scm:git://github.com/ofmooseandmen/halo.git'
+                    url 'https://github.com/ofmooseandmen/halo'
+                }
             }
         }
     }
 }
-
-nexus {
-    sign = true
-    repositoryUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
-    snapshotRepositoryUrl = 'https://oss.sonatype.org/content/repositories/snapshots/'
-}
-
