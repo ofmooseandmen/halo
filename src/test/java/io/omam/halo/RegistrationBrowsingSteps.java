@@ -30,11 +30,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -142,7 +142,7 @@ public final class RegistrationBrowsingSteps {
          */
         for (final String expected : expecteds) {
             await()
-                .atMost(5, SECONDS)
+                .atMost(Duration.ofSeconds(5))
                 .untilAsserted(() -> assertTrue(actuals.contains(expected),
                         "Expected to contain [" + expected + "] but was " + actuals));
         }

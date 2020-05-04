@@ -32,10 +32,10 @@ package io.omam.halo;
 
 import static io.omam.halo.Assert.assertContainsAllServiceInfos;
 import static io.omam.halo.Assert.assertContainsAllServices;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -168,18 +168,16 @@ public final class ServiceBrowsingSteps {
         Collections.sort(expecteds, (s1, s2) -> s1.instanceName().compareTo(s2.instanceName()));
         final boolean up = eventType.equals("up");
         /* Halo and JmDNS service resolution timeout is 6 seconds. */
-        final long timeout = services.size() * 6;
+        final Duration timeout = Duration.ofSeconds(services.size() * 6);
         if (browsedBy.equals("Halo")) {
             final CollectingBrowserListener l = hls.get(listener);
             await()
-                .atMost(timeout, SECONDS)
+                .atMost(timeout)
                 .untilAsserted(() -> assertContainsAllServices(expecteds, up ? l.ups() : l.downs()));
         } else {
             assertTrue(up);
             final CollectingServiceListener l = jls.get(listener);
-            await()
-                .atMost(timeout, SECONDS)
-                .untilAsserted(() -> assertContainsAllServiceInfos(expecteds, l.ups()));
+            await().atMost(timeout).untilAsserted(() -> assertContainsAllServiceInfos(expecteds, l.ups()));
         }
     }
 

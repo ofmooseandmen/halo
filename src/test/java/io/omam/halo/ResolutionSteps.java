@@ -31,7 +31,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package io.omam.halo;
 
 import static io.omam.halo.Assert.assertServiceEquals;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -97,7 +96,7 @@ public final class ResolutionSteps {
         } else {
             throw new AssertionError("Unsupported engine " + engine);
         }
-        await().atLeast(Duration.parse(dur).toMillis(), MILLISECONDS).until(c);
+        await().atLeast(Duration.parse(dur)).until(c);
     }
 
     @Then("no resolved service shall be returned")
