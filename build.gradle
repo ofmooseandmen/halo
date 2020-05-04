@@ -1,7 +1,10 @@
-apply plugin: 'base'
-apply plugin: 'eclipse'
-apply plugin: 'maven'
-apply plugin: 'signing'
+plugins {
+   id 'eclipse'
+   id 'java-library'
+   id 'maven-publish'
+   id 'signing'
+}
+
 apply from: 'resources/eclipse/eclipse.gradle'
 
 repositories {
@@ -12,9 +15,6 @@ if (project.hasProperty('enableJaCoCo')) {
     apply plugin: 'jacoco'
     jacoco { toolVersion = '0.8.5' }
 }
-
-apply plugin: 'java-library'
-apply plugin: 'eclipse'
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
@@ -103,21 +103,76 @@ tasks.eclipse.finalizedBy copyEclipsePrefs
 
 task sourcesJar(type: Jar) {
     from sourceSets.main.allSource
-    archiveClassifier = 'sources'
+    classifier = 'sources'
 }
 
 task testSourcesJar(type: Jar) {
     from sourceSets.test.allSource
-    archiveClassifier = 'test-sources'
+    classifier = 'test-sources'
 }
 
 task javadocJar(type: Jar) {
     from javadoc
-    archiveClassifier = 'javadoc'
+    classifier = 'javadoc'
 }
 
-artifacts {
-    archives javadocJar, sourcesJar, testSourcesJar
+// Requirements:
+//
+// - Add the following properties to ~/.gradle/gradle.properties
+//     ossrhUsername=<username>
+//     ossrhPassword=<password>
+// - Or pass the credentials as command line parameters
+//     ./gradlew uploadArchives -PossrhUsername=<my-username> -PossrhPassword=<my-password>
+//
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+            artifact sourcesJar
+            artifact testSourcesJar
+            artifact javadocJar
+            pom {
+                name = project.name
+                description = 'An implementation of Multicast DNS Service Discovery in Java'
+                url = 'https://github.com/ofmooseandmen/halo'
+                inceptionYear = '2018'
+                licenses {
+                    license {
+                        name = 'The 3-Clause BSD License'
+                        url = 'https://opensource.org/licenses/BSD-3-Clause'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'ofmooseandmen'
+                        name = 'Cedric Liegeois'
+                        email = 'ofmooseandmen@yahoo.com'
+                    }
+                }
+                scm {
+                    connection = 'scm:https://ofmooseandmen@github.com/ofmooseandmen/halo.git'
+                    developerConnection = 'scm:git://github.com/ofmooseandmen/halo.git'
+                    url = 'https://github.com/ofmooseandmen/halo'
+                }
+            }
+        }
+    }
+
+    repositories {
+        mavenLocal()
+        maven {
+            def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+            def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots/"
+            def ossrhUsername = findProperty("ossrhUsername")
+            def ossrhPassword = findProperty("ossrhPassword")
+            url = version.endsWith('-SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+            credentials {
+                username ossrhUsername
+                password ossrhPassword
+            }
+        }
+    }
+
 }
 
 // Requirements:
@@ -133,59 +188,6 @@ def isSnapshot = project.version.toString().endsWith("-SNAPSHOT")
 def isCiEnv = System.getenv("CI") ?: false
 signing {
     required { !(isSnapshot || isCiEnv) }
-    sign configurations.archives
+    sign publishing.publications.maven
 }
 
-// Requirements:
-//
-// - Add the following properties to ~/.gradle/gradle.properties
-//     ossrhUsername=<username>
-//     ossrhPassword=<password>
-// - Or pass the credentials as command line parameters
-//     ./gradlew uploadArchives -PossrhUsername=<my-username> -PossrhPassword=<my-password>
-//
-uploadArchives {
-    repositories {
-        mavenDeployer {
-
-            def sonatypeUser = findProperty("ossrhUsername")
-            def sonatypePass = findProperty("ossrhPassword")
-
-            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
-
-            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-                authentication(userName: sonatypeUser, password: sonatypePass)
-            }
-
-            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
-                authentication(userName: sonatypeUser, password: sonatypePass)
-            }
-
-            // Generate Sonatype conform .pom for Bintray Maven-sync, see https://central.sonatype.org/pages/requirements.html
-            pom.project {
-                name = project.name
-                description = "An implementation of Multicast DNS Service Discovery in Java"
-                url = 'https://github.com/ofmooseandmen/halo'
-                inceptionYear  ='2018'
-                licenses {
-                    license {
-                        name = 'The 3-Clause BSD License'
-                        url = 'https://opensource.org/licenses/BSD-3-Clause'
-                    }
-                }
-                developers {
-                    developer {
-                        id = 'ofmooseandmen'
-                        name = 'Cedric Liegeois'
-                        email = 'ofmooseandmen@yahoo.com'
-                    }
-                }
-                scm {
-                    connection 'scm:https://ofmooseandmen@github.com/ofmooseandmen/halo.git'
-                    developerConnection 'scm:git://github.com/ofmooseandmen/halo.git'
-                    url 'https://github.com/ofmooseandmen/halo'
-                }
-            }
-        }
-    }
-}
