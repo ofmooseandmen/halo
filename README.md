@@ -1,6 +1,6 @@
 # Halo
 
-![CI](https://github.com/ofmooseandmen/halo/workflows/CI/badge.svg)
+[![CI](https://github.com/ofmooseandmen/halo/workflows/CI/badge.svg)](https://github.com/ofmooseandmen/halo/actions?query=workflow%3ACI)
 [![codecov.io](https://codecov.io/github/ofmooseandmen/halo/branches/master/graphs/badge.svg)](https://codecov.io/github/ofmooseandmen/halo)
 [![Maven Central](https://img.shields.io/maven-central/v/com.github.ofmooseandmen/halo.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.github.ofmooseandmen%22%20AND%20a%3A%22halo%22)
 [![Javadocs](https://www.javadoc.io/badge/com.github.ofmooseandmen/halo.svg?color=lightgrey)](https://www.javadoc.io/doc/com.github.ofmooseandmen/halo)

@@ -17,8 +17,10 @@ repositories {
     mavenCentral()
 }
 
-apply plugin: 'jacoco'
-jacoco { toolVersion = '0.8.5' }
+if (project.hasProperty('enableJaCoCo')) {
+    apply plugin: 'jacoco'
+    jacoco { toolVersion = '0.8.5' }
+}
 
 apply plugin: 'java-library'
 apply plugin: 'eclipse'
@@ -42,10 +44,12 @@ test {
     testLogging.showStandardStreams = true
 }
 
-jacocoTestReport {
-    reports {
-        xml.enabled true
-        html.enabled true
+if (project.hasProperty('enableJaCoCo')) {
+    jacocoTestReport {
+        reports {
+            xml.enabled true
+            html.enabled true
+        }
     }
 }
 

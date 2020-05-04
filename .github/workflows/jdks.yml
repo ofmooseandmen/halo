@@ -11,6 +11,7 @@ jobs:
     strategy:
       matrix:
         jdk: [1.8, 14, 15-ea]
+      fail-fast: false
     name: "OpenJDK ${{ matrix.jdk }}"
     runs-on: ubuntu-latest
     steps:
