@@ -2,7 +2,7 @@ apply plugin: 'base'
 apply plugin: 'eclipse'
 apply plugin: 'maven'
 apply plugin: 'signing'
-apply from: 'gradle/eclipse-prefs/eclipse.gradle'
+apply from: 'resources/eclipse/eclipse.gradle'
 
 repositories {
     mavenCentral()
@@ -96,7 +96,7 @@ javadoc {
 eclipse { jdt { file { withProperties eclipsePrefs } } }
 
 task copyEclipsePrefs(type: Copy) {
-    from rootProject.file('gradle/eclipse-prefs/org.eclipse.jdt.ui.prefs')
+    from rootProject.file('resources/eclipse/org.eclipse.jdt.ui.prefs')
     into "${projectDir}/.settings"
 }
 tasks.eclipse.finalizedBy copyEclipsePrefs

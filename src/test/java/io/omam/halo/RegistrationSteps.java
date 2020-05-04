@@ -156,14 +156,14 @@ public final class RegistrationSteps {
             }
         } else if (engine.equals("JmDNS")) {
             for (final ServiceDetails service : services) {
-                final ServiceInfo s = toJmdns(service);
-                engines.jmdns().registerService(s);
+                engines.jmdns().registerService(toJmdns(service));
                 /*
                  * since JmDNS 3.5.5, registerService no longer waits for the service to be registered before
-                 * returning.
+                 * returning, also can't re-use ServiceInfo used to register service.
                  */
-                engines.jmdns().getServiceInfo(s.getType(), s.getName());
-                jss.add(s);
+                final ServiceInfo info = toJmdns(service);
+                engines.jmdns().getServiceInfo(info.getType(), info.getName());
+                jss.add(info);
             }
         } else {
             throw new AssertionError("Unsupported engine " + engine);
