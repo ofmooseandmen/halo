@@ -96,8 +96,10 @@ artifacts {
 //      signing.password=password
 //      signing.secretKeyRingFile=/absolute/path/to/.gnupg/secring.gpg
 //
+def isSnapshot = project.version.toString().endsWith("-SNAPSHOT")
+def isCiEnv = System.getenv("CI") ?: false
 signing {
-    required { !version.endsWith("-SNAPSHOT") }
+    required { !(isSnapshot || isCiEnv) }
     sign configurations.archives
 }
 
