@@ -35,9 +35,9 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.jmdns.ServiceEvent;
 import javax.jmdns.ServiceTypeListener;
@@ -58,7 +58,7 @@ public final class RegistrationBrowsingSteps {
         private final List<String> types;
 
         CollectingBrowserListener() {
-            types = new ArrayList<>();
+            types = new CopyOnWriteArrayList<>();
         }
 
         @Override
@@ -77,7 +77,7 @@ public final class RegistrationBrowsingSteps {
         private final List<String> types;
 
         CollectingTypeListener() {
-            types = new ArrayList<>();
+            types = new CopyOnWriteArrayList<>();
         }
 
         @Override
