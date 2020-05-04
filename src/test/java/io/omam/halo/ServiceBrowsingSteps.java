@@ -166,10 +166,9 @@ public final class ServiceBrowsingSteps {
         /* sort expecteds and actuals by instance name. */
         final List<ServiceDetails> expecteds = new ArrayList<>(services);
         Collections.sort(expecteds, (s1, s2) -> s1.instanceName().compareTo(s2.instanceName()));
-
         final boolean up = eventType.equals("up");
         /* Halo and JmDNS service resolution timeout is 6 seconds. */
-        final long timeout = services.size() * 6000;
+        final long timeout = services.size() * 6;
         if (browsedBy.equals("Halo")) {
             final CollectingBrowserListener l = hls.get(listener);
             await()
