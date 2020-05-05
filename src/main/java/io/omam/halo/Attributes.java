@@ -120,9 +120,9 @@ public interface Attributes {
          * @return this
          */
         public final Builder with(final String key, final String value, final Charset charset) {
-            final ByteBuffer bb = ByteBuffer.wrap(value.getBytes(charset));
-            bb.order(ByteOrder.BIG_ENDIAN);
-            return with(key, bb);
+            final ByteBuffer buffer = ByteBuffer.wrap(value.getBytes(charset));
+            buffer.order(ByteOrder.BIG_ENDIAN);
+            return with(key, buffer);
         }
 
         /**

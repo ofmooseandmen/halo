@@ -34,6 +34,7 @@ import static io.omam.halo.MulticastDns.CLASS_IN;
 import static io.omam.halo.MulticastDns.DOMAIN;
 import static io.omam.halo.MulticastDns.RESOLUTION_TIMEOUT;
 import static io.omam.halo.MulticastDns.TYPE_PTR;
+import static io.omam.halo.MulticastDns.toLowerCase;
 import static io.omam.halo.ServiceImpl.instanceNameOf;
 import static io.omam.halo.ServiceImpl.registrationTypeOf;
 import static java.util.stream.Collectors.groupingBy;
@@ -79,11 +80,11 @@ final class HaloServiceBrowser extends HaloBrowser {
         @Override
         public final Void call() {
             final Set<String> rpns = listeners.keySet();
-            final Builder b = DnsMessage.query();
+            final Builder builder = DnsMessage.query();
             for (final String rpn : rpns) {
-                b.addQuestion(new DnsQuestion(rpn, TYPE_PTR, CLASS_IN));
+                builder.addQuestion(new DnsQuestion(rpn, TYPE_PTR, CLASS_IN));
             }
-            halo.sendMessage(b.get());
+            halo.sendMessage(builder.get());
             return null;
         }
 
@@ -98,33 +99,33 @@ final class HaloServiceBrowser extends HaloBrowser {
         private final String rpn;
 
         /** service to resolve. */
-        private final ServiceImpl s;
+        private final ServiceImpl service;
 
         /**
          * Constructor.
          *
          * @param registrationPointerName registration pointer name of the service being resolved
-         * @param service service to resolve
+         * @param aService service to resolve
          */
-        ResolveTask(final String registrationPointerName, final ServiceImpl service) {
+        ResolveTask(final String registrationPointerName, final ServiceImpl aService) {
             rpn = registrationPointerName;
-            s = service;
+            service = aService;
         }
 
         @SuppressWarnings("synthetic-access")
         @Override
         public final void run() {
             try {
-                final boolean resolved = s.resolve(halo, RESOLUTION_TIMEOUT);
-                final String skey = s.name().toLowerCase();
+                final boolean resolved = service.resolve(halo, RESOLUTION_TIMEOUT);
+                final String skey = toLowerCase(service.name());
                 rFutures.remove(skey);
                 if (resolved) {
-                    LOGGER.info(() -> "Resolved " + s);
-                    services.get(rpn).put(skey, s);
+                    LOGGER.info(() -> "Resolved " + service);
+                    services.get(rpn).put(skey, service);
                     final Collection<ServiceBrowserListener> rlisteners = listeners.get(rpn);
-                    rlisteners.forEach(l -> l.serviceUp(s));
+                    rlisteners.forEach(l -> l.serviceUp(service));
                 } else {
-                    LOGGER.warning(() -> "Could not resolve " + s);
+                    LOGGER.warning(() -> "Could not resolve " + service);
                 }
             } catch (final InterruptedException e) {
                 LOGGER.log(Level.WARNING, "Interrupted while waiting for response", e);
@@ -175,7 +176,7 @@ final class HaloServiceBrowser extends HaloBrowser {
      * @return registration pointer name (lower case)
      */
     private static String toRpn(final String registrationType) {
-        return (registrationType + DOMAIN + ".").toLowerCase();
+        return toLowerCase(registrationType + DOMAIN + ".");
     }
 
     @Override
@@ -199,8 +200,8 @@ final class HaloServiceBrowser extends HaloBrowser {
         final String rpn = toRpn(registrationType);
         final Collection<ServiceBrowserListener> rls =
                 listeners.computeIfAbsent(rpn, k -> new CopyOnWriteArrayList<>());
-        final Map<String, ServiceImpl> rs = services.computeIfAbsent(rpn, k -> new ConcurrentHashMap<>());
-        rs.values().forEach(listener::serviceUp);
+        final Map<String, ServiceImpl> resolved = services.computeIfAbsent(rpn, k -> new ConcurrentHashMap<>());
+        resolved.values().forEach(listener::serviceUp);
         rls.add(listener);
     }
 
@@ -245,14 +246,14 @@ final class HaloServiceBrowser extends HaloBrowser {
     private void handlePtrExpiry(final Map<String, ServiceImpl> rservices,
             final Collection<ServiceBrowserListener> rlisteners, final String serviceName) {
         LOGGER.info(() -> "Service [" + serviceName + "] is down");
-        final String skey = serviceName.toLowerCase();
-        final Future<?> f = rFutures.remove(skey);
-        if (f != null) {
-            f.cancel(true);
+        final String skey = toLowerCase(serviceName);
+        final Future<?> future = rFutures.remove(skey);
+        if (future != null) {
+            future.cancel(true);
         }
-        final ServiceImpl s = rservices.remove(skey);
-        if (s != null) {
-            rlisteners.forEach(l -> l.serviceDown(s));
+        final ServiceImpl service = rservices.remove(skey);
+        if (service != null) {
+            rlisteners.forEach(l -> l.serviceDown(service));
         }
     }
 
@@ -268,7 +269,7 @@ final class HaloServiceBrowser extends HaloBrowser {
         final Collection<ServiceBrowserListener> rlisteners = listeners.get(rpn);
         for (final PtrRecord ptr : pointers) {
             final String serviceName = ptr.target();
-            final String skey = serviceName.toLowerCase();
+            final String skey = toLowerCase(serviceName);
             if (ptr.isExpired(now)) {
                 handlePtrExpiry(rservices, rlisteners, serviceName);
             } else if (!rservices.containsKey(skey) && !rFutures.containsKey(skey)) {
@@ -288,9 +289,9 @@ final class HaloServiceBrowser extends HaloBrowser {
         return response
             .answers()
             .stream()
-            .filter(r -> r.type() == TYPE_PTR && rpns.contains(r.name().toLowerCase()))
+            .filter(r -> r.type() == TYPE_PTR && rpns.contains(toLowerCase(r.name())))
             .map(r -> (PtrRecord) r)
-            .collect(groupingBy(r -> r.name().toLowerCase()));
+            .collect(groupingBy(r -> toLowerCase(r.name())));
     }
 
     /**
@@ -305,9 +306,9 @@ final class HaloServiceBrowser extends HaloBrowser {
         final Optional<String> registrationType = registrationTypeOf(serviceName);
         if (instanceName.isPresent() && registrationType.isPresent()) {
             LOGGER.fine(() -> "Discovered [" + serviceName + "]");
-            final ServiceImpl s = new ServiceImpl(instanceName.get(), registrationType.get());
-            final Future<?> f = res.submit(new ResolveTask(rpn, s));
-            rFutures.put(serviceName.toLowerCase(), f);
+            final ServiceImpl service = new ServiceImpl(instanceName.get(), registrationType.get());
+            final Future<?> future = res.submit(new ResolveTask(rpn, service));
+            rFutures.put(toLowerCase(serviceName), future);
         } else {
             LOGGER.warning(() -> "Could not decode service name [" + serviceName + "]");
         }

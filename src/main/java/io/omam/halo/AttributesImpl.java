@@ -77,13 +77,13 @@ final class AttributesImpl implements Attributes {
 
     @Override
     public final Optional<String> value(final String key, final Charset charset) {
-        final Optional<ByteBuffer> buffer = value(key);
-        if (!buffer.isPresent()) {
+        final Optional<ByteBuffer> optBuffer = value(key);
+        if (!optBuffer.isPresent()) {
             return Optional.empty();
         }
-        final ByteBuffer bb = buffer.get();
-        final byte[] bytes = new byte[bb.remaining()];
-        bb.get(bytes);
+        final ByteBuffer buffer = optBuffer.get();
+        final byte[] bytes = new byte[buffer.remaining()];
+        buffer.get(bytes);
         return Optional.of(new String(bytes, charset));
     }
 

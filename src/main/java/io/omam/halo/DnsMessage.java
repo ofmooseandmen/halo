@@ -85,11 +85,11 @@ final class DnsMessage {
          * @param otherFlags other flags
          */
         private Builder(final short flag, final short[] otherFlags) {
-            short f = flag;
+            short someFlags = flag;
             for (final short of : otherFlags) {
-                f = (short) (f | of);
+                someFlags = (short) (someFlags | of);
             }
-            flags = f;
+            flags = someFlags;
             questions = new ArrayList<>();
             answers = new ArrayList<>();
             authorities = new ArrayList<>();
@@ -288,32 +288,32 @@ final class DnsMessage {
      * @throws IOException in case of I/O error during decoding
      */
     static DnsMessage decode(final byte[] bytes, final Instant now) throws IOException {
-        try (final MessageInputStream is = new MessageInputStream(bytes)) {
+        try (final MessageInputStream input = new MessageInputStream(bytes)) {
             /*
              * header is 6 shorts for the ID, flags, number of questions, number of answers, number of authorities
              * and number of additional. ID is irrelevant for mDNS.
              */
-            is.readShort();
-            final short flags = (short) is.readShort();
-            final short numQuestions = (short) is.readShort();
-            final short numAnswers = (short) is.readShort();
-            final short numAuthorities = (short) is.readShort();
-            final short numAdditional = (short) is.readShort();
+            input.readShort();
+            final short flags = (short) input.readShort();
+            final short numQuestions = (short) input.readShort();
+            final short numAnswers = (short) input.readShort();
+            final short numAuthorities = (short) input.readShort();
+            final short numAdditional = (short) input.readShort();
 
             final List<DnsQuestion> questions = new ArrayList<>();
             for (int i = 0; i < numQuestions; i++) {
-                final String name = is.readName();
-                final short type = (short) is.readShort();
-                final short clazz = (short) is.readShort();
+                final String name = input.readName();
+                final short type = (short) input.readShort();
+                final short clazz = (short) input.readShort();
                 final DnsQuestion question = new DnsQuestion(name, type, clazz);
                 questions.add(question);
             }
-            final List<DnsAnswer> answers = readRecords(is, numAnswers, now)
+            final List<DnsAnswer> answers = readRecords(input, numAnswers, now)
                 .stream()
                 .map(DnsAnswer::unstamped)
                 .collect(Collectors.toList());
-            final List<DnsRecord> authorities = readRecords(is, numAuthorities, now);
-            final List<DnsRecord> additional = readRecords(is, numAdditional, now);
+            final List<DnsRecord> authorities = readRecords(input, numAuthorities, now);
+            final List<DnsRecord> additional = readRecords(input, numAdditional, now);
             return new DnsMessage(flags, questions, answers, authorities, additional);
         } catch (final BufferUnderflowException e) {
             throw new IOException(e);
@@ -343,48 +343,50 @@ final class DnsMessage {
     /**
      * Reads one {@link DnsRecord} from the given stream.
      *
-     * @param is stream
+     * @param input stream
      * @param now current instant
      * @return the read DNS record if any
      * @throws IOException in case of I/O error
      */
-    private static Optional<DnsRecord> readRecord(final MessageInputStream is, final Instant now)
+    private static Optional<DnsRecord> readRecord(final MessageInputStream input, final Instant now)
             throws IOException {
-        final String name = is.readName();
-        final short type = (short) is.readShort();
-        final short clazz = (short) is.readShort();
-        final Duration ttl = Duration.ofSeconds(is.readInt());
-        final short length = (short) is.readShort();
+        final String name = input.readName();
+        final short type = (short) input.readShort();
+        final short clazz = (short) input.readShort();
+        final Duration ttl = Duration.ofSeconds(input.readInt());
+        final short length = (short) input.readShort();
 
         final DnsRecord record;
         switch (type) {
             case TYPE_A:
-                record = new AddressRecord(name, clazz, ttl, now, InetAddress.getByAddress(is.readBytes(length)));
+                record = new AddressRecord(name, clazz, ttl, now,
+                                           InetAddress.getByAddress(input.readBytes(length)));
                 break;
             case TYPE_AAAA:
-                record = new AddressRecord(name, clazz, ttl, now, InetAddress.getByAddress(is.readBytes(length)));
+                record = new AddressRecord(name, clazz, ttl, now,
+                                           InetAddress.getByAddress(input.readBytes(length)));
                 break;
             case TYPE_PTR:
-                record = new PtrRecord(name, clazz, ttl, now, is.readName());
+                record = new PtrRecord(name, clazz, ttl, now, input.readName());
                 break;
             case TYPE_SRV:
                 /* ignore priority. */
-                is.readShort();
+                input.readShort();
                 /* ignore priority. */
-                is.readShort();
-                final short port = (short) is.readShort();
-                final String server = is.readName();
+                input.readShort();
+                final short port = (short) input.readShort();
+                final String server = input.readName();
                 record = new SrvRecord(name, clazz, ttl, now, port, server);
                 break;
             case TYPE_TXT:
-                record = new TxtRecord(name, clazz, ttl, now, AttributesCodec.decode(is, length));
+                record = new TxtRecord(name, clazz, ttl, now, AttributesCodec.decode(input, length));
                 break;
             default:
                 /*
                  * ignore unknown types: skip the payload for the resource record so the next records can be parsed
                  * correctly.
                  */
-                final long skipped = is.skip(length);
+                final long skipped = input.skip(length);
                 if (skipped != length) {
                     throw new IOException("Failed to skip over ignored record.");
                 }
@@ -397,17 +399,17 @@ final class DnsMessage {
     /**
      * Reads all {@link DnsRecord}(s) from the given stream.
      *
-     * @param is stream
+     * @param input stream
      * @param size number of record(s) to read
      * @param now current instant
      * @return all read DNS record(s)
      * @throws IOException in case of I/O error
      */
-    private static List<DnsRecord> readRecords(final MessageInputStream is, final int size, final Instant now)
+    private static List<DnsRecord> readRecords(final MessageInputStream input, final int size, final Instant now)
             throws IOException {
         final List<DnsRecord> records = new ArrayList<>();
         for (int i = 0; i < size; i++) {
-            readRecord(is, now).ifPresent(records::add);
+            readRecord(input, now).ifPresent(records::add);
         }
         return records;
     }
@@ -455,17 +457,21 @@ final class DnsMessage {
 
     @Override
     public final String toString() {
-        final StringBuilder sb = new StringBuilder("DNS ");
+        final StringBuilder builder = new StringBuilder("DNS ");
         if (isQuery()) {
-            sb
+            builder
                 .append("query with ")
                 .append(questions.size())
                 .append(" question(s): ")
                 .append(questions.toString());
         } else {
-            sb.append("response with ").append(answers.size()).append(" answer(s): ").append(answers.toString());
+            builder
+                .append("response with ")
+                .append(answers.size())
+                .append(" answer(s): ")
+                .append(answers.toString());
         }
-        return sb.toString();
+        return builder.toString();
     }
 
     /**
@@ -483,19 +489,19 @@ final class DnsMessage {
      * @return bytes
      */
     final byte[] encode() {
-        try (final MessageOutputStream mos = new MessageOutputStream()) {
-            mos.writeShort((short) 0);
+        try (final MessageOutputStream output = new MessageOutputStream()) {
+            output.writeShort((short) 0);
 
-            mos.writeShort(flags);
-            mos.writeShort((short) questions.size());
-            mos.writeShort((short) nbAnswers);
-            mos.writeShort((short) nbAuthorities);
-            mos.writeShort((short) nbAdditional);
+            output.writeShort(flags);
+            output.writeShort((short) questions.size());
+            output.writeShort((short) nbAnswers);
+            output.writeShort((short) nbAuthorities);
+            output.writeShort((short) nbAdditional);
 
-            questions.forEach(q -> write(q, mos));
-            answers.forEach(a -> write(a.record(), a.stamp(), mos));
+            questions.forEach(q -> write(q, output));
+            answers.forEach(a -> write(a.record(), a.stamp(), output));
 
-            return mos.toByteArray();
+            return output.toByteArray();
         }
     }
 

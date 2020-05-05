@@ -53,7 +53,7 @@ final class Reaper implements AutoCloseable {
     private final ScheduledExecutorService ses;
 
     /** future to cancel the background reaping task. */
-    private Future<?> f;
+    private Future<?> future;
 
     /**
      * Constructor.
@@ -72,9 +72,9 @@ final class Reaper implements AutoCloseable {
      */
     @Override
     public final void close() {
-        if (f != null) {
-            f.cancel(true);
-            f = null;
+        if (future != null) {
+            future.cancel(true);
+            future = null;
         }
         ses.shutdownNow();
     }
@@ -83,7 +83,7 @@ final class Reaper implements AutoCloseable {
      * Starts a background task to remove expired records.
      */
     final void start() {
-        f = ses
+        future = ses
             .scheduleAtFixedRate(() -> cache.clean(clock.instant()), REAPING_INTERVAL.toMillis(),
                     REAPING_INTERVAL.toMillis(), TimeUnit.MILLISECONDS);
     }

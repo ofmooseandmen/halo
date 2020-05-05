@@ -65,8 +65,9 @@ final class HaloRegistrationTypeBrowser extends HaloBrowser {
 
         @Override
         public final Void call() {
-            final Builder b = DnsMessage.query().addQuestion(new DnsQuestion(RT_DISCOVERY, TYPE_PTR, CLASS_IN));
-            halo.sendMessage(b.get());
+            final Builder builder =
+                    DnsMessage.query().addQuestion(new DnsQuestion(RT_DISCOVERY, TYPE_PTR, CLASS_IN));
+            halo.sendMessage(builder.get());
             return null;
         }
 
@@ -107,16 +108,6 @@ final class HaloRegistrationTypeBrowser extends HaloBrowser {
             .forEach(this::handlePointer);
     }
 
-    @Override
-    protected final void doClose() {
-        // empty.
-    }
-
-    @Override
-    protected final Callable<Void> queryTask() {
-        return new QueryTask();
-    }
-
     /**
      * Adds the given listener.
      * <p>
@@ -140,22 +131,32 @@ final class HaloRegistrationTypeBrowser extends HaloBrowser {
         listeners.remove(listener);
     }
 
+    @Override
+    protected final void doClose() {
+        // empty.
+    }
+
+    @Override
+    protected final Callable<Void> queryTask() {
+        return new QueryTask();
+    }
+
     /**
      * Handles a response PTR record.
      *
-     * @param p pointer
+     * @param record pointer record
      */
-    private void handlePointer(final PtrRecord p) {
-        final int end = p.target().indexOf(DOMAIN);
-        if (end != -1) {
-            final String rt = p.target().substring(0, end);
-            if (!rts.contains(rt)) {
-                LOGGER.info(() -> "Discovered new registration type [" + p.target() + "]");
-                rts.add(rt);
-                listeners.forEach(l -> l.registrationTypeDiscovered(rt));
-            }
+    private void handlePointer(final PtrRecord record) {
+        final int end = record.target().indexOf(DOMAIN);
+        if (end == -1) {
+            LOGGER.warning(() -> "Ignored pointer to [" + record.target() + "]");
         } else {
-            LOGGER.warning(() -> "Ignored pointer to [" + p.target() + "]");
+            final String regType = record.target().substring(0, end);
+            if (!rts.contains(regType)) {
+                LOGGER.info(() -> "Discovered new registration type [" + record.target() + "]");
+                rts.add(regType);
+                listeners.forEach(l -> l.registrationTypeDiscovered(regType));
+            }
         }
     }
 }

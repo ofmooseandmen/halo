@@ -52,45 +52,45 @@ final class HaloScheduledExecutorService {
     private static class SchedulingTask implements Callable<Void> {
 
         /** task to execute */
-        private final Callable<Void> c;
+        private final Callable<Void> task;
 
         /** scheduled executor service. */
-        private final ScheduledExecutorService ses;
+        private final ScheduledExecutorService executor;
 
         /** number of time the task shall be executed per batch. */
-        private final int s;
+        private final int size;
 
         /** delay before the first execution and between each subsequent execution(s). */
-        private final Duration d;
+        private final Duration delay;
 
         /** duration between each batch. */
-        private final Duration p;
+        private final Duration pause;
 
         /**
          * Constructor.
          *
-         * @param callable task to execute
-         * @param scheduledExecutorService scheduled executor service
-         * @param size number of time the task shall be executed per batch
-         * @param delay delay before the first execution and between each subsequent execution(s)
-         * @param pause duration between each batch
+         * @param aTask task to execute
+         * @param anExecutor scheduled executor service
+         * @param aSize number of time the task shall be executed per batch
+         * @param aDelay delay before the first execution and between each subsequent execution(s)
+         * @param aPause duration between each batch
          */
-        SchedulingTask(final Callable<Void> callable, final ScheduledExecutorService scheduledExecutorService,
-                final int size, final Duration delay, final Duration pause) {
-            c = callable;
-            ses = scheduledExecutorService;
-            s = size;
-            d = delay;
-            p = pause;
+        SchedulingTask(final Callable<Void> aTask, final ScheduledExecutorService anExecutor, final int aSize,
+                final Duration aDelay, final Duration aPause) {
+            task = aTask;
+            executor = anExecutor;
+            size = aSize;
+            delay = aDelay;
+            pause = aPause;
         }
 
         @Override
         public final Void call() throws Exception {
-            for (int i = 0; i < s; i++) {
-                final long dl = (i + 1) * d.toMillis();
-                ses.schedule(c, dl, TimeUnit.MILLISECONDS);
+            for (int i = 0; i < size; i++) {
+                final long currentDelay = (i + 1) * delay.toMillis();
+                executor.schedule(task, currentDelay, TimeUnit.MILLISECONDS);
             }
-            ses.schedule(this, p.toMillis(), TimeUnit.MILLISECONDS);
+            executor.schedule(this, pause.toMillis(), TimeUnit.MILLISECONDS);
             return null;
         }
 
@@ -122,8 +122,8 @@ final class HaloScheduledExecutorService {
             final Duration delay) {
         final Collection<ScheduledFuture<Void>> futures = new ArrayList<>();
         for (int i = 0; i < size; i++) {
-            final long d = (i + 1) * delay.toMillis();
-            futures.add(ses.schedule(callable, d, TimeUnit.MILLISECONDS));
+            final long currentDelay = (i + 1) * delay.toMillis();
+            futures.add(ses.schedule(callable, currentDelay, TimeUnit.MILLISECONDS));
         }
         return futures;
     }

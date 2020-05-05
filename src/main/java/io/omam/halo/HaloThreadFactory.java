@@ -60,10 +60,10 @@ final class HaloThreadFactory implements ThreadFactory {
     }
 
     @Override
-    public final Thread newThread(final Runnable r) {
-        final Thread t = new Thread(r, namePrefix + threadNumber.getAndIncrement());
-        t.setDaemon(true);
-        t.setPriority(Thread.NORM_PRIORITY);
-        return t;
+    public final Thread newThread(final Runnable runnable) {
+        final Thread thread = new Thread(runnable, namePrefix + threadNumber.getAndIncrement());
+        thread.setDaemon(true);
+        thread.setPriority(Thread.NORM_PRIORITY);
+        return thread;
     }
 }

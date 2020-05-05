@@ -79,7 +79,7 @@ public interface Service {
         }
 
         /** service being built> */
-        private final ServiceImpl si;
+        private final ServiceImpl service;
 
         /**
          * Constructor.
@@ -90,14 +90,14 @@ public interface Service {
          * @param port service port number
          */
         Builder(final String instanceName, final String registrationType, final int port) {
-            si = new ServiceImpl(instanceName, registrationType);
-            si.setPort((short) port);
-            si.setAttributes(Attributes.create().with("").get());
-            si.setHostname(LOCAL_HOST.getHostName());
+            service = new ServiceImpl(instanceName, registrationType);
+            service.setPort((short) port);
+            service.setAttributes(Attributes.create().with("").get());
+            service.setHostname(LOCAL_HOST.getHostName());
             if (LOCAL_HOST instanceof Inet4Address) {
-                si.setIpv4Address((Inet4Address) LOCAL_HOST);
+                service.setIpv4Address((Inet4Address) LOCAL_HOST);
             } else if (LOCAL_HOST instanceof Inet6Address) {
-                si.setIpv6Address((Inet6Address) LOCAL_HOST);
+                service.setIpv6Address((Inet6Address) LOCAL_HOST);
             }
         }
 
@@ -108,13 +108,13 @@ public interface Service {
          * @return this builder
          */
         public final Builder attributes(final Attributes attributes) {
-            si.setAttributes(attributes);
+            service.setAttributes(attributes);
             return this;
         }
 
         @Override
         public final Service get() {
-            return si;
+            return service;
         }
 
         /**
@@ -126,7 +126,7 @@ public interface Service {
          * @return this builder
          */
         public final Builder hostname(final String hostname) {
-            si.setHostname(hostname);
+            service.setHostname(hostname);
             return this;
         }
 
@@ -137,7 +137,7 @@ public interface Service {
          * @return this builder
          */
         public final Builder ipv4Address(final Inet4Address address) {
-            si.setIpv4Address(address);
+            service.setIpv4Address(address);
             return this;
         }
 
@@ -148,7 +148,7 @@ public interface Service {
          * @return this builder
          */
         public final Builder ipv6Address(final Inet6Address address) {
-            si.setIpv6Address(address);
+            service.setIpv6Address(address);
             return this;
         }
 

@@ -143,7 +143,7 @@ final class HaloChannel implements AutoCloseable {
             buf.order(ByteOrder.BIG_ENDIAN);
             while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    final DnsMessage msg = sq.take();
+                    final DnsMessage msg = sent.take();
                     LOGGER.fine(() -> "Sending " + msg);
                     final byte[] packet = msg.encode();
                     buf.clear();
@@ -186,7 +186,7 @@ final class HaloChannel implements AutoCloseable {
     private final Clock clock;
 
     /** executor service to send/receive messages. */
-    private final ExecutorService es;
+    private final ExecutorService executor;
 
     /** IPV4 channel(s). */
     private final List<SelectionKey> ipv4;
@@ -207,7 +207,7 @@ final class HaloChannel implements AutoCloseable {
     private Future<?> sender;
 
     /** queue of sent DNS messages. */
-    private final BlockingQueue<DnsMessage> sq;
+    private final BlockingQueue<DnsMessage> sent;
 
     /**
      * Constructor.
@@ -220,10 +220,10 @@ final class HaloChannel implements AutoCloseable {
     private HaloChannel(final Consumer<DnsMessage> aListener, final Clock aClock,
             final Collection<NetworkInterface> nis) throws IOException {
         clock = aClock;
-        es = Executors.newFixedThreadPool(2, new HaloThreadFactory("channel"));
+        executor = Executors.newFixedThreadPool(2, new HaloThreadFactory("channel"));
         listener = aListener;
         selector = Selector.open();
-        sq = new LinkedBlockingQueue<>();
+        sent = new LinkedBlockingQueue<>();
 
         ipv4 = new ArrayList<>();
         ipv6 = new ArrayList<>();
@@ -258,11 +258,11 @@ final class HaloChannel implements AutoCloseable {
     static HaloChannel allNetworkInterfaces(final Consumer<DnsMessage> listener, final Clock clock)
             throws IOException {
         final Enumeration<NetworkInterface> nics = NetworkInterface.getNetworkInterfaces();
-        final Collection<NetworkInterface> c = new ArrayList<>();
+        final Collection<NetworkInterface> allNics = new ArrayList<>();
         while (nics.hasMoreElements()) {
-            c.add(nics.nextElement());
+            allNics.add(nics.nextElement());
         }
-        return networkInterfaces(listener, clock, c);
+        return networkInterfaces(listener, clock, allNics);
     }
 
     /**
@@ -284,7 +284,7 @@ final class HaloChannel implements AutoCloseable {
         LOGGER.fine("Closing channel");
         selector.wakeup();
         disable();
-        es.shutdownNow();
+        executor.shutdownNow();
         close(ipv4);
         close(ipv6);
     }
@@ -294,10 +294,10 @@ final class HaloChannel implements AutoCloseable {
      */
     final synchronized void enable() {
         if (sender == null) {
-            sender = es.submit(new Sender());
+            sender = executor.submit(new Sender());
         }
         if (receiver == null) {
-            receiver = es.submit(new Receiver());
+            receiver = executor.submit(new Receiver());
         }
     }
 
@@ -307,7 +307,7 @@ final class HaloChannel implements AutoCloseable {
      * @param message message to send
      */
     final void send(final DnsMessage message) {
-        sq.add(message);
+        sent.add(message);
     }
 
     /**
@@ -340,13 +340,13 @@ final class HaloChannel implements AutoCloseable {
     /**
      * Determines whether the given network interface has an address of the given class.
      *
-     * @param ni network interface
-     * @param ipv {@link InetAddress} class
+     * @param iface network interface
+     * @param inetClass {@link InetAddress} class
      * @return {@code true} if given network interface has an address of the given class
      */
-    private boolean hasIpv(final NetworkInterface ni, final Class<? extends InetAddress> ipv) {
-        for (final Enumeration<InetAddress> e = ni.getInetAddresses(); e.hasMoreElements();) {
-            if (e.nextElement().getClass().isAssignableFrom(ipv)) {
+    private boolean hasIpv(final NetworkInterface iface, final Class<? extends InetAddress> inetClass) {
+        for (final Enumeration<InetAddress> e = iface.getInetAddresses(); e.hasMoreElements();) {
+            if (e.nextElement().getClass().isAssignableFrom(inetClass)) {
                 return true;
             }
         }
@@ -360,30 +360,33 @@ final class HaloChannel implements AutoCloseable {
      * multicast}, is {@link NetworkInterface#isUp() up} and has at least one address matching the given protocol
      * family
      *
-     * @param ni all network interface
+     * @param iface all network interface
      * @param family IPV4 or IPV5
      * @param loopback {@code true} if given interface must be the loopback, {@code false} if it must not
      * @return a new multicast channel or empty if the given network interface is not valid
      */
-    private Optional<DatagramChannel> openChannel(final NetworkInterface ni, final ProtocolFamily family,
+    private Optional<DatagramChannel> openChannel(final NetworkInterface iface, final ProtocolFamily family,
             final boolean loopback) {
         final boolean ipv4Protocol = family == StandardProtocolFamily.INET;
         final InetAddress addr = ipv4Protocol ? IPV4_ADDR : IPV6_ADDR;
         try {
             final Class<? extends InetAddress> ipvClass = ipv4Protocol ? Inet4Address.class : Inet6Address.class;
-            if (ni.supportsMulticast() && ni.isUp() && ni.isLoopback() == loopback && hasIpv(ni, ipvClass)) {
+            if (iface.supportsMulticast()
+                && iface.isUp()
+                && iface.isLoopback() == loopback
+                && hasIpv(iface, ipvClass)) {
                 final Optional<DatagramChannel> channel = openChannel(family);
                 if (channel.isPresent()) {
-                    channel.get().setOption(StandardSocketOptions.IP_MULTICAST_IF, ni);
-                    channel.get().join(addr, ni);
-                    LOGGER.info(() -> "Joined multicast address " + addr + " on " + ni);
+                    channel.get().setOption(StandardSocketOptions.IP_MULTICAST_IF, iface);
+                    channel.get().join(addr, iface);
+                    LOGGER.info(() -> "Joined multicast address " + addr + " on " + iface);
                     return channel;
                 }
             }
-            LOGGER.fine(() -> "Ignored " + ni + " for " + addr);
+            LOGGER.fine(() -> "Ignored " + iface + " for " + addr);
             return Optional.empty();
         } catch (final IOException e) {
-            LOGGER.log(Level.WARNING, e, () -> "Ignored " + ni + " for " + addr);
+            LOGGER.log(Level.WARNING, e, () -> "Ignored " + iface + " for " + addr);
             return Optional.empty();
         }
     }

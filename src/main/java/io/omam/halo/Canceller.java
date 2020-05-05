@@ -84,22 +84,25 @@ final class Canceller implements AutoCloseable {
             final Attributes attributes = service.attributes();
             final String serviceName = service.name();
             final short unique = uniqueClass(CLASS_IN);
-            final Builder b = DnsMessage
+            final Builder builder = DnsMessage
                 .response(FLAGS_AA)
                 .addAnswer(new PtrRecord(service.registrationPointerName(), CLASS_IN, ZERO, now, serviceName),
                         Optional.empty())
-                .addAnswer(new SrvRecord(serviceName, unique, ZERO, now, service.port(), hostname), Optional.empty())
+                .addAnswer(new SrvRecord(serviceName, unique, ZERO, now, service.port(), hostname),
+                        Optional.empty())
                 .addAnswer(new TxtRecord(serviceName, unique, ZERO, now, attributes), Optional.empty());
 
             service
                 .ipv4Address()
-                .ifPresent(a -> b.addAnswer(new AddressRecord(hostname, unique, ZERO, now, a), Optional.empty()));
+                .ifPresent(a -> builder
+                    .addAnswer(new AddressRecord(hostname, unique, ZERO, now, a), Optional.empty()));
 
             service
                 .ipv6Address()
-                .ifPresent(a -> b.addAnswer(new AddressRecord(hostname, unique, ZERO, now, a), Optional.empty()));
+                .ifPresent(a -> builder
+                    .addAnswer(new AddressRecord(hostname, unique, ZERO, now, a), Optional.empty()));
 
-            halo.sendMessage(b.get());
+            halo.sendMessage(builder.get());
             return null;
         }
     }

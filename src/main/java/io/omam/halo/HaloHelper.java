@@ -39,6 +39,13 @@ import java.util.Optional;
 abstract class HaloHelper {
 
     /**
+     * Constructor.
+     */
+    protected HaloHelper() {
+        // empty.
+    }
+
+    /**
      * Adds the given listener to receive DNS responses.
      *
      * @param listener listener not null

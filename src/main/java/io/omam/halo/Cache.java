@@ -33,6 +33,7 @@ package io.omam.halo;
 import static io.omam.halo.MulticastDns.CLASS_ANY;
 import static io.omam.halo.MulticastDns.EXPIRY_TTL;
 import static io.omam.halo.MulticastDns.TYPE_ANY;
+import static io.omam.halo.MulticastDns.toLowerCase;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -117,7 +118,7 @@ final class Cache {
      * @return all DNS records matching the given name
      */
     final Collection<DnsRecord> entries(final String name) {
-        return map.getOrDefault(name.toLowerCase(), Collections.emptyList());
+        return map.getOrDefault(toLowerCase(name), Collections.emptyList());
     }
 
     /**
@@ -167,7 +168,7 @@ final class Cache {
     final void removeAll(final String name) {
         Objects.requireNonNull(name);
         LOGGER.fine(() -> "Removing all DNS records associated with" + name + " from cache");
-        map.remove(name.toLowerCase());
+        map.remove(toLowerCase(name));
     }
 
     /**
@@ -191,46 +192,46 @@ final class Cache {
      * Returns true if both DNS records have the same service class (or one has a service class of
      * {@link #CLASS_ANY}).
      *
-     * @param r1 DNS record
-     * @param r2 DNS record
+     * @param record1 DNS record
+     * @param record2 DNS record
      * @return as described above
      */
-    private boolean isSameClass(final DnsRecord r1, final DnsRecord r2) {
-        return isSameClass(r1, r2.clazz());
+    private boolean isSameClass(final DnsRecord record1, final DnsRecord record2) {
+        return isSameClass(record1, record2.clazz());
     }
 
     /**
      * Returns true if given DNS record has given service class (or record/given class is {@link #CLASS_ANY}).
      *
-     * @param r DNS record
+     * @param record DNS record
      * @param clazz service class
      * @return as described above
      */
-    private boolean isSameClass(final DnsRecord r, final short clazz) {
-        return r.clazz() == CLASS_ANY || clazz == CLASS_ANY || r.clazz() == clazz;
+    private boolean isSameClass(final DnsRecord record, final short clazz) {
+        return record.clazz() == CLASS_ANY || clazz == CLASS_ANY || record.clazz() == clazz;
     }
 
     /**
      * Returns true if both DNS records have the same service type (or one has a service type of
      * {@link #TYPE_ANY}).
      *
-     * @param r1 DNS record
-     * @param r2 DNS record
+     * @param record1 DNS record
+     * @param record2 DNS record
      * @return as described above
      */
-    private boolean isSameType(final DnsRecord r1, final DnsRecord r2) {
-        return isSameType(r1, r2.type());
+    private boolean isSameType(final DnsRecord record1, final DnsRecord record2) {
+        return isSameType(record1, record2.type());
     }
 
     /**
      * Returns true if given DNS record has given service type (or record/given type is {@link #TYPE_ANY}).
      *
-     * @param r DNS record
+     * @param record DNS record
      * @param type service type
      * @return as described above
      */
-    private boolean isSameType(final DnsRecord r, final short type) {
-        return r.type() == TYPE_ANY || type == TYPE_ANY || r.type() == type;
+    private boolean isSameType(final DnsRecord record, final short type) {
+        return record.type() == TYPE_ANY || type == TYPE_ANY || record.type() == type;
     }
 
     /**
@@ -240,7 +241,7 @@ final class Cache {
      * @return key
      */
     private String key(final DnsRecord record) {
-        return record.name().toLowerCase();
+        return toLowerCase(record.name());
     }
 
     /**
@@ -250,9 +251,9 @@ final class Cache {
      */
     private void logResult(final Optional<? extends DnsRecord> result) {
         if (result.isPresent()) {
-            LOGGER.fine("Found cached " + result.get());
+            LOGGER.fine(() -> "Found cached " + result.get());
         } else {
-            LOGGER.fine("No cached record found");
+            LOGGER.fine(() -> "No cached record found");
         }
     }
 

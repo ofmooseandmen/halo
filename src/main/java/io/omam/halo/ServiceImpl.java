@@ -249,16 +249,16 @@ final class ServiceImpl implements Service, ResponseListener {
 
         final Optional<DnsRecord> cachedIpV4;
         final Optional<DnsRecord> cachedIpV6;
-        if (hostname != null) {
+        if (hostname == null) {
+            cachedIpV4 = Optional.empty();
+            cachedIpV6 = Optional.empty();
+        } else {
             /* look for a cached A record. */
             cachedIpV4 = halo.cachedRecord(hostname, TYPE_A, CLASS_IN);
             cachedIpV4.ifPresent(c -> update(halo, c));
             /* look for a cached AAAA record. */
             cachedIpV6 = halo.cachedRecord(hostname, TYPE_AAAA, CLASS_IN);
             cachedIpV6.ifPresent(c -> update(halo, c));
-        } else {
-            cachedIpV4 = Optional.empty();
-            cachedIpV6 = Optional.empty();
         }
 
         if (resolved()) {
@@ -355,7 +355,7 @@ final class ServiceImpl implements Service, ResponseListener {
         awaitingResolution = true;
         boolean response = false;
         try {
-            final Timeout timeout = Timeout.of(dur);
+            final Timeout timeout = Timeout.ofDuration(dur);
             Duration remaining = timeout.remaining();
             while (awaitingResolution && !remaining.isZero()) {
                 response = resolved.await(remaining.toMillis(), TimeUnit.MILLISECONDS);
@@ -379,24 +379,24 @@ final class ServiceImpl implements Service, ResponseListener {
      * @return delays
      */
     private Queue<Duration> delays(final Duration timeout) {
-        final Queue<Duration> q = new ArrayDeque<>();
+        final Queue<Duration> result = new ArrayDeque<>();
         if (timeout.compareTo(RESOLUTION_INTERVAL) <= 0) {
-            return q;
+            return result;
         }
         int factor = 1;
         Duration delay = RESOLUTION_INTERVAL;
         Duration total = Duration.ZERO;
         do {
-            q.add(delay);
+            result.add(delay);
             total = total.plus(delay);
             factor = factor * 2;
             delay = RESOLUTION_INTERVAL.multipliedBy(factor);
         } while (total.plus(delay).compareTo(timeout) <= 0);
         delay = timeout.minus(total);
         if (!delay.isZero()) {
-            q.add(delay);
+            result.add(delay);
         }
-        return q;
+        return result;
     }
 
     /**
@@ -416,7 +416,9 @@ final class ServiceImpl implements Service, ResponseListener {
      * @param record DNS record
      */
     private void update(final HaloHelper halo, final DnsRecord record) {
-        if (!record.isExpired(halo.now())) {
+        if (record.isExpired(halo.now())) {
+            LOGGER.info(() -> "Ignored expired " + record);
+        } else {
             final String serviceName = name();
             final boolean matchesService = record.name().equalsIgnoreCase(serviceName);
             final boolean matchesHost = record.name().equalsIgnoreCase(hostname);
@@ -444,8 +446,6 @@ final class ServiceImpl implements Service, ResponseListener {
             } else {
                 LOGGER.fine(() -> "Ignored irrelevant " + record);
             }
-        } else {
-            LOGGER.info(() -> "Ignored expired " + record);
         }
     }
 

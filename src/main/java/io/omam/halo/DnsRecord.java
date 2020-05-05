@@ -88,8 +88,8 @@ abstract class DnsRecord extends DnsEntry {
      * @return {@code true} iff this record has expired Returns true if this record has expired.
      */
     final boolean isExpired(final Instant now) {
-        final Instant t = expirationTime(100);
-        return t.equals(now) || t.isBefore(now);
+        final Instant instant = expirationTime(100);
+        return instant.equals(now) || instant.isBefore(now);
     }
 
     /**

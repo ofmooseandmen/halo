@@ -99,7 +99,7 @@ final class Announcer implements AutoCloseable {
             final short unique = uniqueClass(CLASS_IN);
             /* no stamp when announcing, TTL will be the one given. */
             final Optional<Instant> stamp = Optional.empty();
-            final Builder b = DnsMessage
+            final Builder builder = DnsMessage
                 .response(FLAGS_AA)
                 .addAnswer(new PtrRecord(service.registrationPointerName(), CLASS_IN, ttl, now, serviceName),
                         stamp)
@@ -108,13 +108,13 @@ final class Announcer implements AutoCloseable {
 
             service
                 .ipv4Address()
-                .ifPresent(a -> b.addAnswer(new AddressRecord(hostname, unique, ttl, now, a), stamp));
+                .ifPresent(a -> builder.addAnswer(new AddressRecord(hostname, unique, ttl, now, a), stamp));
 
             service
                 .ipv6Address()
-                .ifPresent(a -> b.addAnswer(new AddressRecord(hostname, unique, ttl, now, a), stamp));
+                .ifPresent(a -> builder.addAnswer(new AddressRecord(hostname, unique, ttl, now, a), stamp));
 
-            halo.sendMessage(b.get());
+            halo.sendMessage(builder.get());
             return null;
         }
     }
@@ -181,7 +181,7 @@ final class Announcer implements AutoCloseable {
             lock.lock();
             boolean signalled = false;
             try {
-                final Timeout timeout = Timeout.of(PROBING_TIMEOUT);
+                final Timeout timeout = Timeout.ofDuration(PROBING_TIMEOUT);
                 Duration remaining = timeout.remaining();
                 while (!match.get() && !remaining.isZero()) {
                     signalled = cdt.await(remaining.toMillis(), TimeUnit.MILLISECONDS);
@@ -228,7 +228,7 @@ final class Announcer implements AutoCloseable {
             final Instant now = halo.now();
             final String hostname = service.hostname();
             final String serviceName = service.name();
-            final Builder b = DnsMessage
+            final Builder builder = DnsMessage
                 .query()
                 .addQuestion(new DnsQuestion(hostname, TYPE_ANY, CLASS_IN))
                 .addQuestion(new DnsQuestion(serviceName, TYPE_ANY, CLASS_IN))
@@ -236,12 +236,12 @@ final class Announcer implements AutoCloseable {
 
             service
                 .ipv4Address()
-                .ifPresent(a -> b.addAuthority(new AddressRecord(hostname, CLASS_IN, TTL, now, a)));
+                .ifPresent(a -> builder.addAuthority(new AddressRecord(hostname, CLASS_IN, TTL, now, a)));
             service
                 .ipv6Address()
-                .ifPresent(a -> b.addAuthority(new AddressRecord(hostname, CLASS_IN, TTL, now, a)));
+                .ifPresent(a -> builder.addAuthority(new AddressRecord(hostname, CLASS_IN, TTL, now, a)));
 
-            halo.sendMessage(b.get());
+            halo.sendMessage(builder.get());
             return null;
         }
     }

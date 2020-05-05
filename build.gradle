@@ -2,6 +2,7 @@ plugins {
    id 'eclipse'
    id 'java-library'
    id 'maven-publish'
+   id 'pmd'
    id 'signing'
 }
 
@@ -28,6 +29,15 @@ dependencies {
         'org.jmdns:jmdns:3.5.5',
         'org.slf4j:slf4j-jdk14:1.7.30'
     )
+}
+
+pmd {
+    consoleOutput = true
+    toolVersion = "6.21.0"
+    rulePriority = 5
+    ruleSets = []
+    ruleSetFiles = files("resources/pmd/ruleset.xml")
+    ignoreFailures = true
 }
 
 // use cucumberTest instead
@@ -67,6 +77,9 @@ if (project.hasProperty('enableJaCoCo')) {
         description 'Generates code coverage report for the cucumberTest task.'
 
         outputs.upToDateWhen { false }
+
+        classDirectories.from(sourceSets.main.output.classesDirs)
+        sourceDirectories.from(sourceSets.main.java.srcDirs)
 
         executionData(files("${buildDir}/jacoco/cucumberTest.exec"))
 
@@ -122,7 +135,7 @@ task javadocJar(type: Jar) {
 //     ossrhUsername=<username>
 //     ossrhPassword=<password>
 // - Or pass the credentials as command line parameters
-//     ./gradlew uploadArchives -PossrhUsername=<my-username> -PossrhPassword=<my-password>
+//     ./gradlew publishXXXX -PossrhUsername=<my-username> -PossrhPassword=<my-password>
 //
 publishing {
     publications {

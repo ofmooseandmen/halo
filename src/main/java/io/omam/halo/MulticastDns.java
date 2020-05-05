@@ -35,6 +35,7 @@ import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.time.Duration;
+import java.util.Locale;
 import java.util.Properties;
 
 /**
@@ -49,7 +50,7 @@ final class MulticastDns {
     static final String RT_DISCOVERY = "_services._dns-sd._udp.local.";
 
     /** maximum size of DNS message in bytes. */
-    static final int MAX_DNS_MESSAGE_SIZE = 65536;
+    static final int MAX_DNS_MESSAGE_SIZE = 65_536;
 
     /** mDNS IPV4 address. */
     static final InetAddress IPV4_ADDR;
@@ -148,9 +149,10 @@ final class MulticastDns {
     private static final short CLASS_UNIQUE = (short) 0x8000;
 
     static {
-        try (final InputStream is = MulticastDns.class.getClassLoader().getResourceAsStream("halo.properties")) {
+        try (final InputStream input =
+                MulticastDns.class.getClassLoader().getResourceAsStream("halo.properties")) {
             final Properties props = new Properties();
-            props.load(is);
+            props.load(input);
             IPV4_ADDR = InetAddress.getByName(stringProp("io.omam.halo.mdns.ipv4", props));
             IPV6_ADDR = InetAddress.getByName(stringProp("io.omam.halo.mdns.ipv6", props));
             MDNS_PORT = intProp("io.omam.halo.mdns.port", props);
@@ -209,6 +211,16 @@ final class MulticastDns {
      */
     static short encodeClass(final short classIndex, final boolean unique) {
         return (short) (classIndex | (unique ? CLASS_UNIQUE : 0));
+    }
+
+    /**
+     * Returns {@code value.toLowerCase(Locale.ROOT)}.
+     *
+     * @param value string
+     * @return lower case string using ROOT locale
+     */
+    static String toLowerCase(final String value) {
+        return value.toLowerCase(Locale.ROOT);
     }
 
     /**

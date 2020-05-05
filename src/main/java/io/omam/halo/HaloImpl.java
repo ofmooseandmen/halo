@@ -40,6 +40,7 @@ import static io.omam.halo.MulticastDns.TYPE_ANY;
 import static io.omam.halo.MulticastDns.TYPE_PTR;
 import static io.omam.halo.MulticastDns.TYPE_SRV;
 import static io.omam.halo.MulticastDns.TYPE_TXT;
+import static io.omam.halo.MulticastDns.toLowerCase;
 import static io.omam.halo.MulticastDns.uniqueClass;
 
 import java.io.IOException;
@@ -153,26 +154,26 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
      * @return new instance name
      */
     private static String changeInstanceName(final String instanceName) {
-        final Matcher m = INSTANCE_NAME_PATTERN.matcher(instanceName);
+        final Matcher matcher = INSTANCE_NAME_PATTERN.matcher(instanceName);
         final String result;
-        if (!m.matches()) {
-            result = instanceName + " (2)";
-        } else {
-            final int next = Integer.parseInt(m.group("i")) + 1;
-            final int start = m.start("i");
-            final int end = m.end("i");
+        if (matcher.matches()) {
+            final int next = Integer.parseInt(matcher.group("i")) + 1;
+            final int start = matcher.start("i");
+            final int end = matcher.end("i");
             result = instanceName.substring(0, start) + next + instanceName.substring(end);
+        } else {
+            result = instanceName + " (2)";
         }
         LOGGER.fine(() -> "Change service instance name from: [" + instanceName + "] to [" + result + "]");
         return result;
     }
 
     @Override
-    public final void accept(final DnsMessage in) {
-        if (in.isQuery()) {
-            handleQuery(in);
-        } else if (in.isResponse()) {
-            handleResponse(in);
+    public final void accept(final DnsMessage message) {
+        if (message.isQuery()) {
+            handleQuery(message);
+        } else if (message.isResponse()) {
+            handleResponse(message);
         } else {
             LOGGER.warning("Ignored received DNS message.");
         }
@@ -220,7 +221,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
 
     @Override
     public final void deregister(final Service service) throws IOException {
-        if (services.containsKey(service.name().toLowerCase())) {
+        if (services.containsKey(toLowerCase(service.name()))) {
             canceller.cancel(service);
             remove(service);
             cache.removeAll(service.name());
@@ -267,19 +268,19 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     public final Optional<Service> resolve(final String instanceName, final String registrationType,
             final Duration timeout) {
         cache.clean(now());
-        final ServiceImpl si = new ServiceImpl(instanceName, registrationType);
-        LOGGER.fine(() -> "Resolving " + si.toString() + ON_DOMAIN);
+        final ServiceImpl service = new ServiceImpl(instanceName, registrationType);
+        LOGGER.fine(() -> "Resolving " + service.toString() + ON_DOMAIN);
         try {
-            final boolean resolved = si.resolve(this, timeout);
+            final boolean resolved = service.resolve(this, timeout);
             if (resolved) {
-                LOGGER.info(() -> "Resolved " + si.toString() + ON_DOMAIN);
-                return Optional.of(si);
+                LOGGER.info(() -> "Resolved " + service.toString() + ON_DOMAIN);
+                return Optional.of(service);
             }
         } catch (final InterruptedException e) {
             LOGGER.log(Level.FINE, "Interrupted while waiting for response", e);
             Thread.currentThread().interrupt();
         }
-        LOGGER.info(() -> "Could not resolve " + si.toString() + ON_DOMAIN);
+        LOGGER.info(() -> "Could not resolve " + service.toString() + ON_DOMAIN);
         return Optional.empty();
     }
 
@@ -315,11 +316,11 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     /**
      * Adds the given registered service.
      *
-     * @param s service
+     * @param service service
      */
-    private void add(final Service s) {
-        services.put(s.name().toLowerCase(), s);
-        final String rpn = s.registrationPointerName();
+    private void add(final Service service) {
+        services.put(toLowerCase(service.name()), service);
+        final String rpn = service.registrationPointerName();
         registrationPointerNames.add(rpn);
     }
 
@@ -443,9 +444,9 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
                     addIpv6Address(query, question, builder, now);
                 }
 
-                final Service s = services.get(question.name().toLowerCase());
-                if (s != null) {
-                    addServiceAnswer(query, question, s, builder, now);
+                final Service service = services.get(toLowerCase(question.name()));
+                if (service != null) {
+                    addServiceAnswer(query, question, service, builder, now);
                 }
             }
         }
@@ -470,7 +471,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
             final Instant now = now();
 
             /* check own services. */
-            final Service own = services.get(result.name().toLowerCase());
+            final Service own = services.get(toLowerCase(result.name()));
             if (own != null) {
                 final String otherHostname = own.hostname();
                 collision = own.port() != port || !otherHostname.equals(hostname);
@@ -507,11 +508,11 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     private void handleQuery(final DnsMessage query) {
         LOGGER.fine(() -> "Trying to respond to " + query);
         final DnsMessage response = buildResponse(query);
-        if (!response.answers().isEmpty()) {
+        if (response.answers().isEmpty()) {
+            LOGGER.fine(() -> "Ignoring query");
+        } else {
             LOGGER.fine(() -> "Responding with " + response);
             channel.send(response);
-        } else {
-            LOGGER.fine("Ignoring query");
         }
     }
 
@@ -539,11 +540,11 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     /**
      * Removes the given registered service.
      *
-     * @param s service
+     * @param service service
      */
-    private void remove(final Service s) {
-        registrationPointerNames.remove(s.registrationPointerName());
-        services.remove(s.name().toLowerCase());
+    private void remove(final Service service) {
+        registrationPointerNames.remove(service.registrationPointerName());
+        services.remove(toLowerCase(service.name()));
     }
 
     /**

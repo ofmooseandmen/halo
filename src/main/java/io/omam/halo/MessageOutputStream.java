@@ -45,6 +45,9 @@ import java.util.Map;
  */
 final class MessageOutputStream extends ByteArrayOutputStream {
 
+    /** dot character. */
+    private static final char DOT = '.';
+
     /** pointers for decompression: string to index in this stream. */
     private final Map<String, Integer> pointers;
 
@@ -99,20 +102,20 @@ final class MessageOutputStream extends ByteArrayOutputStream {
      * Writes the given byte to this output stream.
      *
      * @see ByteArrayOutputStream#write(int)
-     * @param b byte
+     * @param value byte
      */
-    final void writeByte(final int b) {
-        write(b & 0xFF);
+    final void writeByte(final int value) {
+        write(value & 0xFF);
     }
 
     /**
      * Writes the given integer to this output stream.
      *
-     * @param i integer
+     * @param value integer
      */
-    final void writeInt(final int i) {
-        writeShort(i >> 16);
-        writeShort(i);
+    final void writeInt(final int value) {
+        writeShort(value >> 16);
+        writeShort(value);
     }
 
     /**
@@ -123,15 +126,15 @@ final class MessageOutputStream extends ByteArrayOutputStream {
     final void writeName(final String name) {
         String sub = name;
         while (true) {
-            int n = sub.indexOf('.');
-            if (n < 0) {
-                n = sub.length();
+            int split = sub.indexOf(DOT);
+            if (split < 0) {
+                split = sub.length();
             }
-            if (n <= 0) {
+            if (split <= 0) {
                 writeByte(0);
                 return;
             }
-            final String label = sub.substring(0, n);
+            final String label = sub.substring(0, split);
             final Integer offset = pointers.get(sub);
             if (offset != null) {
                 final int val = offset.intValue();
@@ -141,8 +144,8 @@ final class MessageOutputStream extends ByteArrayOutputStream {
             }
             pointers.put(sub, Integer.valueOf(size()));
             writeCharacterString(label);
-            sub = sub.substring(n);
-            if (sub.startsWith(".")) {
+            sub = sub.substring(split);
+            if (sub.charAt(0) == DOT) {
                 sub = sub.substring(1);
             }
         }
@@ -151,31 +154,31 @@ final class MessageOutputStream extends ByteArrayOutputStream {
     /**
      * Writes the given short to this output stream.
      *
-     * @param s short
+     * @param value short
      */
-    final void writeShort(final int s) {
-        writeByte(s >> 8);
-        writeByte(s);
+    final void writeShort(final int value) {
+        writeByte(value >> 8);
+        writeByte(value);
     }
 
     /**
      * Writes the given short at the given index to this output stream without advancing the position.
      *
      * @param index index
-     * @param s short
+     * @param value short
      */
-    final void writeShort(final int index, final short s) {
-        buf[index] = (byte) (s >> 8 & 0xFF);
-        buf[index + 1] = (byte) (s & 0xFF);
+    final void writeShort(final int index, final short value) {
+        buf[index] = (byte) (value >> 8 & 0xFF);
+        buf[index + 1] = (byte) (value & 0xFF);
     }
 
     /**
      * Writes the given {@link StandardCharsets#UTF_8 UTF8} String to this output stream.
      *
-     * @param str UTF8 string
+     * @param value UTF8 string
      */
-    final void writeString(final String str) {
-        final byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
+    final void writeString(final String value) {
+        final byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
         writeAllBytes(bytes);
     }
 
@@ -183,10 +186,10 @@ final class MessageOutputStream extends ByteArrayOutputStream {
      * Writes the size of the given {@link StandardCharsets#UTF_8 UTF8} String, followed by the given String to
      * this output stream.
      *
-     * @param str UTF8 string
+     * @param value UTF8 string
      */
-    private void writeCharacterString(final String str) {
-        final byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
+    private void writeCharacterString(final String value) {
+        final byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
         writeByte(bytes.length);
         writeAllBytes(bytes);
     }

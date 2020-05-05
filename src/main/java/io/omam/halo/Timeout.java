@@ -64,7 +64,7 @@ final class Timeout {
      * @param initialDuration initial duration, not null
      * @return a new {@link Timeout timeout}
      */
-    static Timeout of(final Duration initialDuration) {
+    static Timeout ofDuration(final Duration initialDuration) {
         return new Timeout(initialDuration);
     }
 

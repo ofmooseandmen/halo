@@ -52,16 +52,16 @@ final class AttributesCodec {
     /**
      * Obtains an instance of {@code Attributes} by reading the given number of bytes from the given stream.
      *
-     * @param is stream of bytes
+     * @param input stream of bytes
      * @param length number of bytes to read
      * @return attributes, not null
      */
-    static Attributes decode(final MessageInputStream is, final int length) {
+    static Attributes decode(final MessageInputStream input, final int length) {
         final Map<String, Optional<ByteBuffer>> map = new HashMap<>();
         int readBytes = 0;
         while (readBytes < length) {
-            final int pairLength = is.readByte();
-            final byte[] bytes = is.readBytes(pairLength);
+            final int pairLength = input.readByte();
+            final byte[] bytes = input.readBytes(pairLength);
             final int sep = separator(bytes);
             final String key;
             final Optional<ByteBuffer> value;
@@ -84,9 +84,9 @@ final class AttributesCodec {
      * Writes the given {@code Attributes} to the given stream.
      *
      * @param attributes attributes
-     * @param os stream of bytes
+     * @param output stream of bytes
      */
-    static void encode(final Attributes attributes, final MessageOutputStream os) {
+    static void encode(final Attributes attributes, final MessageOutputStream output) {
         final Set<String> keys = attributes.keys();
         for (final String key : keys) {
             try (final MessageOutputStream attos = new MessageOutputStream()) {
@@ -98,8 +98,8 @@ final class AttributesCodec {
                     value.get().get(bytes);
                     attos.writeAllBytes(bytes);
                 }
-                os.writeByte(attos.size());
-                os.writeAllBytes(attos.toByteArray());
+                output.writeByte(attos.size());
+                output.writeAllBytes(attos.toByteArray());
             }
         }
     }

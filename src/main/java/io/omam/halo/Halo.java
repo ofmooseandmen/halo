@@ -251,12 +251,12 @@ public interface Halo extends AutoCloseable {
      */
     public static Halo networkInterfaces(final Clock clock, final NetworkInterface nic,
             final NetworkInterface... nics) throws IOException {
-        final Collection<NetworkInterface> c = new ArrayList<>();
-        c.add(nic);
+        final Collection<NetworkInterface> allNics = new ArrayList<>();
+        allNics.add(nic);
         for (final NetworkInterface n : nics) {
-            c.add(n);
+            allNics.add(n);
         }
-        return new HaloImpl(clock, c);
+        return new HaloImpl(clock, allNics);
     }
 
     /**
