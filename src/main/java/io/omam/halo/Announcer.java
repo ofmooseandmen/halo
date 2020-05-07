@@ -159,7 +159,7 @@ final class Announcer implements AutoCloseable {
                     .stream()
                     .anyMatch(a -> a.name().equalsIgnoreCase(service.name()) && a.type() == TYPE_SRV)) {
                     match.set(true);
-                    LOGGER.fine("Received matching response");
+                    LOGGER.info(() -> "Received response matching probed service: " + response);
                     cdt.signalAll();
                 }
             } finally {
