@@ -39,13 +39,13 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Logger;
 
 /**
@@ -57,13 +57,93 @@ final class Cache {
     private static final Logger LOGGER = Logger.getLogger(Cache.class.getName());
 
     /** maps a DNS record key to all cached DNS entries. */
-    private final ConcurrentHashMap<String, List<DnsRecord>> map;
+    private final Map<String, Collection<DnsRecord>> map;
 
     /**
      * Constructor.
      */
     Cache() {
         map = new ConcurrentHashMap<>();
+    }
+
+    /**
+     * Returns true if both DNS records have the same service class (or one has a service class of
+     * {@link #CLASS_ANY}).
+     *
+     * @param record1 DNS record
+     * @param record2 DNS record
+     * @return as described above
+     */
+    private static boolean isSameClass(final DnsRecord record1, final DnsRecord record2) {
+        return isSameClass(record1, record2.clazz());
+    }
+
+    /**
+     * Returns true if given DNS record has given service class (or record/given class is {@link #CLASS_ANY}).
+     *
+     * @param record DNS record
+     * @param clazz service class
+     * @return as described above
+     */
+    private static boolean isSameClass(final DnsRecord record, final short clazz) {
+        return record.clazz() == CLASS_ANY || clazz == CLASS_ANY || record.clazz() == clazz;
+    }
+
+    /**
+     * Returns true if both DNS records have the same service type (or one has a service type of
+     * {@link #TYPE_ANY}).
+     *
+     * @param record1 DNS record
+     * @param record2 DNS record
+     * @return as described above
+     */
+    private static boolean isSameType(final DnsRecord record1, final DnsRecord record2) {
+        return isSameType(record1, record2.type());
+    }
+
+    /**
+     * Returns true if given DNS record has given service type (or record/given type is {@link #TYPE_ANY}).
+     *
+     * @param record DNS record
+     * @param type service type
+     * @return as described above
+     */
+    private static boolean isSameType(final DnsRecord record, final short type) {
+        return record.type() == TYPE_ANY || type == TYPE_ANY || record.type() == type;
+    }
+
+    /**
+     * Returns the association key for the given record.
+     *
+     * @param record record
+     * @return key
+     */
+    private static String key(final DnsRecord record) {
+        return toLowerCase(record.name());
+    }
+
+    /**
+     * Logs search result.
+     *
+     * @param result search result
+     */
+    private static void logResult(final Optional<? extends DnsRecord> result) {
+        if (result.isPresent()) {
+            LOGGER.fine(() -> "Found cached " + result.get());
+        } else {
+            LOGGER.fine(() -> "No cached record found");
+        }
+    }
+
+    /**
+     * Determines whether both given DNS records have the same type and class.
+     * 
+     * @param record1 first DNS record
+     * @param record2 second DNS record
+     * @return {@code true} if both DNS records have the same type and class, {@code false} otherwise
+     */
+    private static boolean matches(final DnsRecord record1, final DnsRecord record2) {
+        return isSameType(record1, record2) && isSameClass(record1, record2);
     }
 
     /**
@@ -76,15 +156,14 @@ final class Cache {
      */
     final void add(final DnsRecord record) {
         Objects.requireNonNull(record);
-        final int index = indexOf(record);
+        final boolean existed = entries(record.name()).removeIf(other -> matches(other, record));
         final String key = key(record);
-        if (index == -1) {
+        if (existed) {
             LOGGER.fine(() -> "Adding " + record + " to cache");
-            map.computeIfAbsent(key, k -> new CopyOnWriteArrayList<>()).add(record);
         } else {
-            LOGGER.fine(() -> "Replacing " + map.get(key).get(index) + " with " + record + " in cache");
-            map.get(key).set(index, record);
+            LOGGER.fine(() -> "Replacing cached record " + key + " with " + record);
         }
+        map.computeIfAbsent(key, k -> new ConcurrentLinkedQueue<>()).add(record);
     }
 
     /**
@@ -94,7 +173,7 @@ final class Cache {
      */
     final void clean(final Instant now) {
         final Set<String> services = new HashSet<>();
-        for (final Entry<String, List<DnsRecord>> e : map.entrySet()) {
+        for (final Entry<String, Collection<DnsRecord>> e : map.entrySet()) {
             e.getValue().removeIf(r -> r.isExpired(now));
             if (e.getValue().isEmpty()) {
                 services.add(e.getKey());
@@ -129,12 +208,10 @@ final class Cache {
      */
     final void expire(final DnsRecord record) {
         Objects.requireNonNull(record);
-        final int index = indexOf(record);
-        final String key = key(record);
-        if (index != -1) {
+        entries(record.name()).stream().filter(other -> matches(record, other)).forEach(r -> {
             LOGGER.fine(() -> "Setting TTL of " + record + " to " + EXPIRY_TTL);
-            map.get(key).get(index).setTtl(EXPIRY_TTL);
-        }
+            r.setTtl(EXPIRY_TTL);
+        });
     }
 
     /**
@@ -169,92 +246,6 @@ final class Cache {
         Objects.requireNonNull(name);
         LOGGER.fine(() -> "Removing all DNS records associated with" + name + " from cache");
         map.remove(toLowerCase(name));
-    }
-
-    /**
-     * Returns the index of the DNS record matching the given DNS record if it exists.
-     *
-     * @param record DNS record
-     * @return the index or {@code -1}
-     */
-    private int indexOf(final DnsRecord record) {
-        int index = 0;
-        for (final DnsRecord r : entries(record.name())) {
-            if (isSameType(r, record) && isSameClass(r, record)) {
-                return index;
-            }
-            index++;
-        }
-        return -1;
-    }
-
-    /**
-     * Returns true if both DNS records have the same service class (or one has a service class of
-     * {@link #CLASS_ANY}).
-     *
-     * @param record1 DNS record
-     * @param record2 DNS record
-     * @return as described above
-     */
-    private boolean isSameClass(final DnsRecord record1, final DnsRecord record2) {
-        return isSameClass(record1, record2.clazz());
-    }
-
-    /**
-     * Returns true if given DNS record has given service class (or record/given class is {@link #CLASS_ANY}).
-     *
-     * @param record DNS record
-     * @param clazz service class
-     * @return as described above
-     */
-    private boolean isSameClass(final DnsRecord record, final short clazz) {
-        return record.clazz() == CLASS_ANY || clazz == CLASS_ANY || record.clazz() == clazz;
-    }
-
-    /**
-     * Returns true if both DNS records have the same service type (or one has a service type of
-     * {@link #TYPE_ANY}).
-     *
-     * @param record1 DNS record
-     * @param record2 DNS record
-     * @return as described above
-     */
-    private boolean isSameType(final DnsRecord record1, final DnsRecord record2) {
-        return isSameType(record1, record2.type());
-    }
-
-    /**
-     * Returns true if given DNS record has given service type (or record/given type is {@link #TYPE_ANY}).
-     *
-     * @param record DNS record
-     * @param type service type
-     * @return as described above
-     */
-    private boolean isSameType(final DnsRecord record, final short type) {
-        return record.type() == TYPE_ANY || type == TYPE_ANY || record.type() == type;
-    }
-
-    /**
-     * Returns the association key for the given record.
-     *
-     * @param record record
-     * @return key
-     */
-    private String key(final DnsRecord record) {
-        return toLowerCase(record.name());
-    }
-
-    /**
-     * Logs search result.
-     *
-     * @param result search result
-     */
-    private void logResult(final Optional<? extends DnsRecord> result) {
-        if (result.isPresent()) {
-            LOGGER.fine(() -> "Found cached " + result.get());
-        } else {
-            LOGGER.fine(() -> "No cached record found");
-        }
     }
 
 }

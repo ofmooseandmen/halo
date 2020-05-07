@@ -157,10 +157,7 @@ public final class RegistrationSteps {
         } else if (engine.equals("JmDNS")) {
             for (final ServiceDetails service : services) {
                 engines.jmdns().registerService(toJmdns(service));
-                /*
-                 * since JmDNS 3.5.5, registerService no longer waits for the service to be registered before
-                 * returning, also can't re-use ServiceInfo used to register service.
-                 */
+                // TODO: investigate why getServiceInfo & new toJmdns?
                 final ServiceInfo info = toJmdns(service);
                 engines.jmdns().getServiceInfo(info.getType(), info.getName());
                 jss.add(info);

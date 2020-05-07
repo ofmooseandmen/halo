@@ -37,11 +37,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.jmdns.ServiceEvent;
 import javax.jmdns.ServiceInfo;
@@ -61,13 +62,13 @@ public final class ServiceBrowsingSteps {
 
     private static final class CollectingBrowserListener implements ServiceBrowserListener {
 
-        private final List<Service> ups;
+        private final Collection<Service> ups;
 
-        private final List<Service> downs;
+        private final Collection<Service> downs;
 
         CollectingBrowserListener() {
-            ups = new CopyOnWriteArrayList<>();
-            downs = new CopyOnWriteArrayList<>();
+            ups = new ConcurrentLinkedQueue<>();
+            downs = new ConcurrentLinkedQueue<>();
         }
 
         @Override
@@ -80,11 +81,11 @@ public final class ServiceBrowsingSteps {
             ups.add(service);
         }
 
-        final List<Service> downs() {
+        final Collection<Service> downs() {
             return downs;
         }
 
-        final List<Service> ups() {
+        final Collection<Service> ups() {
             return ups;
         }
 
@@ -92,10 +93,10 @@ public final class ServiceBrowsingSteps {
 
     private static final class CollectingServiceListener implements ServiceListener {
 
-        private final List<ServiceInfo> ups;
+        private final Collection<ServiceInfo> ups;
 
         CollectingServiceListener() {
-            ups = new CopyOnWriteArrayList<>();
+            ups = new ConcurrentLinkedQueue<>();
         }
 
         @Override
@@ -117,7 +118,7 @@ public final class ServiceBrowsingSteps {
             ups.add(event.getInfo());
         }
 
-        final List<ServiceInfo> ups() {
+        final Collection<ServiceInfo> ups() {
             return ups;
         }
 

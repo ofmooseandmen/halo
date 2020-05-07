@@ -35,9 +35,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.jmdns.ServiceEvent;
 import javax.jmdns.ServiceTypeListener;
@@ -55,10 +56,10 @@ public final class RegistrationBrowsingSteps {
 
     private static final class CollectingBrowserListener implements RegistrationTypeBrowserListener {
 
-        private final List<String> types;
+        private final Collection<String> types;
 
         CollectingBrowserListener() {
-            types = new CopyOnWriteArrayList<>();
+            types = new ConcurrentLinkedQueue<>();
         }
 
         @Override
@@ -66,7 +67,7 @@ public final class RegistrationBrowsingSteps {
             types.add(registrationType);
         }
 
-        final List<String> types() {
+        final Collection<String> types() {
             return types;
         }
 
@@ -74,10 +75,10 @@ public final class RegistrationBrowsingSteps {
 
     private static final class CollectingTypeListener implements ServiceTypeListener {
 
-        private final List<String> types;
+        private final Collection<String> types;
 
         CollectingTypeListener() {
-            types = new CopyOnWriteArrayList<>();
+            types = new ConcurrentLinkedQueue<>();
         }
 
         @Override
@@ -92,7 +93,7 @@ public final class RegistrationBrowsingSteps {
 
         }
 
-        final List<String> types() {
+        final Collection<String> types() {
             return types;
         }
 
@@ -128,7 +129,7 @@ public final class RegistrationBrowsingSteps {
     @Then("the listener shall be notified of the following registration types:")
     public final void thenListenerNotified(final DataTable data) {
         final List<String> expecteds = data.asList();
-        final List<String> actuals;
+        final Collection<String> actuals;
         if (browsedBy.equals("Halo")) {
             final CollectingBrowserListener l = hl.orElseThrow(AssertionError::new);
             actuals = l.types();

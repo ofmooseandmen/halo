@@ -57,7 +57,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -100,7 +100,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     private final Reaper reaper;
 
     /** {@link ResponseListener listener}s. */
-    private final List<ResponseListener> rls;
+    private final Collection<ResponseListener> rls;
 
     /** Registration Types browser. */
     private final HaloRegistrationTypeBrowser rBrowser;
@@ -132,7 +132,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
         }
         clock = aClock;
         reaper = new Reaper(cache, clock);
-        rls = new CopyOnWriteArrayList<>();
+        rls = new ConcurrentLinkedQueue<>();
 
         rBrowser = new HaloRegistrationTypeBrowser(this);
         sBrowser = new HaloServiceBrowser(this);

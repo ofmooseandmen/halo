@@ -48,7 +48,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -199,7 +199,7 @@ final class HaloServiceBrowser extends HaloBrowser {
         Objects.requireNonNull(listener);
         final String rpn = toRpn(registrationType);
         final Collection<ServiceBrowserListener> rls =
-                listeners.computeIfAbsent(rpn, k -> new CopyOnWriteArrayList<>());
+                listeners.computeIfAbsent(rpn, k -> new ConcurrentLinkedQueue<>());
         final Map<String, ServiceImpl> resolved = services.computeIfAbsent(rpn, k -> new ConcurrentHashMap<>());
         resolved.values().forEach(listener::serviceUp);
         rls.add(listener);

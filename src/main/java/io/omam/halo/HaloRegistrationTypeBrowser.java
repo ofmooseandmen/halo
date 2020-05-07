@@ -35,10 +35,10 @@ import static io.omam.halo.MulticastDnsSd.DOMAIN;
 import static io.omam.halo.MulticastDnsSd.RT_DISCOVERY;
 import static io.omam.halo.MulticastDnsSd.TYPE_PTR;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Logger;
 
 import io.omam.halo.DnsMessage.Builder;
@@ -80,10 +80,10 @@ final class HaloRegistrationTypeBrowser extends HaloBrowser {
     private final HaloHelper halo;
 
     /** all listeners. */
-    private final List<RegistrationTypeBrowserListener> listeners;
+    private final Collection<RegistrationTypeBrowserListener> listeners;
 
     /** all discovered registration types. */
-    private final List<String> rts;
+    private final Collection<String> rts;
 
     /**
      * Constructor.
@@ -93,8 +93,8 @@ final class HaloRegistrationTypeBrowser extends HaloBrowser {
     HaloRegistrationTypeBrowser(final HaloHelper haloHelper) {
         super("registration-discoverer", haloHelper);
         halo = haloHelper;
-        listeners = new CopyOnWriteArrayList<>();
-        rts = new CopyOnWriteArrayList<>();
+        listeners = new ConcurrentLinkedQueue<>();
+        rts = new ConcurrentLinkedQueue<>();
     }
 
     @Override

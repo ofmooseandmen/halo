@@ -10,6 +10,7 @@
     <booleanAttribute key="org.eclipse.jdt.launching.ATTR_USE_START_ON_FIRST_THREAD" value="true"/>
     <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="io.cucumber.core.cli.Main"/>
     <stringAttribute key="org.eclipse.jdt.launching.MODULE_NAME" value="halo"/>
+    <stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Djava.util.logging.config.file=src/test/resources/logging.properties"/>
     <stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="--strict --glue io.omam.halo --tags @wip src/test/resources"/>
     <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="halo"/>
 </launchConfiguration>

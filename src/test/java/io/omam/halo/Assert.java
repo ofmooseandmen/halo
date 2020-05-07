@@ -37,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.function.BiPredicate;
 
@@ -60,8 +61,8 @@ final class Assert {
      * @param expecteds expected services
      * @param actuals actual services
      */
-    static void assertContainsAllServiceInfos(final List<ServiceDetails> expecteds,
-            final List<ServiceInfo> actuals) {
+    static void assertContainsAllServiceInfos(final Collection<ServiceDetails> expecteds,
+            final Collection<ServiceInfo> actuals) {
         final BiPredicate<ServiceDetails, ServiceInfo> match = (sd, si) -> sd.instanceName().equals(si.getName())
             && (sd.registrationType() + "local.").equals(si.getType())
             && sd.port() == si.getPort()
@@ -75,7 +76,8 @@ final class Assert {
      * @param expecteds expected services
      * @param actuals actual services
      */
-    static void assertContainsAllServices(final List<ServiceDetails> expecteds, final List<Service> actuals) {
+    static void assertContainsAllServices(final Collection<ServiceDetails> expecteds,
+            final Collection<Service> actuals) {
         final BiPredicate<ServiceDetails, Service> match = (sd, s) -> sd.instanceName().equals(s.instanceName())
             && sd.registrationType().equals(s.registrationType())
             && sd.port() == s.port()
