@@ -30,14 +30,23 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
+/**
+ * RegisteredService implementation.
+ */
 final class RegisteredServiceImpl extends BaseRegistrableService implements RegisteredService {
 
+    /** service attributes. */
     private final Attributes attributes;
 
-    RegisteredServiceImpl(final RegisterableService other) {
-        super(other.instanceName(), other.registrationType(), other.hostname(), other.ipv4Address(),
-              other.ipv6Address(), other.port());
-        attributes = other.attributes();
+    /**
+     * Constructor.
+     *
+     * @param original registerable service
+     */
+    RegisteredServiceImpl(final RegisterableService original) {
+        super(original.instanceName(), original.registrationType(), original.hostname(), original.ipv4Address(),
+              original.ipv6Address(), original.port());
+        attributes = original.attributes();
     }
 
     @Override

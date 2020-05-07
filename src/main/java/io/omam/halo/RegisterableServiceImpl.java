@@ -35,28 +35,52 @@ import static io.omam.halo.MulticastDnsSd.DOMAIN;
 import java.net.InetAddress;
 import java.util.Optional;
 
+/**
+ * RegisterableService implementation.
+ */
 final class RegisterableServiceImpl extends BaseRegistrableService implements RegisterableService {
 
+    /** service attributes. */
     private final Attributes attributes;
 
-    RegisterableServiceImpl(final String anInstanceName, final RegisterableService other) {
-        this(anInstanceName, other.registrationType(), other.hostname(), other.ipv4Address(), other.ipv6Address(),
-             other.port(), other.attributes());
+    /**
+     * Constructor.
+     *
+     * @param anInstanceName new instance name
+     * @param original original service
+     */
+    RegisterableServiceImpl(final String anInstanceName, final RegisterableService original) {
+        this(anInstanceName, original.registrationType(), original.hostname(), original.ipv4Address(), original.ipv6Address(),
+             original.port(), original.attributes());
     }
 
+    /**
+     *
+     * Constructor.
+     *
+     * @param anInstanceName the service instance name, a human-readable string, e.g. {@code Living Room Printer}
+     * @param aRegistrationType service type (IANA) and transport protocol (udp or tcp), e.g. {@code _ftp._tcp.} or
+     *            {@code _http._udp.}
+     * @param aHostname service local hostname
+     * @param anIpv4Address service IPv4 address
+     * @param anIpv6Address service IPv6 address
+     * @param aPort service port
+     * @param someAttributes service attributes
+     */
     RegisterableServiceImpl(final String anInstanceName, final String aRegistrationType, final String aHostname,
             final Optional<InetAddress> anIpv4Address, final Optional<InetAddress> anIpv6Address,
             final short aPort, final Attributes someAttributes) {
-        super(anInstanceName, aRegistrationType, localHostname(aHostname), anIpv4Address, anIpv6Address, aPort);
+        super(anInstanceName, aRegistrationType, actualHostname(aHostname), anIpv4Address, anIpv6Address, aPort);
         attributes = someAttributes;
     }
 
     /**
-     * Sets the hostname, appending '.local.' if needed.
+     * Computes the actual hostname, appending '.local.' if needed.
      *
      * @param hostname the hostname
+     * @return the actual hostname
      */
-    private static String localHostname(final String hostname) {
+    private static String actualHostname(final String hostname) {
         String localHostname = hostname;
         final int index = localHostname.indexOf("." + DOMAIN);
         if (index > 0) {

@@ -50,6 +50,17 @@ abstract class BaseRegistrableService extends BaseService {
     /** service port. */
     private final short port;
 
+    /**
+     * Constructor.
+     *
+     * @param anInstanceName the service instance name, a human-readable string, e.g. {@code Living Room Printer}
+     * @param aRegistrationType service type (IANA) and transport protocol (udp or tcp), e.g. {@code _ftp._tcp.} or
+     *            {@code _http._udp.}
+     * @param aHostname service local hostname
+     * @param anIpv4Address service IPv4 address
+     * @param anIpv6Address service IPv6 address
+     * @param aPort service port
+     */
     protected BaseRegistrableService(final String anInstanceName, final String aRegistrationType,
             final String aHostname, final Optional<InetAddress> anIpv4Address,
             final Optional<InetAddress> anIpv6Address, final short aPort) {

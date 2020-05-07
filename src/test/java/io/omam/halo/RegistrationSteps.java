@@ -156,11 +156,9 @@ public final class RegistrationSteps {
             }
         } else if (engine.equals("JmDNS")) {
             for (final ServiceDetails service : services) {
-                engines.jmdns().registerService(toJmdns(service));
-                // TODO: investigate why getServiceInfo & new toJmdns?
-                final ServiceInfo info = toJmdns(service);
-                engines.jmdns().getServiceInfo(info.getType(), info.getName());
-                jss.add(info);
+                final ServiceInfo serviceInfo = toJmdns(service);
+                engines.jmdns().registerService(serviceInfo);
+                jss.add(serviceInfo);
             }
         } else {
             throw new AssertionError("Unsupported engine " + engine);
