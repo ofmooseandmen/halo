@@ -271,7 +271,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
             throw new IOException(msg);
         }
         LOGGER.info(() -> "Registered " + toRegister + ON_DOMAIN);
-        final RegisteredService rservice = new RegisteredServiceImpl(toRegister);
+        final RegisteredService rservice = new RegisteredServiceImpl(toRegister, this);
         registered.put(serviceKey, rservice);
         return rservice;
     }
@@ -317,6 +317,11 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     @Override
     final Instant now() {
         return clock.instant();
+    }
+
+    @Override
+    final void reannounce(final RegisteredService service, final Duration ttl) throws IOException {
+        announcer.reannounce(service, ttl);
     }
 
     @Override

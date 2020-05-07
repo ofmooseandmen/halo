@@ -30,28 +30,43 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
+import static io.omam.halo.HaloProperties.TTL;
+
+import java.io.IOException;
+
 /**
  * RegisteredService implementation.
  */
 final class RegisteredServiceImpl extends BaseRegistrableService implements RegisteredService {
 
     /** service attributes. */
-    private final Attributes attributes;
+    private Attributes attributes;
+
+    private final HaloHelper halo;
 
     /**
      * Constructor.
      *
      * @param original registerable service
+     * @param haloHelper halo helper
      */
-    RegisteredServiceImpl(final RegisterableService original) {
+    RegisteredServiceImpl(final RegisterableService original, final HaloHelper haloHelper) {
         super(original.instanceName(), original.registrationType(), original.hostname(), original.ipv4Address(),
               original.ipv6Address(), original.port());
         attributes = original.attributes();
+        halo = haloHelper;
     }
 
     @Override
     public final Attributes attributes() {
         return attributes;
+    }
+
+    @Override
+    public final void changeAttributes(final Attributes newAttributes) throws IOException {
+        attributes = newAttributes;
+        halo.reannounce(this, TTL);
+
     }
 
 }

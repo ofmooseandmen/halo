@@ -30,9 +30,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
+import java.io.IOException;
+
 /**
  * A service that has been registered on the <strong>local</strong> domain.
  */
 public interface RegisteredService extends Service {
-    // TODO: changeAttributes(Attributes)
+
+    /**
+     * Changes the attributes of this registered service and re-announces it on the local network.
+     *
+     * @param newAttributes new attributes
+     * @throws IOException in case of I/O error
+     */
+    void changeAttributes(final Attributes newAttributes) throws IOException;
+
 }

@@ -30,6 +30,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
+import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 
@@ -66,6 +68,15 @@ abstract class HaloHelper {
      * @return the current instant.
      */
     abstract Instant now();
+
+    /**
+     * Re-announces the given registered service after its attributes have been changed.
+     * 
+     * @param service the service
+     * @param ttl the TTL
+     * @throws IOException in case of I/O error
+     */
+    abstract void reannounce(final RegisteredService service, final Duration ttl) throws IOException;
 
     /**
      * Removes the given listener so that it no longer receives DNS responses.

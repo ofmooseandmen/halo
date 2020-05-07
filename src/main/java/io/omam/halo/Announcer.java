@@ -53,6 +53,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -69,7 +70,7 @@ final class Announcer implements AutoCloseable {
     private static final class AnnounceTask implements Callable<Void> {
 
         /** the service to announce. */
-        private final RegisterableService service;
+        private final Service service;
 
         /** service time to live; */
         private final Duration ttl;
@@ -84,7 +85,7 @@ final class Announcer implements AutoCloseable {
          * @param aTtl service time to live
          * @param haloHelper halo helper
          */
-        AnnounceTask(final RegisterableService aService, final Duration aTtl, final HaloHelper haloHelper) {
+        AnnounceTask(final Service aService, final Duration aTtl, final HaloHelper haloHelper) {
             service = aService;
             ttl = aTtl;
             halo = haloHelper;
@@ -136,6 +137,9 @@ final class Announcer implements AutoCloseable {
         /** the service being probed. */
         private final RegisterableService service;
 
+        /** predicate to determine if a conflict service was found. */
+        private Predicate<? super DnsRecord> conflicting;
+
         /**
          * Constructor.
          *
@@ -146,6 +150,13 @@ final class Announcer implements AutoCloseable {
             match = new AtomicBoolean(false);
             lock = new ReentrantLock();
             cdt = lock.newCondition();
+            conflicting = other -> {
+                if (other.type() == TYPE_SRV && other.name().equalsIgnoreCase(service.name())) {
+                    final SrvRecord srvRecord = (SrvRecord) other;
+                    return !srvRecord.server().equalsIgnoreCase(service.hostname());
+                }
+                return false;
+            };
         }
 
         @SuppressWarnings("synthetic-access")
@@ -157,7 +168,8 @@ final class Announcer implements AutoCloseable {
                 if (response
                     .answers()
                     .stream()
-                    .anyMatch(a -> a.name().equalsIgnoreCase(service.name()) && a.type() == TYPE_SRV)) {
+                    // and its not us...
+                    .anyMatch(conflicting)) {
                     match.set(true);
                     LOGGER.info(() -> "Received response matching probed service: " + response);
                     cdt.signalAll();
@@ -303,11 +315,31 @@ final class Announcer implements AutoCloseable {
         } catch (final ExecutionException e) {
             throw new IOException(e);
         } catch (final InterruptedException e) {
-            LOGGER.log(Level.FINE, "Interrupted while probing service", e);
+            LOGGER.log(Level.FINE, "Interrupted while announcing service", e);
             Thread.currentThread().interrupt();
             return false;
         } finally {
             halo.removeResponseListener(listener);
+        }
+    }
+
+    /**
+     * Re-announces the given registered service after its attributes have been changed.
+     *
+     * @param service the service
+     * @param ttl the TTL
+     * @throws IOException in case of I/O error
+     */
+    final void reannounce(final RegisteredService service, final Duration ttl) throws IOException {
+        try {
+            LOGGER.fine(() -> "Re-announcing " + service);
+            ses.submit(new AnnounceTask(service, ttl, halo)).get();
+            LOGGER.info(() -> "Re-announced " + service);
+        } catch (final ExecutionException e) {
+            throw new IOException(e);
+        } catch (final InterruptedException e) {
+            LOGGER.log(Level.FINE, "Interrupted while re-announcing service", e);
+            Thread.currentThread().interrupt();
         }
     }
 
