@@ -67,7 +67,7 @@ import java.util.Optional;
  *     // if blocking until the service has been announced is not acceptable:
  *     ExecutorService es = Executors.newSingleThreadExecutor();
  *     Future&lt;Registered&gt; future =
- *             es.submit(() -> halo.register(RegisterableService.create("Future", "_http._udp.", 8009).get()));
+ *             es.submit(() -&gt; halo.register(RegisterableService.create("Future", "_http._udp.", 8009).get()));
  * }
  * </code>
  * </pre>
@@ -89,7 +89,7 @@ import java.util.Optional;
  *
  *     // if blocking until the service has been resolved is not acceptable:
  *     ExecutorService es = Executors.newSingleThreadExecutor();
- *     Future&lt;Optional&lt;ResolvedService&gt;&gt; future = es.submit(() -> halo.resolved("Foo Bar", "_http._udp."));
+ *     Future&lt;Optional&lt;ResolvedService&gt;&gt; future = es.submit(() -&gt; halo.resolved("Foo Bar", "_http._udp."));
  * }
  * </code>
  * </pre>
@@ -265,9 +265,9 @@ public interface Halo extends AutoCloseable {
      * <pre>
      * <code>
      * ExecutorService es = Executors.newSingleThreadExecutor();
-     * Future&lt;RegisteredService&gt; future = es.submit(() -> halo.register(service));
-     * </pre>
+     * Future&lt;RegisteredService&gt; future = es.submit(() -&gt; halo.register(service));
      * </code>
+     * </pre>
      * <p>
      * The {@link RegisterableService#instanceName() instance name} of the service will be changed to be unique if
      * possible.
@@ -298,9 +298,9 @@ public interface Halo extends AutoCloseable {
      * <pre>
      * <code>
      * ExecutorService es = Executors.newSingleThreadExecutor();
-     * Future&lt;RegisteredService&gt; future = es.submit(() -> halo.register(service));
-     * </pre>
+     * Future&lt;RegisteredService&gt; future = es.submit(() -&gt; halo.register(service, allowNameChange));
      * </code>
+     * </pre>
      * <p>
      * If {@code allowNameChange} is {@code true} the {@link RegisterableService#instanceName() instance name} of
      * the service will be changed to be unique if possible.
@@ -334,9 +334,9 @@ public interface Halo extends AutoCloseable {
      * <pre>
      * <code>
      * ExecutorService es = Executors.newSingleThreadExecutor();
-     * Future&lt;RegisteredService&gt; future = es.submit(() -> halo.register(service));
-     * </pre>
+     * Future&lt;RegisteredService&gt; future = es.submit(() -&gt; halo.register(service, ttl, allowNameChange));
      * </code>
+     * </pre>
      * <p>
      * If {@code allowNameChange} is {@code true} the {@link RegisterableService#instanceName() instance name} of
      * the service will be changed to be unique if possible.
@@ -379,9 +379,9 @@ public interface Halo extends AutoCloseable {
      * <pre>
      * <code>
      * ExecutorService es = Executors.newSingleThreadExecutor();
-     * Future&lt;Optional&lt;ResolvedService&gt;&gt; future = es.submit(() -> halo.resolve(instanceName, registrationType));
-     * </pre>
+     * Future&lt;Optional&lt;ResolvedService&gt;&gt; future = es.submit(() -&gt; halo.resolve(instanceName, registrationType));
      * </code>
+     * </pre>
      * <p>
      * This method relies on the following <a href="#configuration">properties</a>:
      * <ul>
@@ -402,7 +402,14 @@ public interface Halo extends AutoCloseable {
     /**
      * Resolves a service of the <strong>local</strong> domain by its instance name and registration type to a
      * target host, port and text record if it exits. This methods blocks until the service has been resolved or an
-     * error occurs.
+     * error occurs.if this is not acceptable, submit this method as a task to an executor:
+     *
+     * <pre>
+     * <code>
+     * ExecutorService es = Executors.newSingleThreadExecutor();
+     * Future&lt;Optional&lt;ResolvedService&gt;&gt; future = es.submit(() -&gt; halo.resolve(instanceName, registrationType, timeout));
+     * </code>
+     * </pre>
      * <p>
      * This method relies on the following <a href="#configuration">properties</a>:
      * <ul>
