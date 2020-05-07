@@ -41,6 +41,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.jmdns.ServiceInfo;
+import javax.jmdns.impl.ServiceInfoImpl;
+import javax.jmdns.impl.constants.DNSConstants;
 
 import io.cucumber.datatable.DataTable;
 import io.cucumber.java.After;
@@ -163,7 +165,7 @@ public final class RegistrationSteps {
                  * wait first for the service to be actually registered and then only for the listener to be
                  * notified.
                  */
-                engines.jmdns().getServiceInfo(serviceInfo.getType(), serviceInfo.getName());
+                ((ServiceInfoImpl) serviceInfo).waitForAnnounced(DNSConstants.SERVICE_INFO_TIMEOUT);
                 jss.add(serviceInfo);
             }
         } else {
