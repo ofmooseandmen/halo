@@ -29,4 +29,3 @@ Feature: Registration types browsing
     Then the listener shall be notified of the following registration types:
       | _music._tcp.  |
       | _thingy._tcp. |
-      
