@@ -29,18 +29,22 @@ Halo is tested with [cucumber](https://cucumber.io) against [JmDNS](https://gith
 
 ```java
 try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
-    // allowing service instance name to be changed and with a default TTL of 1 hour.
-    Registered service = halo.register(RegisterableService.create("Foo Bar", "_http._udp.", (short) 8009).get());
-    // registered service is returned.
+    // allowing service instance name to be changed and with a default TTL of 1 hour:
+    Registered service = halo.register(RegisterableService.create("Foo Bar", "_http._udp.", 8009).get());
+    // registered service is returned:
     System.err.println(service);
 
     // registering again the service instance and registration type will return a service
-    // with an instance name of "Foo Bar (2)".
-    Registered = halo.register(RegisterableService.create("Foo Bar", "_http._udp.", (short) 8010).get());
+    // with an instance name of "Foo Bar (2)":
+    service = halo.register(RegisterableService.create("Foo Bar", "_http._udp.", 8010).get());
     System.err.println(service);
 
-    // not allowing service instance name to be changed will throw an IOException at this point.
-    halo.register(RegisterableService.create("Foo Bar", "_http._udp.", (short) 8011).get(), false);
+    // not allowing service instance name to be changed will throw an IOException at this point:
+    halo.register(RegisterableService.create("Foo Bar", "_http._udp.", 8011).get(), false);
+    
+    // if blocking until the service has been announced is not acceptable:
+    ExecutorService es = Executors.newSingleThreadExecutor();
+    Future<Registered> future = es.submit(() -> halo.register(RegisterableService.create("Future", "_http._udp.", 8009).get()));
 }
 ```
 
@@ -48,14 +52,18 @@ try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
 
 ```java
 try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
-    // default timeout of 6 seconds.
+    // default timeout of 6 seconds:
     Optional<ResolvedService> service = halo.resolve("Foo Bar", "_http._udp.");
-    // Optional contains the service if it could be resolved, empty otherwise.
+    // Optional contains the service if it could be resolved, empty otherwise:
     System.err.println(service);
     
-    // user defined timeout.
+    // user defined timeout:
     service = halo.resolve("Foo Bar", "_http._udp.", Duration.ofSeconds(1));
     System.err.println(service);
+
+    // if blocking until the service has been resolved is not acceptable:
+    ExecutorService es = Executors.newSingleThreadExecutor();
+    Future<Optional<ResolvedService>> future = es.submit(() -> halo.resolved("Foo Bar", "_http._udp."));
 }
 ```
 

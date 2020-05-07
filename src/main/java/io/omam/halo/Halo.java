@@ -51,18 +51,22 @@ import java.util.Optional;
  * <pre>
  * <code>
  * try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
- *     // allowing service instance name to be changed and with a default TTL of 1 hour.
- *     RegisteredService service = halo.register(RegisterableService.create("Foo Bar", "_http._udp.", (short) 8009).get());
- *     // registered service is returned.
+ *     // allowing service instance name to be changed and with a default TTL of 1 hour:
+ *     RegisteredService service = halo.register(RegisterableService.create("Foo Bar", "_http._udp.", 8009).get());
+ *     // registered service is returned:
  *     System.err.println(service);
  *
  *     // registering again the service instance and registration type will return a service
- *     // with an instance name of "Foo Bar (2)".
- *     service = halo.register(RegisterableService.create("Foo Bar", "_http._udp.", (short) 8010).get());
+ *     // with an instance name of "Foo Bar (2)":
+ *     service = halo.register(RegisterableService.create("Foo Bar", "_http._udp.", 8010).get());
  *     System.err.println(service);
  *
- *     // not allowing service instance name to be changed will throw an IOException at this point.
- *     halo.register(RegisterableService.create("Foo Bar", "_http._udp.", (short) 8011).get(), false);
+ *     // not allowing service instance name to be changed will throw an IOException at this point:
+ *     halo.register(RegisterableService.create("Foo Bar", "_http._udp.", 8011).get(), false);
+ *
+ *     // if blocking until the service has been announced is not acceptable:
+ *     ExecutorService es = Executors.newSingleThreadExecutor();
+ *     Future&lt;Registered&gt; future = es.submit(() -> halo.register(RegisterableService.create("Future", "_http._udp.", 8009).get()));
  * }
  * </code>
  * </pre>
@@ -73,14 +77,18 @@ import java.util.Optional;
  * <pre>
  * <code>
  * try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
- *     // default timeout of 6 seconds.
+ *     // default timeout of 6 seconds:
  *     Optional&lt;ResolvedService&gt; service = halo.resolve("Foo Bar", "_http._udp.");
  *     // Optional contains the service if it could be resolved, empty otherwise.
  *     System.err.println(service);
  *
- *     // user defined timeout.
+ *     // user defined timeout:
  *     service = halo.resolve("Foo Bar", "_http._udp.", Duration.ofSeconds(1));
  *     System.err.println(service);
+ *
+ *     // if blocking until the service has been resolved is not acceptable:
+ *     ExecutorService es = Executors.newSingleThreadExecutor();
+ *     Future&lt;Optional&lt;ResolvedService&gt;&gt; future = es.submit(() -> halo.resolved("Foo Bar", "_http._udp."));
  * }
  * </code>
  * </pre>
@@ -90,7 +98,7 @@ import java.util.Optional;
  *
  * <pre>
  * <code>
- * // browse registration types.
+ * // browse registration types:
  * try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
  *     final Browser browser = halo.browse(System.err::printLn);
  *
@@ -100,7 +108,7 @@ import java.util.Optional;
  *     browser.close();
  * }
  *
- * // browse services for a given registration type.
+ * // browse services for a given registration type:
  * try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
  *     final ServiceBrowserListener l = new ServiceBrowserListener() {
  *
@@ -248,9 +256,17 @@ public interface Halo extends AutoCloseable {
     void deregisterAll() throws IOException;
 
     /**
-     * Registers the given service on the <strong>local</strong> domain with the default TTL. This methods blocks
-     * until the service has been registered (i.e. after configured number of probes and announcement) or an error
-     * occurs.
+     * Registers the given service on the <strong>local</strong> domain with the default TTL.
+     * <p>
+     * This methods blocks until the service has been registered (i.e. after configured number of probes and
+     * announcement) or an error occurs. if this is not acceptable, submit this method as a task to an executor:
+     *
+     * <pre>
+     * <code>
+     * ExecutorService es = Executors.newSingleThreadExecutor();
+     * Future&lt;RegisteredService&gt; future = es.submit(() -> halo.register(service));
+     * </pre>
+     * </code>
      * <p>
      * The {@link RegisterableService#instanceName() instance name} of the service will be changed to be unique if
      * possible.
@@ -273,9 +289,17 @@ public interface Halo extends AutoCloseable {
     }
 
     /**
-     * Registers the given service on the <strong>local</strong> domain with the default TTL. This methods blocks
-     * until the service has been registered (i.e. after configured number of probes and announcement) or an error
-     * occurs.
+     * Registers the given service on the <strong>local</strong> domain with the default TTL.
+     * <p>
+     * This methods blocks until the service has been registered (i.e. after configured number of probes and
+     * announcement) or an error occurs. if this is not acceptable, submit this method as a task to an executor:
+     *
+     * <pre>
+     * <code>
+     * ExecutorService es = Executors.newSingleThreadExecutor();
+     * Future&lt;RegisteredService&gt; future = es.submit(() -> halo.register(service));
+     * </pre>
+     * </code>
      * <p>
      * If {@code allowNameChange} is {@code true} the {@link RegisterableService#instanceName() instance name} of
      * the service will be changed to be unique if possible.
@@ -301,9 +325,17 @@ public interface Halo extends AutoCloseable {
     }
 
     /**
-     * Registers the given service on the <strong>local</strong> domain with the given TTL. This methods blocks
-     * until the service has been registered (i.e. after configured number of probes and announcement) or an error
-     * occurs.
+     * Registers the given service on the <strong>local</strong> domain with the given TTL.
+     * <p>
+     * This methods blocks until the service has been registered (i.e. after configured number of probes and
+     * announcement) or an error occurs. if this is not acceptable, submit this method as a task to an executor:
+     *
+     * <pre>
+     * <code>
+     * ExecutorService es = Executors.newSingleThreadExecutor();
+     * Future&lt;RegisteredService&gt; future = es.submit(() -> halo.register(service));
+     * </pre>
+     * </code>
      * <p>
      * If {@code allowNameChange} is {@code true} the {@link RegisterableService#instanceName() instance name} of
      * the service will be changed to be unique if possible.
@@ -338,8 +370,17 @@ public interface Halo extends AutoCloseable {
 
     /**
      * Resolves a service of the <strong>local</strong> domain by its instance name and registration type to a
-     * target host, port and text record if it exits. This methods blocks until the service has been resolved or an
-     * error occurs.
+     * target host, port and text record if it exits.
+     * <p>
+     * This methods blocks until the service has been resolved or an error occurs.if this is not acceptable, submit
+     * this method as a task to an executor:
+     *
+     * <pre>
+     * <code>
+     * ExecutorService es = Executors.newSingleThreadExecutor();
+     * Future&lt;Optional&lt;ResolvedService&gt;&gt; future = es.submit(() -> halo.resolve(instanceName, registrationType));
+     * </pre>
+     * </code>
      * <p>
      * This method relies on the following <a href="#configuration">properties</a>:
      * <ul>
