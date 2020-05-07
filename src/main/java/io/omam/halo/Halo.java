@@ -66,7 +66,8 @@ import java.util.Optional;
  *
  *     // if blocking until the service has been announced is not acceptable:
  *     ExecutorService es = Executors.newSingleThreadExecutor();
- *     Future&lt;Registered&gt; future = es.submit(() -> halo.register(RegisterableService.create("Future", "_http._udp.", 8009).get()));
+ *     Future&lt;Registered&gt; future =
+ *             es.submit(() -> halo.register(RegisterableService.create("Future", "_http._udp.", 8009).get()));
  * }
  * </code>
  * </pre>

@@ -44,7 +44,8 @@ try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
     
     // if blocking until the service has been announced is not acceptable:
     ExecutorService es = Executors.newSingleThreadExecutor();
-    Future<Registered> future = es.submit(() -> halo.register(RegisterableService.create("Future", "_http._udp.", 8009).get()));
+    Future<Registered> future =
+            es.submit(() -> halo.register(RegisterableService.create("Future", "_http._udp.", 8009).get()));
 }
 ```
 
