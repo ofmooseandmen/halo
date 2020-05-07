@@ -92,7 +92,7 @@ if (project.hasProperty('enableJaCoCo')) {
 
 if (Integer.valueOf(JavaVersion.current().getMajorVersion()) > 8) {
     // --release 8: configures the compiler to produce class files that will link against version 8
-    compileJava.options.compilerArgs += ['--release', 8]
+    compileJava.options.compilerArgs += ['--release', '8']
 }
 
 compileJava.options.encoding = 'UTF-8'
