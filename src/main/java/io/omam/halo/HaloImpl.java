@@ -436,7 +436,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
 
     /**
      * Returns the announcing or registered service for the given name.
-     * 
+     *
      * @param name name of the sevice
      * @return announcing or registered service or null if not found.
      */
@@ -508,7 +508,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
                 final String otherHostname = own.hostname();
                 collision = own.port() != port || !otherHostname.equals(hostname);
                 if (collision) {
-                    final String msg = "Registered service collision: " + own;
+                    final String msg = "Own registered service collision: " + own;
                     result = tryResolveCollision(result, allowNameChange, msg);
                 }
             }

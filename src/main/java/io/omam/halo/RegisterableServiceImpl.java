@@ -50,8 +50,8 @@ final class RegisterableServiceImpl extends BaseRegistrableService implements Re
      * @param original original service
      */
     RegisterableServiceImpl(final String anInstanceName, final RegisterableService original) {
-        this(anInstanceName, original.registrationType(), original.hostname(), original.ipv4Address(), original.ipv6Address(),
-             original.port(), original.attributes());
+        this(anInstanceName, original.registrationType(), original.hostname(), original.ipv4Address(),
+             original.ipv6Address(), original.port(), original.attributes());
     }
 
     /**
