@@ -30,7 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import static io.omam.halo.MulticastDns.TYPE_PTR;
+import static io.omam.halo.MulticastDnsSd.TYPE_PTR;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -75,15 +75,15 @@ final class PtrRecord extends DnsRecord {
             + "]";
     }
 
-    @Override
-    protected final void write(final MessageOutputStream mos) {
-        mos.writeName(target);
-    }
-
     /**
      * @return pointer target.
      */
     final String target() {
         return target;
+    }
+
+    @Override
+    protected final void write(final MessageOutputStream mos) {
+        mos.writeName(target);
     }
 }

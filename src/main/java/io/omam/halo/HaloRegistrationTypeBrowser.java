@@ -30,10 +30,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import static io.omam.halo.MulticastDns.CLASS_IN;
-import static io.omam.halo.MulticastDns.DOMAIN;
-import static io.omam.halo.MulticastDns.RT_DISCOVERY;
-import static io.omam.halo.MulticastDns.TYPE_PTR;
+import static io.omam.halo.MulticastDnsSd.CLASS_IN;
+import static io.omam.halo.MulticastDnsSd.DOMAIN;
+import static io.omam.halo.MulticastDnsSd.RT_DISCOVERY;
+import static io.omam.halo.MulticastDnsSd.TYPE_PTR;
 
 import java.util.List;
 import java.util.Objects;
@@ -46,7 +46,7 @@ import io.omam.halo.DnsMessage.Builder;
 /**
  * Halo registration type browser.
  * <p>
- * Network (local domain) is queried at regular intervals with a {@link MulticastDns#RT_DISCOVERY} question.
+ * Network (local domain) is queried at regular intervals with a {@link MulticastDnsSd#RT_DISCOVERY} question.
  */
 final class HaloRegistrationTypeBrowser extends HaloBrowser {
 

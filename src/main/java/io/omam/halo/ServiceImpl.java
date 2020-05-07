@@ -30,13 +30,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import static io.omam.halo.MulticastDns.CLASS_IN;
-import static io.omam.halo.MulticastDns.DOMAIN;
-import static io.omam.halo.MulticastDns.RESOLUTION_INTERVAL;
-import static io.omam.halo.MulticastDns.TYPE_A;
-import static io.omam.halo.MulticastDns.TYPE_AAAA;
-import static io.omam.halo.MulticastDns.TYPE_SRV;
-import static io.omam.halo.MulticastDns.TYPE_TXT;
+import static io.omam.halo.HaloProperties.RESOLUTION_INTERVAL;
+import static io.omam.halo.MulticastDnsSd.CLASS_IN;
+import static io.omam.halo.MulticastDnsSd.DOMAIN;
+import static io.omam.halo.MulticastDnsSd.TYPE_A;
+import static io.omam.halo.MulticastDnsSd.TYPE_AAAA;
+import static io.omam.halo.MulticastDnsSd.TYPE_SRV;
+import static io.omam.halo.MulticastDnsSd.TYPE_TXT;
 
 import java.net.Inet4Address;
 import java.net.Inet6Address;

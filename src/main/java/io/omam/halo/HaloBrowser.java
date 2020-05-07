@@ -30,9 +30,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import static io.omam.halo.MulticastDns.QUERYING_DELAY;
-import static io.omam.halo.MulticastDns.QUERYING_INTERVAL;
-import static io.omam.halo.MulticastDns.QUERY_NUM;
+import static io.omam.halo.HaloProperties.QUERYING_DELAY;
+import static io.omam.halo.HaloProperties.QUERYING_INTERVAL;
+import static io.omam.halo.HaloProperties.QUERY_NUM;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;

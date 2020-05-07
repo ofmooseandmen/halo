@@ -47,7 +47,7 @@ final class MulticastDnsHelper {
     /**
      * Returns the value corresponding to the given class name.
      * <p>
-     * Example: {@code classForName("IN")} returns {@link MulticastDns#CLASS_IN}.
+     * Example: {@code classForName("IN")} returns {@link MulticastDnsSd#CLASS_IN}.
      *
      * @param name constant name
      * @return constant value
@@ -59,7 +59,7 @@ final class MulticastDnsHelper {
     /**
      * Returns the value corresponding to the given flags name.
      * <p>
-     * Example: {@code typeForName("QR_QUERY")} returns {@link MulticastDns#FLAGS_QR_QUERY}.
+     * Example: {@code typeForName("QR_QUERY")} returns {@link MulticastDnsSd#FLAGS_QR_QUERY}.
      *
      * @param name constant name
      * @return constant value
@@ -71,7 +71,7 @@ final class MulticastDnsHelper {
     /**
      * Returns the value corresponding to the given type name.
      * <p>
-     * Example: {@code typeForName("AAAA")} returns {@link MulticastDns#TYPE_AAAA}.
+     * Example: {@code typeForName("AAAA")} returns {@link MulticastDnsSd#TYPE_AAAA}.
      *
      * @param name constant name
      * @return constant value
@@ -88,7 +88,7 @@ final class MulticastDnsHelper {
      */
     private static int forName(final String name) {
         try {
-            final Field field = MulticastDns.class.getDeclaredField(name);
+            final Field field = MulticastDnsSd.class.getDeclaredField(name);
             field.setAccessible(true);
             return field.getInt(null);
         } catch (final IllegalAccessException | NoSuchFieldException | SecurityException e) {

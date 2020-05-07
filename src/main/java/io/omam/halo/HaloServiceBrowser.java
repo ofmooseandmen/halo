@@ -30,11 +30,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import static io.omam.halo.MulticastDns.CLASS_IN;
-import static io.omam.halo.MulticastDns.DOMAIN;
-import static io.omam.halo.MulticastDns.RESOLUTION_TIMEOUT;
-import static io.omam.halo.MulticastDns.TYPE_PTR;
-import static io.omam.halo.MulticastDns.toLowerCase;
+import static io.omam.halo.HaloProperties.RESOLUTION_TIMEOUT;
+import static io.omam.halo.MulticastDnsSd.CLASS_IN;
+import static io.omam.halo.MulticastDnsSd.DOMAIN;
+import static io.omam.halo.MulticastDnsSd.TYPE_PTR;
+import static io.omam.halo.MulticastDnsSd.toLowerCase;
 import static io.omam.halo.ServiceImpl.instanceNameOf;
 import static io.omam.halo.ServiceImpl.registrationTypeOf;
 import static java.util.stream.Collectors.groupingBy;

@@ -30,11 +30,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import static io.omam.halo.MulticastDns.CANCELLING_INTERVAL;
-import static io.omam.halo.MulticastDns.CANCEL_NUM;
-import static io.omam.halo.MulticastDns.CLASS_IN;
-import static io.omam.halo.MulticastDns.FLAGS_AA;
-import static io.omam.halo.MulticastDns.uniqueClass;
+import static io.omam.halo.HaloProperties.CANCELLING_INTERVAL;
+import static io.omam.halo.HaloProperties.CANCEL_NUM;
+import static io.omam.halo.MulticastDnsSd.CLASS_IN;
+import static io.omam.halo.MulticastDnsSd.FLAGS_AA;
+import static io.omam.halo.MulticastDnsSd.uniqueClass;
 import static java.time.Duration.ZERO;
 
 import java.io.IOException;

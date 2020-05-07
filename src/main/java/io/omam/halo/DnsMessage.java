@@ -30,15 +30,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import static io.omam.halo.MulticastDns.FLAGS_QR_MASK;
-import static io.omam.halo.MulticastDns.FLAGS_QR_QUERY;
-import static io.omam.halo.MulticastDns.FLAGS_QR_RESPONSE;
-import static io.omam.halo.MulticastDns.TYPE_A;
-import static io.omam.halo.MulticastDns.TYPE_AAAA;
-import static io.omam.halo.MulticastDns.TYPE_PTR;
-import static io.omam.halo.MulticastDns.TYPE_SRV;
-import static io.omam.halo.MulticastDns.TYPE_TXT;
-import static io.omam.halo.MulticastDns.encodeClass;
+import static io.omam.halo.MulticastDnsSd.FLAGS_QR_MASK;
+import static io.omam.halo.MulticastDnsSd.FLAGS_QR_QUERY;
+import static io.omam.halo.MulticastDnsSd.FLAGS_QR_RESPONSE;
+import static io.omam.halo.MulticastDnsSd.TYPE_A;
+import static io.omam.halo.MulticastDnsSd.TYPE_AAAA;
+import static io.omam.halo.MulticastDnsSd.TYPE_PTR;
+import static io.omam.halo.MulticastDnsSd.TYPE_SRV;
+import static io.omam.halo.MulticastDnsSd.TYPE_TXT;
+import static io.omam.halo.MulticastDnsSd.encodeClass;
 
 import java.io.IOException;
 import java.net.InetAddress;

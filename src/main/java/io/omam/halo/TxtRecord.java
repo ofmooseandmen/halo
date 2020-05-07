@@ -30,7 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import static io.omam.halo.MulticastDns.TYPE_TXT;
+import static io.omam.halo.MulticastDnsSd.TYPE_TXT;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -75,16 +75,16 @@ final class TxtRecord extends DnsRecord {
             + "]";
     }
 
-    @Override
-    protected final void write(final MessageOutputStream mos) {
-        AttributesCodec.encode(attributes, mos);
-    }
-
     /**
      * @return attributes.
      */
     final Attributes attributes() {
         return attributes;
+    }
+
+    @Override
+    protected final void write(final MessageOutputStream mos) {
+        AttributesCodec.encode(attributes, mos);
     }
 
 }

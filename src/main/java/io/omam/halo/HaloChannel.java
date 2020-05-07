@@ -30,12 +30,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import static io.omam.halo.MulticastDns.IPV4_ADDR;
-import static io.omam.halo.MulticastDns.IPV4_SOA;
-import static io.omam.halo.MulticastDns.IPV6_ADDR;
-import static io.omam.halo.MulticastDns.IPV6_SOA;
-import static io.omam.halo.MulticastDns.MAX_DNS_MESSAGE_SIZE;
-import static io.omam.halo.MulticastDns.MDNS_PORT;
+import static io.omam.halo.HaloProperties.IPV4_ADDR;
+import static io.omam.halo.HaloProperties.IPV4_SOA;
+import static io.omam.halo.HaloProperties.IPV6_ADDR;
+import static io.omam.halo.HaloProperties.IPV6_SOA;
+import static io.omam.halo.HaloProperties.MDNS_PORT;
+import static io.omam.halo.MulticastDnsSd.MAX_DNS_MESSAGE_SIZE;
 
 import java.io.IOException;
 import java.net.Inet4Address;

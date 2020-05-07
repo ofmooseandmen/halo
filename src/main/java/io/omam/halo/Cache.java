@@ -30,10 +30,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import static io.omam.halo.MulticastDns.CLASS_ANY;
-import static io.omam.halo.MulticastDns.EXPIRY_TTL;
-import static io.omam.halo.MulticastDns.TYPE_ANY;
-import static io.omam.halo.MulticastDns.toLowerCase;
+import static io.omam.halo.HaloProperties.EXPIRY_TTL;
+import static io.omam.halo.MulticastDnsSd.CLASS_ANY;
+import static io.omam.halo.MulticastDnsSd.TYPE_ANY;
+import static io.omam.halo.MulticastDnsSd.toLowerCase;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -122,8 +122,8 @@ final class Cache {
     }
 
     /**
-     * Sets the TTL of the given cached record to {@link MulticastDns#EXPIRY_TTL} in order for the reaper to remove
-     * it later.
+     * Sets the TTL of the given cached record to {@link HaloProperties#EXPIRY_TTL} in order for the reaper to
+     * remove it later.
      *
      * @param record DNS record to remove
      */

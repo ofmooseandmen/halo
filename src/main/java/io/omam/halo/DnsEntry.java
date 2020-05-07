@@ -30,7 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import static io.omam.halo.MulticastDns.decodeClass;
+import static io.omam.halo.MulticastDnsSd.decodeClass;
 
 import java.util.Objects;
 

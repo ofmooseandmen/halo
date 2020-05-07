@@ -30,7 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import static io.omam.halo.MulticastDns.TYPE_SRV;
+import static io.omam.halo.MulticastDnsSd.TYPE_SRV;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -86,15 +86,6 @@ final class SrvRecord extends DnsRecord {
             + "]";
     }
 
-    @Override
-    protected final void write(final MessageOutputStream mos) {
-        /* priority and weight are always 0. */
-        mos.writeShort(0);
-        mos.writeShort(0);
-        mos.writeShort(port);
-        mos.writeName(server);
-    }
-
     /**
      * @return service port.
      */
@@ -107,6 +98,15 @@ final class SrvRecord extends DnsRecord {
      */
     final String server() {
         return server;
+    }
+
+    @Override
+    protected final void write(final MessageOutputStream mos) {
+        /* priority and weight are always 0. */
+        mos.writeShort(0);
+        mos.writeShort(0);
+        mos.writeShort(port);
+        mos.writeName(server);
     }
 
 }

@@ -30,18 +30,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import static io.omam.halo.MulticastDns.CLASS_IN;
-import static io.omam.halo.MulticastDns.FLAGS_AA;
-import static io.omam.halo.MulticastDns.RT_DISCOVERY;
-import static io.omam.halo.MulticastDns.TTL;
-import static io.omam.halo.MulticastDns.TYPE_A;
-import static io.omam.halo.MulticastDns.TYPE_AAAA;
-import static io.omam.halo.MulticastDns.TYPE_ANY;
-import static io.omam.halo.MulticastDns.TYPE_PTR;
-import static io.omam.halo.MulticastDns.TYPE_SRV;
-import static io.omam.halo.MulticastDns.TYPE_TXT;
-import static io.omam.halo.MulticastDns.toLowerCase;
-import static io.omam.halo.MulticastDns.uniqueClass;
+import static io.omam.halo.HaloProperties.TTL;
+import static io.omam.halo.MulticastDnsSd.CLASS_IN;
+import static io.omam.halo.MulticastDnsSd.FLAGS_AA;
+import static io.omam.halo.MulticastDnsSd.RT_DISCOVERY;
+import static io.omam.halo.MulticastDnsSd.TYPE_A;
+import static io.omam.halo.MulticastDnsSd.TYPE_AAAA;
+import static io.omam.halo.MulticastDnsSd.TYPE_ANY;
+import static io.omam.halo.MulticastDnsSd.TYPE_PTR;
+import static io.omam.halo.MulticastDnsSd.TYPE_SRV;
+import static io.omam.halo.MulticastDnsSd.TYPE_TXT;
+import static io.omam.halo.MulticastDnsSd.toLowerCase;
+import static io.omam.halo.MulticastDnsSd.uniqueClass;
 
 import java.io.IOException;
 import java.net.InetAddress;

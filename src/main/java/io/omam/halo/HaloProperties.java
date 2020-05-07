@@ -35,122 +35,160 @@ import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.time.Duration;
-import java.util.Locale;
 import java.util.Properties;
 
 /**
- * Multicast-DNS constants.
+ * Configurable system properties related to multicast-DNS service discovery.
+ * <p>
+ * The following parameters can be configured by system properties:
+ * <table>
+ * <caption>Summary of Halo system properties</caption>
+ * <tr>
+ * <td><b>Property Key</b></td>
+ * <td><b>Description</b></td>
+ * <td><b>Default</b></td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.halo.mdns.ipv4</td>
+ * <td>mDNS IPV4 address</td>
+ * <td>224.0.0.251</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.halo.mdns.ipv6</td>
+ * <td>mDNS IPV6 address</td>
+ * <td>FF02::FB</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.halo.mdns.port</td>
+ * <td>mDNS port</td>
+ * <td>5353</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.halo.resolution.timeout</td>
+ * <td>resolution timeout in milliseconds</td>
+ * <td>6000</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.halo.resolution.interval</td>
+ * <td>interval between resolution questions in milliseconds</td>
+ * <td>200</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.halo.probing.timeout</td>
+ * <td>probing timeout in milliseconds</td>
+ * <td>6000</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.halo.probing.interval</td>
+ * <td>interval between probe messages in milliseconds</td>
+ * <td>250</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.halo.probing.number</td>
+ * <td>number of probing messages before announcing a registered service</td>
+ * <td>3</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.halo.querying.delay</td>
+ * <td>delay before transmitting a browsing query in milliseconds</td>
+ * <td>120</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.halo.querying.interval</td>
+ * <td>interval between browsing queries in milliseconds</td>
+ * <td>1200000</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.halo.querying.number</td>
+ * <td>number of browsing queries</td>
+ * <td>3</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.halo.cancellation.interval</td>
+ * <td>interval between goodbye messages in milliseconds</td>
+ * <td>250</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.halo.cancellation.number</td>
+ * <td>number of goodbye messages sent when de-registering a service</td>
+ * <td>3</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.halo.reaper.interval</td>
+ * <td>cache record reaper interval in milliseconds</td>
+ * <td>10000</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.halo.ttl.default</td>
+ * <td>DNS record default time to live in milliseconds</td>
+ * <td>3600000</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.halo.ttl.expiry</td>
+ * <td>DNS record time to live after expiry in milliseconds</td>
+ * <td>1000</td>
+ * </tr>
+ * </table>
  */
-final class MulticastDns {
-
-    /** the domain: always local. */
-    static final String DOMAIN = "local";
-
-    /** registration types discovery. */
-    static final String RT_DISCOVERY = "_services._dns-sd._udp.local.";
-
-    /** maximum size of DNS message in bytes. */
-    static final int MAX_DNS_MESSAGE_SIZE = 65_536;
+public final class HaloProperties {
 
     /** mDNS IPV4 address. */
-    static final InetAddress IPV4_ADDR;
+    public static final InetAddress IPV4_ADDR;
 
     /** mDNS IPV6 address. */
-    static final InetAddress IPV6_ADDR;
+    public static final InetAddress IPV6_ADDR;
 
     /** mDNS port. */
-    static final int MDNS_PORT;
+    public static final int MDNS_PORT;
 
     /** IPV4 socket address. */
-    static final InetSocketAddress IPV4_SOA;
+    public static final InetSocketAddress IPV4_SOA;
 
     /** IPV6 socket address. */
-    static final InetSocketAddress IPV6_SOA;
+    public static final InetSocketAddress IPV6_SOA;
 
     /** interval between probe message. */
-    static final Duration PROBING_INTERVAL;
+    public static final Duration PROBING_INTERVAL;
 
     /** probing timeout. */
-    static final Duration PROBING_TIMEOUT;
+    public static final Duration PROBING_TIMEOUT;
 
     /** number of probes before announcing a registered service. */
-    static final int PROBE_NUM;
+    public static final int PROBE_NUM;
 
     /** interval between goodbyes messages. */
-    static final Duration CANCELLING_INTERVAL;
+    public static final Duration CANCELLING_INTERVAL;
 
     /** number of cancel message sent when de-registering a service. */
-    static final int CANCEL_NUM;
+    public static final int CANCEL_NUM;
 
     /** cache record reaper interval. */
-    static final Duration REAPING_INTERVAL;
+    public static final Duration REAPING_INTERVAL;
 
     /** default resolution timeout. */
-    static final Duration RESOLUTION_TIMEOUT;
+    public static final Duration RESOLUTION_TIMEOUT;
 
     /** interval between resolution question. */
-    static final Duration RESOLUTION_INTERVAL;
+    public static final Duration RESOLUTION_INTERVAL;
 
     /** number of queries. */
-    static final int QUERY_NUM;
+    public static final int QUERY_NUM;
 
     /** interval between browsing query. */
-    static final Duration QUERYING_DELAY;
+    public static final Duration QUERYING_DELAY;
 
     /** interval between browsing query. */
-    static final Duration QUERYING_INTERVAL;
+    public static final Duration QUERYING_INTERVAL;
 
     /** time to live: 1 hour. */
-    static final Duration TTL;
+    public static final Duration TTL;
 
     /** time to live after expiry: 1 second. */
-    static final Duration EXPIRY_TTL;
-
-    /** query or response mask (unsigned). */
-    static final short FLAGS_QR_MASK = (short) 0x8000;
-
-    /** query flag (unsigned). */
-    static final short FLAGS_QR_QUERY = 0x0000;
-
-    /** response flag (unsigned). */
-    static final short FLAGS_QR_RESPONSE = (short) 0x8000;
-
-    /** authoritative answer flag (unsigned). */
-    static final short FLAGS_AA = 0x0400;
-
-    /** Internet class. */
-    static final short CLASS_IN = 1;
-
-    /** any class. */
-    static final short CLASS_ANY = 255;
-
-    /** type A (IPV4 address) record. */
-    static final short TYPE_A = 1;
-
-    /** pointer record. */
-    static final short TYPE_PTR = 12;
-
-    /** text record. */
-    static final short TYPE_TXT = 16;
-
-    /** type AAAA (IPV6 address) record. */
-    static final short TYPE_AAAA = 28;
-
-    /** server record. */
-    static final short TYPE_SRV = 33;
-
-    /** any record. */
-    static final short TYPE_ANY = 255;
-
-    /** class mask (unsigned). */
-    private static final short CLASS_MASK = 0x7FFF;
-
-    /** unique class (unsigned). */
-    private static final short CLASS_UNIQUE = (short) 0x8000;
+    public static final Duration EXPIRY_TTL;
 
     static {
         try (final InputStream input =
-                MulticastDns.class.getClassLoader().getResourceAsStream("halo.properties")) {
+                HaloProperties.class.getClassLoader().getResourceAsStream("halo.properties")) {
             final Properties props = new Properties();
             props.load(input);
             IPV4_ADDR = InetAddress.getByName(stringProp("io.omam.halo.mdns.ipv4", props));
@@ -186,51 +224,8 @@ final class MulticastDns {
     /**
      * Constructor.
      */
-    private MulticastDns() {
+    private HaloProperties() {
         // empty.
-    }
-
-    /**
-     * Decodes the given class and returns an array with the class index and whether the class is unique (a value
-     * different from 0 denotes a unique class).
-     *
-     * @param clazz class
-     * @return an array of 2 shorts, first is class index, second whether class is unique
-     */
-    static short[] decodeClass(final short clazz) {
-        return new short[] { (short) (clazz & CLASS_MASK), (short) (clazz & CLASS_UNIQUE) };
-    }
-
-    /**
-     * Encodes the given class index and whether it is unique into a class. This is the reverse operation of
-     * {@link #encodeClass(short, boolean)}.
-     *
-     * @param classIndex class index
-     * @param unique whether the class is unique
-     * @return encoded class
-     */
-    static short encodeClass(final short classIndex, final boolean unique) {
-        return (short) (classIndex | (unique ? CLASS_UNIQUE : 0));
-    }
-
-    /**
-     * Returns {@code value.toLowerCase(Locale.ROOT)}.
-     *
-     * @param value string
-     * @return lower case string using ROOT locale
-     */
-    static String toLowerCase(final String value) {
-        return value.toLowerCase(Locale.ROOT);
-    }
-
-    /**
-     * Makes the given class unique.
-     *
-     * @param classIndex class index
-     * @return unique class
-     */
-    static short uniqueClass(final short classIndex) {
-        return (short) (classIndex | CLASS_UNIQUE);
     }
 
     /**

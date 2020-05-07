@@ -30,8 +30,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import static io.omam.halo.MulticastDns.RESOLUTION_TIMEOUT;
-import static io.omam.halo.MulticastDns.TTL;
+import static io.omam.halo.HaloProperties.RESOLUTION_TIMEOUT;
+import static io.omam.halo.HaloProperties.TTL;
 
 import java.io.IOException;
 import java.net.NetworkInterface;
@@ -127,97 +127,7 @@ import java.util.Optional;
  * </pre>
  *
  * <p id="configuration">
- * <strong>Configuration</strong> <br>
- * The following parameters can be configured by system properties:
- * <table>
- * <caption>Summary of Halo system properties</caption>
- * <tr>
- * <td><b>Property Key</b></td>
- * <td><b>Description</b></td>
- * <td><b>Default</b></td>
- * </tr>
- * <tr>
- * <td>io.omam.halo.mdns.ipv4</td>
- * <td>mDNS IPV4 address</td>
- * <td>224.0.0.251</td>
- * </tr>
- * <tr>
- * <td>io.omam.halo.mdns.ipv6</td>
- * <td>mDNS IPV6 address</td>
- * <td>FF02::FB</td>
- * </tr>
- * <tr>
- * <td>io.omam.halo.mdns.port</td>
- * <td>mDNS port</td>
- * <td>5353</td>
- * </tr>
- * <tr>
- * <td>io.omam.halo.resolution.timeout</td>
- * <td>resolution timeout in milliseconds</td>
- * <td>6000</td>
- * </tr>
- * <tr>
- * <td>io.omam.halo.resolution.interval</td>
- * <td>interval between resolution questions in milliseconds</td>
- * <td>200</td>
- * </tr>
- * <tr>
- * <td>io.omam.halo.probing.timeout</td>
- * <td>probing timeout in milliseconds</td>
- * <td>6000</td>
- * </tr>
- * <tr>
- * <td>io.omam.halo.probing.interval</td>
- * <td>interval between probe messages in milliseconds</td>
- * <td>250</td>
- * </tr>
- * <tr>
- * <td>io.omam.halo.probing.number</td>
- * <td>number of probing messages before announcing a registered service</td>
- * <td>3</td>
- * </tr>
- * <tr>
- * <td>io.omam.halo.querying.delay</td>
- * <td>delay before transmitting a browsing query in milliseconds</td>
- * <td>120</td>
- * </tr>
- * <tr>
- * <td>io.omam.halo.querying.interval</td>
- * <td>interval between browsing queries in milliseconds</td>
- * <td>1200000</td>
- * </tr>
- * <tr>
- * <td>io.omam.halo.querying.number</td>
- * <td>number of browsing queries</td>
- * <td>3</td>
- * </tr>
- * <tr>
- * <td>io.omam.halo.cancellation.interval</td>
- * <td>interval between goodbye messages in milliseconds</td>
- * <td>250</td>
- * </tr>
- * <tr>
- * <td>io.omam.halo.cancellation.number</td>
- * <td>number of goodbye messages sent when de-registering a service</td>
- * <td>3</td>
- * </tr>
- * <tr>
- * <td>io.omam.halo.reaper.interval</td>
- * <td>cache record reaper interval in milliseconds</td>
- * <td>10000</td>
- * </tr>
- * <tr>
- * <td>io.omam.halo.ttl.default</td>
- * <td>DNS record default time to live in milliseconds</td>
- * <td>3600000</td>
- * </tr>
- * <tr>
- * <td>io.omam.halo.ttl.expiry</td>
- * <td>DNS record time to live after expiry in milliseconds</td>
- * <td>1000</td>
- * </tr>
- * </table>
- *
+ * <strong>Configuration</strong>: see {@link HaloProperties}.
  */
 public interface Halo extends AutoCloseable {
 

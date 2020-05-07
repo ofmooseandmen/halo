@@ -30,7 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import static io.omam.halo.MulticastDns.REAPING_INTERVAL;
+import static io.omam.halo.HaloProperties.REAPING_INTERVAL;
 
 import java.time.Clock;
 import java.util.concurrent.Executors;

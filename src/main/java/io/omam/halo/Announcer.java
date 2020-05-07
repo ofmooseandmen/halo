@@ -30,15 +30,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import static io.omam.halo.MulticastDns.CLASS_IN;
-import static io.omam.halo.MulticastDns.FLAGS_AA;
-import static io.omam.halo.MulticastDns.PROBE_NUM;
-import static io.omam.halo.MulticastDns.PROBING_INTERVAL;
-import static io.omam.halo.MulticastDns.PROBING_TIMEOUT;
-import static io.omam.halo.MulticastDns.TTL;
-import static io.omam.halo.MulticastDns.TYPE_ANY;
-import static io.omam.halo.MulticastDns.TYPE_SRV;
-import static io.omam.halo.MulticastDns.uniqueClass;
+import static io.omam.halo.HaloProperties.PROBE_NUM;
+import static io.omam.halo.HaloProperties.PROBING_INTERVAL;
+import static io.omam.halo.HaloProperties.PROBING_TIMEOUT;
+import static io.omam.halo.HaloProperties.TTL;
+import static io.omam.halo.MulticastDnsSd.CLASS_IN;
+import static io.omam.halo.MulticastDnsSd.FLAGS_AA;
+import static io.omam.halo.MulticastDnsSd.TYPE_ANY;
+import static io.omam.halo.MulticastDnsSd.TYPE_SRV;
+import static io.omam.halo.MulticastDnsSd.uniqueClass;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -174,7 +174,7 @@ final class Announcer implements AutoCloseable {
          * it contains a {@link SrvRecord SRV record}.
          *
          * @return {@code true} iff a response matching the probe query has been received before the
-         *         {@link MulticastDns#PROBING_TIMEOUT probing timeout} has elapsed
+         *         {@link HaloProperties#PROBING_TIMEOUT probing timeout} has elapsed
          */
         @SuppressWarnings("synthetic-access")
         final boolean await() {
