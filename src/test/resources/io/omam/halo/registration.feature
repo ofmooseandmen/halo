@@ -32,7 +32,7 @@ Feature: Service registration
     When the following service is registered with "Halo" not allowing instance name change:
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9010 | Some Text |
-    Then a "java.io.IOException" shall be thrown with message containing "Registered service collision (...) Living Room Speaker (...) _music._tcp."
+    Then a "java.io.IOException" shall be thrown with message containing "Own registered service collision (...) Living Room Speaker (...) _music._tcp."
 
   Scenario: Service registration with unresolved instance name collision from cache
     Given a "Halo" instance has been created
