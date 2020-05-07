@@ -137,7 +137,7 @@ final class Cache {
 
     /**
      * Determines whether both given DNS records have the same type and class.
-     * 
+     *
      * @param record1 first DNS record
      * @param record2 second DNS record
      * @return {@code true} if both DNS records have the same type and class, {@code false} otherwise
@@ -244,7 +244,7 @@ final class Cache {
      */
     final void removeAll(final String name) {
         Objects.requireNonNull(name);
-        LOGGER.fine(() -> "Removing all DNS records associated with" + name + " from cache");
+        LOGGER.fine(() -> "Removing all DNS records associated with " + name + " from cache");
         map.remove(toLowerCase(name));
     }
 

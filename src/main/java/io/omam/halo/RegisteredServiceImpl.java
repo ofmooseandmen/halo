@@ -1,5 +1,5 @@
 /*
-Copyright 2018 - 2020 Cedric Liegeois
+Copyright 2020-2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -30,23 +30,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-/**
- * The listener interface for discovering {@link Service named service}s of a given registration type.
- */
-public interface ServiceBrowserListener {
+final class RegisteredServiceImpl extends BaseRegistrableService implements RegisteredService {
 
-    /**
-     * Invoked when a previously discovered named service of the target registration type has become unavailable.
-     *
-     * @param service the service
-     */
-    void serviceDown(final ResolvedService service);
+    private final Attributes attributes;
 
-    /**
-     * Invoked when a new named service of the target registration type has been discovered.
-     *
-     * @param service the service
-     */
-    void serviceUp(final ResolvedService service);
+    RegisteredServiceImpl(final RegisterableService other) {
+        super(other.instanceName(), other.registrationType(), other.hostname(), other.ipv4Address(),
+              other.ipv6Address(), other.port());
+        attributes = other.attributes();
+    }
+
+    @Override
+    public final Attributes attributes() {
+        return attributes;
+    }
 
 }

@@ -64,6 +64,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import io.omam.halo.DnsMessage.Builder;
 
@@ -108,8 +109,11 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     /** Service browser. */
     private final HaloServiceBrowser sBrowser;
 
-    /** map of all registered service indexed by {@link Service#instanceName()}. */
-    private final Map<String, Service> services;
+    /** map of all services being registered indexed by {@link Service#instanceName()}. */
+    private final Map<String, RegisterableService> announcing;
+
+    /** map of all registered services indexed by {@link Service#instanceName()}. */
+    private final Map<String, RegisteredService> registered;
 
     /** set of all registration pointer names. */
     private final Set<String> registrationPointerNames;
@@ -137,7 +141,8 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
         rBrowser = new HaloRegistrationTypeBrowser(this);
         sBrowser = new HaloServiceBrowser(this);
 
-        services = new ConcurrentHashMap<>();
+        announcing = new ConcurrentHashMap<>();
+        registered = new ConcurrentHashMap<>();
         registrationPointerNames = ConcurrentHashMap.newKeySet();
 
         channel.enable();
@@ -220,10 +225,12 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     }
 
     @Override
-    public final void deregister(final Service service) throws IOException {
-        if (services.containsKey(toLowerCase(service.name()))) {
+    public final void deregister(final RegisteredService service) throws IOException {
+        final String serviceKey = toLowerCase(service.name());
+        if (registered.containsKey(serviceKey)) {
             canceller.cancel(service);
-            remove(service);
+            registrationPointerNames.remove(service.registrationPointerName());
+            registered.remove(serviceKey);
             cache.removeAll(service.name());
         } else {
             LOGGER.info(() -> service + " is not registered");
@@ -233,7 +240,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     @Override
     public final void deregisterAll() throws IOException {
         final List<String> messages = new ArrayList<>();
-        for (final Service service : services.values()) {
+        for (final RegisteredService service : registered.values()) {
             try {
                 deregister(service);
             } catch (final IOException e) {
@@ -246,29 +253,34 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     }
 
     @Override
-    public final Service register(final Service service, final Duration ttl, final boolean allowNameChange)
-            throws IOException {
+    public final RegisteredService register(final RegisterableService service, final Duration ttl,
+            final boolean allowNameChange) throws IOException {
         LOGGER.fine(() -> "Registering " + service + ON_DOMAIN);
-        final Service rservice = checkInstanceName(service, allowNameChange);
-        add(rservice);
+        final RegisterableService toRegister = checkInstanceName(service, allowNameChange);
+        final String serviceKey = toLowerCase(service.name());
+        announcing.put(serviceKey, service);
+        final String rpn = service.registrationPointerName();
+        registrationPointerNames.add(rpn);
 
-        final boolean announced = announcer.announce(rservice, ttl);
+        final boolean announced = announcer.announce(toRegister, ttl);
+        announcing.remove(serviceKey);
         if (!announced) {
-            remove(rservice);
-            final String msg = "Found conflicts while announcing " + rservice + " on network";
+            registrationPointerNames.remove(service.registrationPointerName());
+            final String msg = "Found conflicts while announcing " + toRegister + " on network";
             LOGGER.warning(msg);
             throw new IOException(msg);
         }
-
-        LOGGER.info(() -> "Registered " + rservice + ON_DOMAIN);
+        LOGGER.info(() -> "Registered " + toRegister + ON_DOMAIN);
+        final RegisteredService rservice = new RegisteredServiceImpl(toRegister);
+        registered.put(serviceKey, rservice);
         return rservice;
     }
 
     @Override
-    public final Optional<Service> resolve(final String instanceName, final String registrationType,
+    public final Optional<ResolvedService> resolve(final String instanceName, final String registrationType,
             final Duration timeout) {
         cache.clean(now());
-        final ServiceImpl service = new ServiceImpl(instanceName, registrationType);
+        final ResolvableService service = new ResolvableService(instanceName, registrationType);
         LOGGER.fine(() -> "Resolving " + service.toString() + ON_DOMAIN);
         try {
             final boolean resolved = service.resolve(this, timeout);
@@ -314,17 +326,6 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     }
 
     /**
-     * Adds the given registered service.
-     *
-     * @param service service
-     */
-    private void add(final Service service) {
-        services.put(toLowerCase(service.name()), service);
-        final String rpn = service.registrationPointerName();
-        registrationPointerNames.add(rpn);
-    }
-
-    /**
      * Adds a DNS record type A corresponding to an answer to the given question if it exits.
      *
      * @param query query being answered
@@ -334,9 +335,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
      */
     private void addIpv4Address(final DnsMessage query, final DnsQuestion question, final Builder builder,
             final Instant now) {
-        services
-            .values()
-            .stream()
+        announcingOrRegistered()
             .filter(s -> s.hostname().equalsIgnoreCase(question.name()))
             .filter(h -> h.ipv4Address().isPresent())
             .forEach(s -> {
@@ -356,9 +355,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
      */
     private void addIpv6Address(final DnsMessage query, final DnsQuestion question, final Builder builder,
             final Instant now) {
-        services
-            .values()
-            .stream()
+        announcingOrRegistered()
             .filter(s -> s.hostname().equalsIgnoreCase(question.name()))
             .filter(h -> h.ipv6Address().isPresent())
             .forEach(s -> {
@@ -383,13 +380,13 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
                 builder.addAnswer(query, new PtrRecord(RT_DISCOVERY, CLASS_IN, TTL, now, rpn));
             }
         } else {
-            for (final Service service : services.values()) {
+            announcingOrRegistered().forEach(service -> {
                 if (question.name().equalsIgnoreCase(service.registrationPointerName())) {
                     builder
                         .addAnswer(query, new PtrRecord(service.registrationPointerName(), CLASS_IN, TTL, now,
                                                         service.name()));
                 }
-            }
+            });
         }
     }
 
@@ -425,6 +422,31 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     }
 
     /**
+     * @return stream of announcing or registered services.
+     */
+    private Stream<Service> announcingOrRegistered() {
+        return Stream.concat(announcing.values().stream(), registered.values().stream());
+    }
+
+    /**
+     * @return announcing or registered service or null if not found.
+     */
+    private Service announcingOrRegistered(final String name) {
+        final String lcName = toLowerCase(name);
+        final RegisterableService aService = announcing.get(lcName);
+        if (aService != null) {
+            return aService;
+        }
+        final RegisteredService rService = registered.get(lcName);
+        if (rService != null) {
+            return rService;
+        }
+        LOGGER.fine(() -> "No announcing or registered service matching: " + name);
+        return null;
+
+    }
+
+    /**
      * Builds a response to the given query.
      *
      * @param query DNS query
@@ -444,7 +466,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
                     addIpv6Address(query, question, builder, now);
                 }
 
-                final Service service = services.get(toLowerCase(question.name()));
+                final Service service = announcingOrRegistered(question.name());
                 if (service != null) {
                     addServiceAnswer(query, question, service, builder, now);
                 }
@@ -461,17 +483,18 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
      * @return the service with a unique instance name
      * @throws IOException if service instance name cannot be made unique
      */
-    private Service checkInstanceName(final Service service, final boolean allowNameChange) throws IOException {
+    private RegisterableService checkInstanceName(final RegisterableService service, final boolean allowNameChange)
+            throws IOException {
         final String hostname = service.hostname();
         final int port = service.port();
         boolean collision = false;
-        Service result = service;
+        RegisterableService result = service;
         do {
             collision = false;
             final Instant now = now();
 
             /* check own services. */
-            final Service own = services.get(toLowerCase(result.name()));
+            final Service own = announcingOrRegistered(result.name());
             if (own != null) {
                 final String otherHostname = own.hostname();
                 collision = own.port() != port || !otherHostname.equals(hostname);
@@ -538,16 +561,6 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     }
 
     /**
-     * Removes the given registered service.
-     *
-     * @param service service
-     */
-    private void remove(final Service service) {
-        registrationPointerNames.remove(service.registrationPointerName());
-        services.remove(toLowerCase(service.name()));
-    }
-
-    /**
      * Tries to resolve a service instance name collision by changing its instance name if allowed.
      *
      * @param service service
@@ -557,14 +570,14 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
      * @return a new service with the same properties as the given one except for its instance name
      * @throws IOException if {@code allowNameChange} is {@code false}
      */
-    private Service tryResolveCollision(final Service service, final boolean allowNameChange, final String msg)
-            throws IOException {
+    private RegisterableService tryResolveCollision(final RegisterableService service,
+            final boolean allowNameChange, final String msg) throws IOException {
         if (!allowNameChange) {
             throw new IOException(msg);
         }
         LOGGER.info(msg);
         final String instanceName = changeInstanceName(service.instanceName());
-        return new ServiceImpl(instanceName, service);
+        return new RegisterableServiceImpl(instanceName, service);
     }
 
 }

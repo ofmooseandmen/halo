@@ -1,5 +1,5 @@
 /*
-Copyright 2018 - 2020 Cedric Liegeois
+Copyright 2020-2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -53,12 +53,12 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
 /**
- * Service implementation.
+ * A service that is being resolved or as been resolved on the local network.
  */
-final class ServiceImpl implements Service, ResponseListener {
+final class ResolvableService extends BaseService implements ResolvedService, ResponseListener {
 
     /** logger. */
-    private static final Logger LOGGER = Logger.getLogger(ServiceImpl.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ResolvableService.class.getName());
 
     /** string for log. */
     private static final String UPDATED_TO = "] updated to ";
@@ -72,9 +72,6 @@ final class ServiceImpl implements Service, ResponseListener {
     /** service hostname. */
     private String hostname;
 
-    /** service instance name. */
-    private final String instanceName;
-
     /** service IPv4 address. */
     private Optional<InetAddress> ipv4Address;
 
@@ -87,32 +84,8 @@ final class ServiceImpl implements Service, ResponseListener {
     /** service port. */
     private short port;
 
-    /** service registration type. */
-    private final String registrationType;
-
     /** condition signaled when service has been resolved. */
     private final Condition resolved;
-
-    /**
-     * Constructor enabling to create a new service from another one but with a new instance name.
-     *
-     * @param anInstanceName the service instance name, a human-readable string, e.g. {@code Living Room Printer}
-     * @param other other service
-     */
-    ServiceImpl(final String anInstanceName, final Service other) {
-        instanceName = anInstanceName;
-        registrationType = other.registrationType();
-
-        attributes = other.attributes();
-        ipv4Address = other.ipv4Address();
-        ipv6Address = other.ipv6Address();
-        port = other.port();
-        hostname = other.hostname();
-
-        awaitingResolution = false;
-        lock = new ReentrantLock();
-        resolved = lock.newCondition();
-    }
 
     /**
      * Constructor.
@@ -121,9 +94,8 @@ final class ServiceImpl implements Service, ResponseListener {
      * @param aRegistrationType service type (IANA) and transport protocol (udp or tcp), e.g. {@code _ftp._tcp.} or
      *            {@code _http._udp.}
      */
-    ServiceImpl(final String anInstanceName, final String aRegistrationType) {
-        instanceName = anInstanceName;
-        registrationType = aRegistrationType;
+    ResolvableService(final String anInstanceName, final String aRegistrationType) {
+        super(anInstanceName, aRegistrationType);
 
         attributes = null;
         ipv4Address = Optional.empty();
@@ -134,6 +106,7 @@ final class ServiceImpl implements Service, ResponseListener {
         awaitingResolution = false;
         lock = new ReentrantLock();
         resolved = lock.newCondition();
+
     }
 
     /**
@@ -161,6 +134,8 @@ final class ServiceImpl implements Service, ResponseListener {
         return begin == -1 || end == -1 ? Optional.empty() : Optional.of(serviceName.substring(begin + 1, end));
     }
 
+    // FIXME read/write lock.
+
     @Override
     public final Attributes attributes() {
         return attributes;
@@ -169,11 +144,6 @@ final class ServiceImpl implements Service, ResponseListener {
     @Override
     public final String hostname() {
         return hostname;
-    }
-
-    @Override
-    public final String instanceName() {
-        return instanceName;
     }
 
     @Override
@@ -187,23 +157,8 @@ final class ServiceImpl implements Service, ResponseListener {
     }
 
     @Override
-    public final String name() {
-        return instanceName + "." + registrationPointerName();
-    }
-
-    @Override
     public final short port() {
         return port;
-    }
-
-    @Override
-    public final String registrationPointerName() {
-        return registrationType + DOMAIN + ".";
-    }
-
-    @Override
-    public final String registrationType() {
-        return registrationType;
     }
 
     @Override
@@ -220,11 +175,6 @@ final class ServiceImpl implements Service, ResponseListener {
         } finally {
             lock.unlock();
         }
-    }
-
-    @Override
-    public final String toString() {
-        return "Service [instance name=" + instanceName + "; registration type=" + registrationType + "]";
     }
 
     /**
@@ -290,58 +240,6 @@ final class ServiceImpl implements Service, ResponseListener {
             halo.removeResponseListener(this);
         }
         return resolved();
-    }
-
-    /**
-     * Sets the attributes.
-     *
-     * @param someAttributes attributes
-     */
-    final void setAttributes(final Attributes someAttributes) {
-        attributes = someAttributes;
-    }
-
-    /**
-     * Sets the hostname, appending '.local.' if needed.
-     *
-     * @param name the hostname
-     */
-    final void setHostname(final String name) {
-        String aHostname = name;
-        final int index = aHostname.indexOf("." + DOMAIN);
-        if (index > 0) {
-            aHostname = aHostname.substring(0, index);
-        }
-        aHostname = aHostname.replaceAll("[:%\\.]", "-");
-        aHostname += "." + DOMAIN + ".";
-        hostname = aHostname;
-    }
-
-    /**
-     * Sets the IPv4 address.
-     *
-     * @param anAddress address
-     */
-    final void setIpv4Address(final Inet4Address anAddress) {
-        ipv4Address = Optional.of(anAddress);
-    }
-
-    /**
-     * Sets the IPv6 address.
-     *
-     * @param anAddress address
-     */
-    final void setIpv6Address(final Inet6Address anAddress) {
-        ipv6Address = Optional.of(anAddress);
-    }
-
-    /**
-     * Sets the port.
-     *
-     * @param aPort port
-     */
-    final void setPort(final short aPort) {
-        port = aPort;
     }
 
     /**

@@ -76,7 +76,7 @@ public final class Engines {
         return atts;
     }
 
-    static Service toHalo(final ServiceDetails sd) throws UnknownHostException {
+    static RegisterableService toHalo(final ServiceDetails sd) throws UnknownHostException {
         /*
          * fake hostname and IP to trigger probing conflict.
          */
@@ -84,8 +84,9 @@ public final class Engines {
         final Optional<InetAddress> ip = hostname.isPresent()
                 ? Optional.of(InetAddress.getByName("2001:0db8:85a3:0000:0000:8a2e:0370:7334"))
                 : Optional.empty();
-        final Service.Builder s =
-                Service.create(sd.instanceName(), sd.registrationType(), sd.port()).attributes(toHalo(sd.text()));
+        final RegisterableService.Builder s = RegisterableService
+            .create(sd.instanceName(), sd.registrationType(), sd.port())
+            .attributes(toHalo(sd.text()));
         hostname.ifPresent(h -> s.hostname(h));
         ip.ifPresent(i -> s.ipv6Address((Inet6Address) i));
         return s.get();

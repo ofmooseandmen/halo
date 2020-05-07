@@ -60,7 +60,7 @@ public final class RegistrationSteps {
 
     private final List<ServiceInfo> jss;
 
-    private final List<Service> hss;
+    private final List<RegisteredService> hss;
 
     private String registeredBy;
 
@@ -88,7 +88,7 @@ public final class RegistrationSteps {
     public final void thenDeregisterService(final String service) throws IOException {
         assertNotNull(registeredBy);
         if (registeredBy.equals("Halo")) {
-            final Service s = hss
+            final RegisteredService s = hss
                 .stream()
                 .filter(hs -> hs.name().equals(service + "local."))
                 .findFirst()

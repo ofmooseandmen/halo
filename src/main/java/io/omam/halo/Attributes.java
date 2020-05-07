@@ -145,6 +145,13 @@ public interface Attributes {
     }
 
     /**
+     * @return empty attributes.
+     */
+    static Attributes empty() {
+        return Attributes.create().get();
+    }
+
+    /**
      * @return all keys.
      */
     Set<String> keys();

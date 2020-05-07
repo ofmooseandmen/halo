@@ -1,4 +1,3 @@
-@wip
 Feature: Service registration
   
   Halo implementation tested against JmDNS

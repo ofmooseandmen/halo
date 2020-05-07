@@ -35,8 +35,6 @@ import static io.omam.halo.MulticastDnsSd.CLASS_IN;
 import static io.omam.halo.MulticastDnsSd.DOMAIN;
 import static io.omam.halo.MulticastDnsSd.TYPE_PTR;
 import static io.omam.halo.MulticastDnsSd.toLowerCase;
-import static io.omam.halo.ServiceImpl.instanceNameOf;
-import static io.omam.halo.ServiceImpl.registrationTypeOf;
 import static java.util.stream.Collectors.groupingBy;
 
 import java.time.Instant;
@@ -99,7 +97,7 @@ final class HaloServiceBrowser extends HaloBrowser {
         private final String rpn;
 
         /** service to resolve. */
-        private final ServiceImpl service;
+        private final ResolvableService service;
 
         /**
          * Constructor.
@@ -107,7 +105,7 @@ final class HaloServiceBrowser extends HaloBrowser {
          * @param registrationPointerName registration pointer name of the service being resolved
          * @param aService service to resolve
          */
-        ResolveTask(final String registrationPointerName, final ServiceImpl aService) {
+        ResolveTask(final String registrationPointerName, final ResolvableService aService) {
             rpn = registrationPointerName;
             service = aService;
         }
@@ -147,7 +145,7 @@ final class HaloServiceBrowser extends HaloBrowser {
     /**
      * resolved services, indexed by registration pointer name, indexed by service name.
      */
-    private final Map<String, Map<String, ServiceImpl>> services;
+    private final Map<String, Map<String, ResolvableService>> services;
 
     /** resolver executor service. */
     private final ExecutorService res;
@@ -200,7 +198,8 @@ final class HaloServiceBrowser extends HaloBrowser {
         final String rpn = toRpn(registrationType);
         final Collection<ServiceBrowserListener> rls =
                 listeners.computeIfAbsent(rpn, k -> new ConcurrentLinkedQueue<>());
-        final Map<String, ServiceImpl> resolved = services.computeIfAbsent(rpn, k -> new ConcurrentHashMap<>());
+        final Map<String, ResolvableService> resolved =
+                services.computeIfAbsent(rpn, k -> new ConcurrentHashMap<>());
         resolved.values().forEach(listener::serviceUp);
         rls.add(listener);
     }
@@ -243,7 +242,7 @@ final class HaloServiceBrowser extends HaloBrowser {
      * @param rlisteners listeners for the registration type
      * @param serviceName service name associated to the expired PTR record
      */
-    private void handlePtrExpiry(final Map<String, ServiceImpl> rservices,
+    private void handlePtrExpiry(final Map<String, ResolvableService> rservices,
             final Collection<ServiceBrowserListener> rlisteners, final String serviceName) {
         LOGGER.info(() -> "Service [" + serviceName + "] is down");
         final String skey = toLowerCase(serviceName);
@@ -251,7 +250,7 @@ final class HaloServiceBrowser extends HaloBrowser {
         if (future != null) {
             future.cancel(true);
         }
-        final ServiceImpl service = rservices.remove(skey);
+        final ResolvableService service = rservices.remove(skey);
         if (service != null) {
             rlisteners.forEach(l -> l.serviceDown(service));
         }
@@ -265,7 +264,7 @@ final class HaloServiceBrowser extends HaloBrowser {
      * @param now current instant
      */
     private void handleResponse(final String rpn, final Collection<PtrRecord> pointers, final Instant now) {
-        final Map<String, ServiceImpl> rservices = services.get(rpn);
+        final Map<String, ResolvableService> rservices = services.get(rpn);
         final Collection<ServiceBrowserListener> rlisteners = listeners.get(rpn);
         for (final PtrRecord ptr : pointers) {
             final String serviceName = ptr.target();
@@ -302,11 +301,11 @@ final class HaloServiceBrowser extends HaloBrowser {
      */
     private void submitResolution(final String rpn, final String serviceName) {
         /* only resolve if service has not already been resolved and no running resolving tasks exits. */
-        final Optional<String> instanceName = instanceNameOf(serviceName);
-        final Optional<String> registrationType = registrationTypeOf(serviceName);
+        final Optional<String> instanceName = ResolvableService.instanceNameOf(serviceName);
+        final Optional<String> registrationType = ResolvableService.registrationTypeOf(serviceName);
         if (instanceName.isPresent() && registrationType.isPresent()) {
             LOGGER.fine(() -> "Discovered [" + serviceName + "]");
-            final ServiceImpl service = new ServiceImpl(instanceName.get(), registrationType.get());
+            final ResolvableService service = new ResolvableService(instanceName.get(), registrationType.get());
             final Future<?> future = res.submit(new ResolveTask(rpn, service));
             rFutures.put(toLowerCase(serviceName), future);
         } else {

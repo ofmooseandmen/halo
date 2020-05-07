@@ -1,5 +1,5 @@
 /*
-Copyright 2018 - 2020 Cedric Liegeois
+Copyright 2020-2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -30,23 +30,54 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
+import static io.omam.halo.MulticastDnsSd.DOMAIN;
+
 /**
- * The listener interface for discovering {@link Service named service}s of a given registration type.
+ * Base class for all service implementation.
  */
-public interface ServiceBrowserListener {
+abstract class BaseService implements Service {
+
+    /** service instance name. */
+    private final String instanceName;
+
+    /** service registration type. */
+    private final String registrationType;
 
     /**
-     * Invoked when a previously discovered named service of the target registration type has become unavailable.
+     * Constructor.
      *
-     * @param service the service
+     * @param anInstanceName the service instance name, a human-readable string, e.g. {@code Living Room Printer}
+     * @param aRegistrationType service type (IANA) and transport protocol (udp or tcp), e.g. {@code _ftp._tcp.} or
+     *            {@code _http._udp.}
      */
-    void serviceDown(final ResolvedService service);
+    protected BaseService(final String anInstanceName, final String aRegistrationType) {
+        instanceName = anInstanceName;
+        registrationType = aRegistrationType;
+    }
 
-    /**
-     * Invoked when a new named service of the target registration type has been discovered.
-     *
-     * @param service the service
-     */
-    void serviceUp(final ResolvedService service);
+    @Override
+    public final String instanceName() {
+        return instanceName;
+    }
+
+    @Override
+    public final String name() {
+        return instanceName + "." + registrationPointerName();
+    }
+
+    @Override
+    public final String registrationPointerName() {
+        return registrationType + DOMAIN + ".";
+    }
+
+    @Override
+    public final String registrationType() {
+        return registrationType;
+    }
+
+    @Override
+    public final String toString() {
+        return "Service [instance name=" + instanceName + "; registration type=" + registrationType + "]";
+    }
 
 }

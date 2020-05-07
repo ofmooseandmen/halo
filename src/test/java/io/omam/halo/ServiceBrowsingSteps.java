@@ -62,9 +62,9 @@ public final class ServiceBrowsingSteps {
 
     private static final class CollectingBrowserListener implements ServiceBrowserListener {
 
-        private final Collection<Service> ups;
+        private final Collection<ResolvedService> ups;
 
-        private final Collection<Service> downs;
+        private final Collection<ResolvedService> downs;
 
         CollectingBrowserListener() {
             ups = new ConcurrentLinkedQueue<>();
@@ -72,20 +72,20 @@ public final class ServiceBrowsingSteps {
         }
 
         @Override
-        public final void serviceDown(final Service service) {
+        public final void serviceDown(final ResolvedService service) {
             downs.add(service);
         }
 
         @Override
-        public final void serviceUp(final Service service) {
+        public final void serviceUp(final ResolvedService service) {
             ups.add(service);
         }
 
-        final Collection<Service> downs() {
+        final Collection<ResolvedService> downs() {
             return downs;
         }
 
-        final Collection<Service> ups() {
+        final Collection<ResolvedService> ups() {
             return ups;
         }
 

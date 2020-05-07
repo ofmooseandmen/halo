@@ -69,7 +69,7 @@ final class Announcer implements AutoCloseable {
     private static final class AnnounceTask implements Callable<Void> {
 
         /** the service to announce. */
-        private final Service service;
+        private final RegisterableService service;
 
         /** service time to live; */
         private final Duration ttl;
@@ -84,7 +84,7 @@ final class Announcer implements AutoCloseable {
          * @param aTtl service time to live
          * @param haloHelper halo helper
          */
-        AnnounceTask(final Service aService, final Duration aTtl, final HaloHelper haloHelper) {
+        AnnounceTask(final RegisterableService aService, final Duration aTtl, final HaloHelper haloHelper) {
             service = aService;
             ttl = aTtl;
             halo = haloHelper;
@@ -134,14 +134,14 @@ final class Announcer implements AutoCloseable {
         private final AtomicBoolean match;
 
         /** the service being probed. */
-        private final Service service;
+        private final RegisterableService service;
 
         /**
          * Constructor.
          *
          * @param aService the service being probed
          */
-        ProbeListener(final Service aService) {
+        ProbeListener(final RegisterableService aService) {
             service = aService;
             match = new AtomicBoolean(false);
             lock = new ReentrantLock();
@@ -207,7 +207,7 @@ final class Announcer implements AutoCloseable {
     private static final class ProbeTask implements Callable<Void> {
 
         /** the service being probed. */
-        private final Service service;
+        private final RegisterableService service;
 
         /** halo helper. */
         private final HaloHelper halo;
@@ -218,7 +218,7 @@ final class Announcer implements AutoCloseable {
          * @param aService the service being probed
          * @param haloHelper halo helper
          */
-        ProbeTask(final Service aService, final HaloHelper haloHelper) {
+        ProbeTask(final RegisterableService aService, final HaloHelper haloHelper) {
             service = aService;
             halo = haloHelper;
         }
@@ -283,7 +283,7 @@ final class Announcer implements AutoCloseable {
      *         announced on the network
      * @throws IOException if an exception occurs while probing
      */
-    final boolean announce(final Service service, final Duration ttl) throws IOException {
+    final boolean announce(final RegisterableService service, final Duration ttl) throws IOException {
         LOGGER.fine(() -> "Start probing for " + service);
         final ProbeListener listener = new ProbeListener(service);
         halo.addResponseListener(listener);

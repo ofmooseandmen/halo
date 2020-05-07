@@ -72,12 +72,13 @@ final class Assert {
 
     /**
      * Asserts that all expected services are present in the actual services.
-     *
+     * 
+     * @param <T> type of the service
      * @param expecteds expected services
      * @param actuals actual services
      */
-    static void assertContainsAllServices(final Collection<ServiceDetails> expecteds,
-            final Collection<Service> actuals) {
+    static <T extends Service> void assertContainsAllServices(final Collection<ServiceDetails> expecteds,
+            final Collection<T> actuals) {
         final BiPredicate<ServiceDetails, Service> match = (sd, s) -> sd.instanceName().equals(s.instanceName())
             && sd.registrationType().equals(s.registrationType())
             && sd.port() == s.port()

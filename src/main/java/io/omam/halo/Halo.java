@@ -229,7 +229,7 @@ public interface Halo extends AutoCloseable {
      * @param service service to de-register
      * @throws IOException if the service cannot be de-registered for any reason
      */
-    void deregister(final Service service) throws IOException;
+    void deregister(final RegisteredService service) throws IOException;
 
     /**
      * De-registers all services.
@@ -248,7 +248,8 @@ public interface Halo extends AutoCloseable {
     /**
      * Registers the given service on the <strong>local</strong> domain with the default TTL.
      * <p>
-     * The {@link Service#instanceName() instance name} of the service will be changed to be unique if possible.
+     * The {@link RegisterableService#instanceName() instance name} of the service will be changed to be unique if
+     * possible.
      * <p>
      * This method relies on the following <a href="#configuration">properties</a>:
      * <ul>
@@ -258,20 +259,20 @@ public interface Halo extends AutoCloseable {
      * <li>{@code io.omam.halo.ttl.default}
      * </ul>
      *
-     * @see #register(Service, Duration, boolean)
+     * @see #register(RegisterableService, Duration, boolean)
      * @param service service to register
      * @return the service that was successfully registered (instance name may have been changed)
      * @throws IOException if the service cannot be registered for any reason
      */
-    default Service register(final Service service) throws IOException {
+    default RegisteredService register(final RegisterableService service) throws IOException {
         return register(service, true);
     }
 
     /**
      * Registers the given service on the <strong>local</strong> domain with the default TTL.
      * <p>
-     * If {@code allowNameChange} is {@code true} the {@link Service#instanceName() instance name} of the service
-     * will be changed to be unique if possible.
+     * If {@code allowNameChange} is {@code true} the {@link RegisterableService#instanceName() instance name} of
+     * the service will be changed to be unique if possible.
      * <p>
      * This method relies on the following <a href="#configuration">properties</a>:
      * <ul>
@@ -281,22 +282,23 @@ public interface Halo extends AutoCloseable {
      * <li>{@code io.omam.halo.ttl.default}
      * </ul>
      *
-     * @see #register(Service, Duration, boolean)
+     * @see #register(RegisterableService, Duration, boolean)
      * @param service service to register
-     * @param allowNameChange {@code true} if {@link Service#instanceName() instance name} can be changed to be
-     *            made unique
+     * @param allowNameChange {@code true} if {@link RegisterableService#instanceName() instance name} can be
+     *            changed to be made unique
      * @return the service that was successfully registered (instance name may have been changed)
      * @throws IOException if the service cannot be registered for any reason
      */
-    default Service register(final Service service, final boolean allowNameChange) throws IOException {
+    default RegisteredService register(final RegisterableService service, final boolean allowNameChange)
+            throws IOException {
         return register(service, TTL, allowNameChange);
     }
 
     /**
      * Registers the given service on the <strong>local</strong> domain with the given TTL.
      * <p>
-     * If {@code allowNameChange} is {@code true} the {@link Service#instanceName() instance name} of the service
-     * will be changed to be unique if possible.
+     * If {@code allowNameChange} is {@code true} the {@link RegisterableService#instanceName() instance name} of
+     * the service will be changed to be unique if possible.
      * <p>
      * This method relies on the following <a href="#configuration">properties</a>:
      * <ul>
@@ -307,12 +309,13 @@ public interface Halo extends AutoCloseable {
      *
      * @param service service to register
      * @param ttl service time-to-live
-     * @param allowNameChange {@code true} if {@link Service#instanceName() instance name} can be changed to be
-     *            made unique
+     * @param allowNameChange {@code true} if {@link RegisterableService#instanceName() instance name} can be
+     *            changed to be made unique
      * @return the service that was successfully registered (instance name may have been changed)
      * @throws IOException if the service cannot be registered for any reason
      */
-    Service register(final Service service, final Duration ttl, final boolean allowNameChange) throws IOException;
+    RegisteredService register(final RegisterableService service, final Duration ttl,
+            final boolean allowNameChange) throws IOException;
 
     /**
      * Resolves a service of the <strong>local</strong> domain by its instance name and registration type to a
@@ -330,7 +333,7 @@ public interface Halo extends AutoCloseable {
      *            {@code _http._udp.}
      * @return the resolved service unless the timeout expired
      */
-    default Optional<Service> resolve(final String instanceName, final String registrationType) {
+    default Optional<ResolvedService> resolve(final String instanceName, final String registrationType) {
         return resolve(instanceName, registrationType, RESOLUTION_TIMEOUT);
     }
 
@@ -349,6 +352,7 @@ public interface Halo extends AutoCloseable {
      * @param timeout for resolution
      * @return the resolved service unless the timeout expired
      */
-    Optional<Service> resolve(final String instanceName, final String registrationType, final Duration timeout);
+    Optional<ResolvedService> resolve(final String instanceName, final String registrationType,
+            final Duration timeout);
 
 }

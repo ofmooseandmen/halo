@@ -33,139 +33,15 @@ package io.omam.halo;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 /**
  * A named service (printer, speaker, etc). The service {@link Service#hostname()} always ends with the '.local'
  * top-level domain.
  *
- * <pre>
- * <code>
- * Service.create("Living Room", "_music._udp.", sd.port(8009))
- *        .ipv4Address(InetAddress.getByName("192.168.0.154"))
- *        .ipv6Address(InetAddress.getByName("2001:0db8:85a3:0000:0000:8a2e:0370:7334"))
- *        .attributes(Attributes.create().with("foo").get())
- *        .get();
- * </code>
- * </pre>
- *
  * @see Attributes
  */
 public interface Service {
-
-    /**
-     * {@link Service} builder.
-     * <p>
-     * Only the service {@link Service#instanceName() instance name}, {@link Service#registrationType()
-     * registration type} and {@link Service#port() port} are mandatory. Other fields default to:
-     * <ul>
-     * <li>{@link Service#hostname() hostname}: local hostname, appended with '.local.' if needed
-     * <li>{@link Service#ipv4Address() IPv4} or {@link Service#ipv6Address() IPv6}: local hostname address
-     * <li>{@link Service#attributes() attributes}: empty key with no value
-     * </ul>
-     */
-    public static final class Builder implements Supplier<Service> {
-
-        /** address of the local host. */
-        private static final InetAddress LOCAL_HOST;
-        static {
-            try {
-                LOCAL_HOST = InetAddress.getLocalHost();
-            } catch (final UnknownHostException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-
-        /** service being built> */
-        private final ServiceImpl service;
-
-        /**
-         * Constructor.
-         *
-         * @param instanceName the service instance name, a human-readable string, e.g. 'Living Room Printer'
-         * @param registrationType service type (IANA) and transport protocol (udp or tcp), e.g. '_ftp._tcp.' or
-         *            {@code _http._udp.}
-         * @param port service port number
-         */
-        Builder(final String instanceName, final String registrationType, final int port) {
-            service = new ServiceImpl(instanceName, registrationType);
-            service.setPort((short) port);
-            service.setAttributes(Attributes.create().with("").get());
-            service.setHostname(LOCAL_HOST.getHostName());
-            if (LOCAL_HOST instanceof Inet4Address) {
-                service.setIpv4Address((Inet4Address) LOCAL_HOST);
-            } else if (LOCAL_HOST instanceof Inet6Address) {
-                service.setIpv6Address((Inet6Address) LOCAL_HOST);
-            }
-        }
-
-        /**
-         * Sets the {@link Service#attributes() attributes} of the service being built to the given value.
-         *
-         * @param attributes attributes
-         * @return this builder
-         */
-        public final Builder attributes(final Attributes attributes) {
-            service.setAttributes(attributes);
-            return this;
-        }
-
-        @Override
-        public final Service get() {
-            return service;
-        }
-
-        /**
-         * Sets the {@link Service#hostname() hostname} of the service being built to the given value.
-         * <p>
-         * {@code .local} is appended to the given hostname if it does not end with it.
-         *
-         * @param hostname hostname
-         * @return this builder
-         */
-        public final Builder hostname(final String hostname) {
-            service.setHostname(hostname);
-            return this;
-        }
-
-        /**
-         * Sets the {@link Service#ipv4Address() IPv4 address} of the service being built to the given value.
-         *
-         * @param address IPv4 address
-         * @return this builder
-         */
-        public final Builder ipv4Address(final Inet4Address address) {
-            service.setIpv4Address(address);
-            return this;
-        }
-
-        /**
-         * Sets the {@link Service#ipv6Address() IPv6 address} of the service being built to the given value.
-         *
-         * @param address IPv6 address
-         * @return this builder
-         */
-        public final Builder ipv6Address(final Inet6Address address) {
-            service.setIpv6Address(address);
-            return this;
-        }
-
-    }
-
-    /**
-     * Returns a new {@code builder} to create a new {@link Service service} with the given mandatory parameters.
-     *
-     * @param instanceName the service instance name, a human-readable string, e.g. 'Living Room Printer'
-     * @param registrationType service type (IANA) and transport protocol (udp or tcp), e.g. '_ftp._tcp. or
-     *            '_http._udp.'
-     * @param port service port, e.g. {@code 8009}
-     * @return a new {@code Builder}
-     */
-    public static Builder create(final String instanceName, final String registrationType, final int port) {
-        return new Builder(instanceName, registrationType, port);
-    }
 
     /**
      * Returns the service attributes.

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 - 2020 Cedric Liegeois
+Copyright 2020-2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -30,23 +30,54 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
+import java.net.InetAddress;
+import java.util.Optional;
+
 /**
- * The listener interface for discovering {@link Service named service}s of a given registration type.
+ *
  */
-public interface ServiceBrowserListener {
+abstract class BaseRegistrableService extends BaseService {
 
-    /**
-     * Invoked when a previously discovered named service of the target registration type has become unavailable.
-     *
-     * @param service the service
-     */
-    void serviceDown(final ResolvedService service);
+    /** service hostname. */
+    private final String hostname;
 
-    /**
-     * Invoked when a new named service of the target registration type has been discovered.
-     *
-     * @param service the service
-     */
-    void serviceUp(final ResolvedService service);
+    /** service IPv4 address. */
+    private final Optional<InetAddress> ipv4Address;
+
+    /** service IPv6 address. */
+    private final Optional<InetAddress> ipv6Address;
+
+    /** service port. */
+    private final short port;
+
+    protected BaseRegistrableService(final String anInstanceName, final String aRegistrationType,
+            final String aHostname, final Optional<InetAddress> anIpv4Address,
+            final Optional<InetAddress> anIpv6Address, final short aPort) {
+        super(anInstanceName, aRegistrationType);
+        hostname = aHostname;
+        ipv4Address = anIpv4Address;
+        ipv6Address = anIpv6Address;
+        port = aPort;
+    }
+
+    @Override
+    public final String hostname() {
+        return hostname;
+    }
+
+    @Override
+    public final Optional<InetAddress> ipv4Address() {
+        return ipv4Address;
+    }
+
+    @Override
+    public final Optional<InetAddress> ipv6Address() {
+        return ipv6Address;
+    }
+
+    @Override
+    public final short port() {
+        return port;
+    }
 
 }

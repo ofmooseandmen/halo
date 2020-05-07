@@ -1,5 +1,5 @@
 /*
-Copyright 2018 - 2020 Cedric Liegeois
+Copyright 2020-2020 Cedric Liegeois
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -31,22 +31,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package io.omam.halo;
 
 /**
- * The listener interface for discovering {@link Service named service}s of a given registration type.
+ * A service that has been resolved on the <strong>local</strong> domain.
  */
-public interface ServiceBrowserListener {
-
-    /**
-     * Invoked when a previously discovered named service of the target registration type has become unavailable.
-     *
-     * @param service the service
-     */
-    void serviceDown(final ResolvedService service);
-
-    /**
-     * Invoked when a new named service of the target registration type has been discovered.
-     *
-     * @param service the service
-     */
-    void serviceUp(final ResolvedService service);
-
+public interface ResolvedService extends Service {
+    // TODO: addListener(AttributesChangeListener)
 }
