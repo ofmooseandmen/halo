@@ -140,10 +140,13 @@ public final class RegistrationBrowsingSteps {
         /*
          * Other events may be fired if other DNS services are running on the machine though, just assert the
          * expected ones.
+         *
          */
+
+        final Duration timeout = Duration.ofSeconds(5);
         for (final String expected : expecteds) {
             await()
-                .atMost(Duration.ofSeconds(5))
+                .atMost(timeout)
                 .untilAsserted(() -> assertTrue(actuals.contains(expected),
                         "Expected to contain [" + expected + "] but was " + actuals));
         }

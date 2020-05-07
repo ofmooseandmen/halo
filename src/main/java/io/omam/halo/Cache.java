@@ -159,9 +159,9 @@ final class Cache {
         final boolean existed = entries(record.name()).removeIf(other -> matches(other, record));
         final String key = key(record);
         if (existed) {
-            LOGGER.fine(() -> "Adding " + record + " to cache");
-        } else {
             LOGGER.fine(() -> "Replacing cached record " + key + " with " + record);
+        } else {
+            LOGGER.fine(() -> "Adding " + record + " to cache");
         }
         map.computeIfAbsent(key, k -> new ConcurrentLinkedQueue<>()).add(record);
     }

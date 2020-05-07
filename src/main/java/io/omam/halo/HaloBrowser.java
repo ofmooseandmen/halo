@@ -31,36 +31,46 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package io.omam.halo;
 
 import static io.omam.halo.HaloProperties.QUERYING_DELAY;
-import static io.omam.halo.HaloProperties.QUERYING_INTERVAL;
-import static io.omam.halo.HaloProperties.QUERY_NUM;
+import static io.omam.halo.HaloProperties.QUERYING_FIRST;
+import static io.omam.halo.HaloProperties.QUERYING_INCREASE;
+import static io.omam.halo.HaloProperties.QUERYING_MAX;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
+import java.util.logging.Logger;
+
+import io.omam.halo.HaloScheduledExecutorService.IncreasingRateTask;
 
 /**
  * Base class for browsing.
  */
 abstract class HaloBrowser implements ResponseListener, AutoCloseable {
 
+    /** logger. */
+    private static final Logger LOGGER = Logger.getLogger(HaloBrowser.class.getName());
+
     /** halo helper. */
     private final HaloHelper halo;
+
+    /** browser name. */
+    private final String name;
 
     /** discoverer executor service. */
     private final HaloScheduledExecutorService ses;
 
-    /** future representing the querying task. */
-    private Future<Void> qFuture;
+    /** querying task. */
+    private IncreasingRateTask task;
 
     /**
      * Constructor.
      *
-     * @param name browser name (use to prefix query background thread)
+     * @param aName browser name (use to prefix query background thread)
      * @param haloHelper halo helper
      */
-    HaloBrowser(final String name, final HaloHelper haloHelper) {
+    HaloBrowser(final String aName, final HaloHelper haloHelper) {
+        name = aName;
         halo = haloHelper;
-        ses = new HaloScheduledExecutorService(name);
-        qFuture = null;
+        ses = new HaloScheduledExecutorService(aName);
+        task = null;
     }
 
     /**
@@ -71,11 +81,45 @@ abstract class HaloBrowser implements ResponseListener, AutoCloseable {
     @Override
     public final void close() {
         halo.removeResponseListener(this);
-        if (qFuture != null) {
-            qFuture.cancel(true);
+        if (task != null) {
+            task.cancel();
         }
         ses.shutdownNow();
         doClose();
+    }
+
+    /**
+     * Resets the query interval to the base value.
+     */
+    final void resetQueryInterval() {
+        if (task != null) {
+            LOGGER.info(() -> "Reset browsing interval for " + name + " to ");
+            task.reset();
+        }
+    }
+
+    /**
+     * Starts browsing.
+     * <p>
+     * If this browser is already started this method has no effect.
+     */
+    final void start() {
+        if (task == null) {
+            halo.addResponseListener(this);
+            /*
+             * RFC 6762: the interval between the first two queries MUST be at least one second, the intervals
+             * between successive queries MUST increase by at least a factor of two. [...]
+             *
+             * When the interval between queries reaches or exceeds 60 minutes, a querier MAY cap the interval to a
+             * maximum of 60 minutes. [...]
+             *
+             * a Multicast DNS querier SHOULD also delay the first query of the series by a randomly chosen amount
+             * in the range 20-120 ms.[...]
+             */
+            task = ses
+                .scheduleIncreasingly(queryTask(), QUERYING_FIRST, QUERYING_DELAY, QUERYING_INCREASE,
+                        QUERYING_MAX);
+        }
     }
 
     /**
@@ -87,17 +131,5 @@ abstract class HaloBrowser implements ResponseListener, AutoCloseable {
      * @return the query task to execute.
      */
     protected abstract Callable<Void> queryTask();
-
-    /**
-     * Starts browsing.
-     * <p>
-     * If this browser is already started this method has no effect.
-     */
-    final void start() {
-        if (qFuture == null) {
-            halo.addResponseListener(this);
-            qFuture = ses.scheduleBatches(queryTask(), QUERY_NUM, QUERYING_DELAY, QUERYING_INTERVAL);
-        }
-    }
 
 }

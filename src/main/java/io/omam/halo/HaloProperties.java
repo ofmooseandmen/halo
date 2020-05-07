@@ -90,18 +90,23 @@ import java.util.Properties;
  * </tr>
  * <tr>
  * <td>io.omam.halo.querying.delay</td>
- * <td>delay before transmitting a browsing query in milliseconds</td>
+ * <td>delay before transmitting the first browsing query in milliseconds</td>
  * <td>120</td>
  * </tr>
  * <tr>
  * <td>io.omam.halo.querying.interval</td>
- * <td>interval between browsing queries in milliseconds</td>
- * <td>1200000</td>
+ * <td>base interval between 2 consecutive browsing queries in milliseconds</td>
+ * <td>1000</td>
  * </tr>
  * <tr>
- * <td>io.omam.halo.querying.number</td>
- * <td>number of browsing queries</td>
- * <td>3</td>
+ * <td>io.omam.halo.querying.increase</td>
+ * <td>increase factor between 2 consecutive browsing queries</td>
+ * <td>2</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.halo.querying.max</td>
+ * <td>maximum internal between 2 consecutive browsing queries</td>
+ * <td>1200000</td>
  * </tr>
  * <tr>
  * <td>io.omam.halo.cancellation.interval</td>
@@ -171,14 +176,17 @@ public final class HaloProperties {
     /** interval between resolution question. */
     public static final Duration RESOLUTION_INTERVAL;
 
-    /** number of queries. */
-    public static final int QUERY_NUM;
+    /** delay before transmitting the first browsing query. */
+    public static final Duration QUERYING_FIRST;
 
-    /** interval between browsing query. */
+    /** interval between consecutive browsing queries. */
     public static final Duration QUERYING_DELAY;
 
-    /** interval between browsing query. */
-    public static final Duration QUERYING_INTERVAL;
+    /** increase factor between consecutive browsing queries. */
+    public static final int QUERYING_INCREASE;
+
+    /** maximum interval between consecutive browsing queries. */
+    public static final Duration QUERYING_MAX;
 
     /** time to live: 1 hour. */
     public static final Duration TTL;
@@ -204,9 +212,10 @@ public final class HaloProperties {
             PROBING_INTERVAL = durationProp("io.omam.halo.probing.interval", props);
             PROBE_NUM = intProp("io.omam.halo.probing.number", props);
 
+            QUERYING_FIRST = durationProp("io.omam.halo.querying.first", props);
             QUERYING_DELAY = durationProp("io.omam.halo.querying.delay", props);
-            QUERYING_INTERVAL = durationProp("io.omam.halo.querying.interval", props);
-            QUERY_NUM = intProp("io.omam.halo.querying.number", props);
+            QUERYING_INCREASE = intProp("io.omam.halo.querying.increase", props);
+            QUERYING_MAX = durationProp("io.omam.halo.querying.max", props);
 
             CANCELLING_INTERVAL = durationProp("io.omam.halo.cancellation.interval", props);
             CANCEL_NUM = intProp("io.omam.halo.cancellation.number", props);

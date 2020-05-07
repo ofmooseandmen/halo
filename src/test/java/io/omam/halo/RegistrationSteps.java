@@ -158,6 +158,12 @@ public final class RegistrationSteps {
             for (final ServiceDetails service : services) {
                 final ServiceInfo serviceInfo = toJmdns(service);
                 engines.jmdns().registerService(serviceInfo);
+                /*
+                 * As of 3.5.5, JmDNS#registerService returns before the service has been announced, so need to
+                 * wait first for the service to be actually registered and then only for the listener to be
+                 * notified.
+                 */
+                engines.jmdns().getServiceInfo(serviceInfo.getType(), serviceInfo.getName());
                 jss.add(serviceInfo);
             }
         } else {

@@ -30,17 +30,17 @@ Halo is tested with [cucumber](https://cucumber.io) against [JmDNS](https://gith
 ```java
 try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
     // allowing service instance name to be changed and with a default TTL of 1 hour.
-    Service service = halo.register(Service.create("Foo Bar", "_http._udp.", (short) 8009).get());
+    Registered service = halo.register(RegisterableService.create("Foo Bar", "_http._udp.", (short) 8009).get());
     // registered service is returned.
     System.err.println(service);
 
     // registering again the service instance and registration type will return a service
     // with an instance name of "Foo Bar (2)".
-    service = halo.register(Service.create("Foo Bar", "_http._udp.", (short) 8010).get());
+    Registered = halo.register(RegisterableService.create("Foo Bar", "_http._udp.", (short) 8010).get());
     System.err.println(service);
 
     // not allowing service instance name to be changed will throw an IOException at this point.
-    halo.register(Service.create("Foo Bar", "_http._udp.", (short) 8011).get(), false);
+    halo.register(RegisterableService.create("Foo Bar", "_http._udp.", (short) 8011).get(), false);
 }
 ```
 
@@ -49,7 +49,7 @@ try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
 ```java
 try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
     // default timeout of 6 seconds.
-    Optional<Service> service = halo.resolve("Foo Bar", "_http._udp.");
+    Optional<ResolvedService> service = halo.resolve("Foo Bar", "_http._udp.");
     // Optional contains the service if it could be resolved, empty otherwise.
     System.err.println(service);
     
@@ -66,12 +66,12 @@ try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
     final ServiceBrowserListener l = new ServiceBrowserListener() {
 
         @Override
-        public final void serviceDown(final Service service) {
+        public final void serviceDown(final ResolvedService service) {
             System.err.println(service + " is down!!!!!");
         }
 
         @Override
-        public final void serviceUp(final Service service) {
+        public final void serviceUp(final ResolvedService service) {
             System.err.println(service + " is up!!!!!");
         }
     };
@@ -101,21 +101,22 @@ try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
 ## Configuration
 The following parameters can be configured by system properties:
 
-| Property Key                       | Description                                                       | Default     |
-| ---------------------------------- | ----------------------------------------------------------------- | ----------- |
-| io.omam.halo.mdns.ipv4             | mDNS IPV4 address                                                 | 224.0.0.251 |
-| io.omam.halo.mdns.ipv6             | mDNS IPV6 address                                                 | FF02::FB    |
-| io.omam.halo.mdns.port             | mDNS port                                                         | 5353        |
-| io.omam.halo.resolution.timeout    | resolution timeout in milliseconds                                | 6000        |
-| io.omam.halo.resolution.interval   | interval between resolution questions in milliseconds             | 200         |
-| io.omam.halo.probing.timeout       | probing timeout in milliseconds                                   | 6000        |
-| io.omam.halo.probing.interval      | interval between probe messages in milliseconds                   | 250         |
-| io.omam.halo.probing.number        | number of probing messages before announcing a registered service | 3           |
-| io.omam.halo.querying.delay        | delay before transmitting a browsing query in milliseconds        | 120         |
-| io.omam.halo.querying.interval     | interval between browsing queries in milliseconds                 | 1200000     |
-| io.omam.halo.querying.number       | number of browsing queries                                        | 3           |
-| io.omam.halo.cancellation.interval | interval between goodbye messages in milliseconds                 | 250         |
-| io.omam.halo.cancellation.number   | number of goodbye messages sent when de-registering a service     | 3           |
-| io.omam.halo.reaper.interval       | cache record reaper interval in milliseconds                      | 10000       |
-| io.omam.halo.ttl.default           | DNS record default time to live in milliseconds                   | 3600000     |
-| io.omam.halo.ttl.expiry            | DNS record time to live after expiry in milliseconds              | 1000        |
+| Property Key                       | Description                                                           | Default     |
+| ---------------------------------- | --------------------------------------------------------------------- | ----------- |
+| io.omam.halo.mdns.ipv4             | mDNS IPV4 address                                                     | 224.0.0.251 |
+| io.omam.halo.mdns.ipv6             | mDNS IPV6 address                                                     | FF02::FB    |
+| io.omam.halo.mdns.port             | mDNS port                                                             | 5353        |
+| io.omam.halo.resolution.timeout    | resolution timeout in milliseconds                                    | 6000        |
+| io.omam.halo.resolution.interval   | interval between resolution questions in milliseconds                 | 200         |
+| io.omam.halo.probing.timeout       | probing timeout in milliseconds                                       | 6000        |
+| io.omam.halo.probing.interval      | interval between probe messages in milliseconds                       | 250         |
+| io.omam.halo.probing.number        | number of probing messages before announcing a registered service     | 3           |
+| io.omam.halo.querying.first        | delay before transmitting the first browsing query in milliseconds    | 50          |
+| io.omam.halo.querying.delay        | interval between consecutive browsing queries in milliseconds         | 1000        |
+| io.omam.halo.querying.increase     | increase factor between consecutive browsing queries                  | 2           |
+| io.omam.halo.querying.max          | maximum interval between consecutive browsing queries in milliseconds | 1200000     |
+| io.omam.halo.cancellation.interval | interval between goodbye messages in milliseconds                     | 250         |
+| io.omam.halo.cancellation.number   | number of goodbye messages sent when de-registering a service         | 3           |
+| io.omam.halo.reaper.interval       | cache record reaper interval in milliseconds                          | 10000       |
+| io.omam.halo.ttl.default           | DNS record default time to live in milliseconds                       | 3600000     |
+| io.omam.halo.ttl.expiry            | DNS record time to live after expiry in milliseconds                  | 1000        |

@@ -52,17 +52,17 @@ import java.util.Optional;
  * <code>
  * try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
  *     // allowing service instance name to be changed and with a default TTL of 1 hour.
- *     Service service = halo.register(Service.create("Foo Bar", "_http._udp.", (short) 8009).get());
+ *     RegisteredService service = halo.register(RegisterableService.create("Foo Bar", "_http._udp.", (short) 8009).get());
  *     // registered service is returned.
  *     System.err.println(service);
  *
  *     // registering again the service instance and registration type will return a service
  *     // with an instance name of "Foo Bar (2)".
- *     service = halo.register(Service.create("Foo Bar", "_http._udp.", (short) 8010).get());
+ *     service = halo.register(RegisterableService.create("Foo Bar", "_http._udp.", (short) 8010).get());
  *     System.err.println(service);
  *
  *     // not allowing service instance name to be changed will throw an IOException at this point.
- *     halo.register(Service.create("Foo Bar", "_http._udp.", (short) 8011).get(), false);
+ *     halo.register(RegisterableService.create("Foo Bar", "_http._udp.", (short) 8011).get(), false);
  * }
  * </code>
  * </pre>
@@ -74,7 +74,7 @@ import java.util.Optional;
  * <code>
  * try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
  *     // default timeout of 6 seconds.
- *     Optional&lt;Service&gt; service = halo.resolve("Foo Bar", "_http._udp.");
+ *     Optional&lt;ResolvedService&gt; service = halo.resolve("Foo Bar", "_http._udp.");
  *     // Optional contains the service if it could be resolved, empty otherwise.
  *     System.err.println(service);
  *
@@ -105,12 +105,12 @@ import java.util.Optional;
  *     final ServiceBrowserListener l = new ServiceBrowserListener() {
  *
  *         &#64;Override
- *         public final void serviceDown(final Service service) {
+ *         public final void serviceDown(final ResolvedService service) {
  *             System.err.println(service + " is down!!!!!");
  *         }
  *
  *         &#64;Override
- *         public final void serviceUp(final Service service) {
+ *         public final void serviceUp(final ResolvedService service) {
  *             System.err.println(service + " is up!!!!!");
  *         }
  *     };
@@ -174,9 +174,10 @@ public interface Halo extends AutoCloseable {
      * <p>
      * This method relies on the following <a href="#configuration">properties</a>:
      * <ul>
+     * <li>{@code io.omam.halo.querying.first}
      * <li>{@code io.omam.halo.querying.delay}
-     * <li>{@code io.omam.halo.querying.interval}
-     * <li>{@code io.omam.halo.querying.number}
+     * <li>{@code io.omam.halo.querying.increase}
+     * <li>{@code io.omam.halo.querying.max}
      * </ul>
      *
      * @param listener the listener
@@ -194,9 +195,10 @@ public interface Halo extends AutoCloseable {
      * <ul>
      * <li>{@code io.omam.halo.resolution.timeout}
      * <li>{@code io.omam.halo.resolution.interval}
+     * <li>{@code io.omam.halo.querying.first}
      * <li>{@code io.omam.halo.querying.delay}
-     * <li>{@code io.omam.halo.querying.interval}
-     * <li>{@code io.omam.halo.querying.number}
+     * <li>{@code io.omam.halo.querying.increase}
+     * <li>{@code io.omam.halo.querying.max}
      * </ul>
      *
      * @param registrationType service type (IANA) and transport protocol (udp or tcp), e.g. {@code _ftp._tcp.} or
@@ -246,7 +248,9 @@ public interface Halo extends AutoCloseable {
     void deregisterAll() throws IOException;
 
     /**
-     * Registers the given service on the <strong>local</strong> domain with the default TTL.
+     * Registers the given service on the <strong>local</strong> domain with the default TTL. This methods blocks
+     * until the service has been registered (i.e. after configured number of probes and announcement) or an error
+     * occurs.
      * <p>
      * The {@link RegisterableService#instanceName() instance name} of the service will be changed to be unique if
      * possible.
@@ -269,7 +273,9 @@ public interface Halo extends AutoCloseable {
     }
 
     /**
-     * Registers the given service on the <strong>local</strong> domain with the default TTL.
+     * Registers the given service on the <strong>local</strong> domain with the default TTL. This methods blocks
+     * until the service has been registered (i.e. after configured number of probes and announcement) or an error
+     * occurs.
      * <p>
      * If {@code allowNameChange} is {@code true} the {@link RegisterableService#instanceName() instance name} of
      * the service will be changed to be unique if possible.
@@ -295,7 +301,9 @@ public interface Halo extends AutoCloseable {
     }
 
     /**
-     * Registers the given service on the <strong>local</strong> domain with the given TTL.
+     * Registers the given service on the <strong>local</strong> domain with the given TTL. This methods blocks
+     * until the service has been registered (i.e. after configured number of probes and announcement) or an error
+     * occurs.
      * <p>
      * If {@code allowNameChange} is {@code true} the {@link RegisterableService#instanceName() instance name} of
      * the service will be changed to be unique if possible.
@@ -318,8 +326,20 @@ public interface Halo extends AutoCloseable {
             final boolean allowNameChange) throws IOException;
 
     /**
+     * Resets the browsing interval for both registration types and services to the default base delay
+     * {@code io.omam.halo.querying.delay}.
+     * <p>
+     * This method relies on the following <a href="#configuration">properties</a>:
+     * <ul>
+     * <li>{@code io.omam.halo.querying.delay}
+     * </ul>
+     */
+    void resetBrowsingInterval();
+
+    /**
      * Resolves a service of the <strong>local</strong> domain by its instance name and registration type to a
-     * target host, port and text record if it exits.
+     * target host, port and text record if it exits. This methods blocks until the service has been resolved or an
+     * error occurs.
      * <p>
      * This method relies on the following <a href="#configuration">properties</a>:
      * <ul>
@@ -339,7 +359,8 @@ public interface Halo extends AutoCloseable {
 
     /**
      * Resolves a service of the <strong>local</strong> domain by its instance name and registration type to a
-     * target host, port and text record if it exits.
+     * target host, port and text record if it exits. This methods blocks until the service has been resolved or an
+     * error occurs.
      * <p>
      * This method relies on the following <a href="#configuration">properties</a>:
      * <ul>

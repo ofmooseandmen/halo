@@ -277,6 +277,12 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     }
 
     @Override
+    public final void resetBrowsingInterval() {
+        rBrowser.resetQueryInterval();
+        sBrowser.resetQueryInterval();
+    }
+
+    @Override
     public final Optional<ResolvedService> resolve(final String instanceName, final String registrationType,
             final Duration timeout) {
         cache.clean(now());
@@ -429,6 +435,9 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     }
 
     /**
+     * Returns the announcing or registered service for the given name.
+     * 
+     * @param name name of the sevice
      * @return announcing or registered service or null if not found.
      */
     private Service announcingOrRegistered(final String name) {
