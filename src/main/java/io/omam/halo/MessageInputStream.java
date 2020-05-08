@@ -109,26 +109,26 @@ final class MessageInputStream extends ByteArrayInputStream {
      */
     final String readName() {
         final Map<Integer, StringBuilder> names = new HashMap<>();
-        final StringBuilder sb = new StringBuilder();
+        final StringBuilder name = new StringBuilder();
         boolean finished = false;
         while (!finished) {
-            final int b = readByte();
-            if (b == 0) {
+            final int read = readByte();
+            if (read == 0) {
                 break;
             }
-            if ((b & 0xC0) == 0x00) {
+            if ((read & 0xC0) == 0x00) {
                 final int offset = pos - 1;
-                final String label = readString(b) + ".";
-                sb.append(label);
+                final String label = readString(read) + ".";
+                name.append(label);
                 for (final StringBuilder previousLabel : names.values()) {
                     previousLabel.append(label);
                 }
                 names.put(offset, new StringBuilder(label));
 
             } else {
-                final int index = (b & 0x3F) << 8 | readByte();
+                final int index = (read & 0x3F) << 8 | readByte();
                 final String compressedLabel = pointers.get(Integer.valueOf(index));
-                sb.append(compressedLabel);
+                name.append(compressedLabel);
                 for (final StringBuilder previousLabel : names.values()) {
                     previousLabel.append(compressedLabel);
                 }
@@ -140,7 +140,7 @@ final class MessageInputStream extends ByteArrayInputStream {
             final Integer index = entry.getKey();
             pointers.put(index, entry.getValue().toString());
         }
-        return sb.toString();
+        return name.toString();
     }
 
     /**

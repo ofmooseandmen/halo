@@ -11,7 +11,7 @@ Feature: Services browsing by registration type
     When the following registration types are browsed with "Halo":
       | registrationType | listenerName |
       | _music._tcp.     | music        |
-    Then the listener "music" shall be notified of the following "up" services:
+    Then the listener "music" shall be notified of the following "added" services:
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
 
@@ -24,7 +24,7 @@ Feature: Services browsing by registration type
     When the following services are registered with "JmDNS":
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
-    Then the listener "music" shall be notified of the following "up" services:
+    Then the listener "music" shall be notified of the following "added" services:
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
 
@@ -38,7 +38,7 @@ Feature: Services browsing by registration type
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
       | Living Room Stuff   | _stuff._tcp.     | 9010 | Some Text |
-    Then the listener "music" shall be notified of the following "up" services:
+    Then the listener "music" shall be notified of the following "added" services:
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
 
@@ -55,11 +55,11 @@ Feature: Services browsing by registration type
       | Bedroom Speaker     | _music._tcp.     | 9010 | Some Text |
       | Living Room Thing   | _thingy._udp.    | 9011 | Some Text |
       | Bedroom Thing       | _thingy._udp.    | 9012 | Some Text |
-    Then the listener "music" shall be notified of the following "up" services:
+    Then the listener "music" shall be notified of the following "added" services:
       | instanceName        | registrationType | port | text      |
       | Living Room Speaker | _music._tcp.     | 9009 | Some Text |
       | Bedroom Speaker     | _music._tcp.     | 9010 | Some Text |
-    And the listener "thingy" shall be notified of the following "up" services:
+    And the listener "thingy" shall be notified of the following "added" services:
       | instanceName      | registrationType | port | text      |
       | Living Room Thing | _thingy._udp.    | 9011 | Some Text |
       | Bedroom Thing     | _thingy._udp.    | 9012 | Some Text |
@@ -74,10 +74,10 @@ Feature: Services browsing by registration type
       | instanceName  | registrationType | port | text      |
       | Bedroom Thing | _thingy._udp.    | 9012 | Some Text |
     When the service "Bedroom Thing._thingy._udp." is de-registered
-    Then the listener "thingy" shall be notified of the following "up" services:
+    Then the listener "thingy" shall be notified of the following "added" services:
       | instanceName  | registrationType | port | text      |
       | Bedroom Thing | _thingy._udp.    | 9012 | Some Text |
-    And the listener "thingy" shall be notified of the following "down" services:
+    And the listener "thingy" shall be notified of the following "removed" services:
       | instanceName  | registrationType | port | text      |
       | Bedroom Thing | _thingy._udp.    | 9012 | Some Text |
 
@@ -94,7 +94,7 @@ Feature: Services browsing by registration type
     When the following services are registered with "JmDNS":
       | instanceName      | registrationType | port | text      |
       | Living Room Thing | _thingy._udp.    | 9011 | Some Text |
-    Then the listener "thingy" shall be notified of the following "up" services:
+    Then the listener "thingy" shall be notified of the following "added" services:
       | instanceName  | registrationType | port | text      |
       | Bedroom Thing | _thingy._udp.    | 9012 | Some Text |
 
@@ -108,7 +108,7 @@ Feature: Services browsing by registration type
     When the following registration types are browsed with "JmDNS":
       | registrationType | listenerName |
       | _music._tcp.     | music        |
-    Then the listener "music" shall be notified of the following "up" services:
+    Then the listener "music" shall be notified of the following "added" services:
       | instanceName        | registrationType | port | text                       |
       | Bedroom Speaker     | _music._tcp.     | 9010 | Hello from the bedroom     |
       | Living Room Speaker | _music._tcp.     | 9011 | Hello from the living room |

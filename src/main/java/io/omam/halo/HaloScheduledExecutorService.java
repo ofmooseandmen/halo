@@ -206,7 +206,7 @@ final class HaloScheduledExecutorService {
     /**
      * @see ScheduledExecutorService#shutdownNow()
      */
-    void shutdownNow() {
+    final void shutdownNow() {
         ses.shutdownNow();
     }
 

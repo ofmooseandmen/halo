@@ -31,8 +31,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package io.omam.halo;
 
 /**
- * A service that has been resolved on the <strong>local</strong> domain.
+ * A service that has been resolved on the <strong>local</strong> domain: the implementation is immutable, if the
+ * hostname, port, IP addresses or attributes of this service are updated, the service must be
+ * {@link Halo#resolve(String, String) resolved} again; if this is a common use case prefer
+ * {@link Halo#browse(String, ServiceBrowserListener) browsing} services.
  */
 public interface ResolvedService extends Service {
-    // TODO: addListener(AttributesChangeListener)
+    // empty.
 }

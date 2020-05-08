@@ -40,6 +40,6 @@ public interface RegistrationTypeBrowserListener {
      *
      * @param registrationType the registration type, e.g. '_music._udp.'
      */
-    void registrationTypeDiscovered(final String registrationType);
+    void registrationTypeAdded(final String registrationType);
 
 }

@@ -59,6 +59,23 @@ final class AttributesImpl implements Attributes {
     }
 
     @Override
+    public final boolean equals(final Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof AttributesImpl)) {
+            return false;
+        }
+        final AttributesImpl other = (AttributesImpl) obj;
+        return map.equals(other.map);
+    }
+
+    @Override
+    public final int hashCode() {
+        return Objects.hashCode(map);
+    }
+
+    @Override
     public final Set<String> keys() {
         return Collections.unmodifiableSet(map.keySet());
     }

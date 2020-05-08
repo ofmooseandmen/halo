@@ -63,7 +63,7 @@ public final class RegistrationBrowsingSteps {
         }
 
         @Override
-        public final void registrationTypeDiscovered(final String registrationType) {
+        public final void registrationTypeAdded(final String registrationType) {
             types.add(registrationType);
         }
 

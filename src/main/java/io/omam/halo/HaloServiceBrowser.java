@@ -49,7 +49,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -91,6 +90,7 @@ final class HaloServiceBrowser extends HaloBrowser {
     /**
      * Task to resolve services that have been discovered during query.
      */
+    @SuppressWarnings("synthetic-access")
     private final class ResolveTask implements Runnable {
 
         /** registration pointer name of the service being resolved. */
@@ -110,18 +110,26 @@ final class HaloServiceBrowser extends HaloBrowser {
             service = aService;
         }
 
-        @SuppressWarnings("synthetic-access")
         @Override
         public final void run() {
             try {
                 final boolean resolved = service.resolve(halo, RESOLUTION_TIMEOUT);
-                final String skey = toLowerCase(service.name());
-                rFutures.remove(skey);
                 if (resolved) {
-                    LOGGER.info(() -> "Resolved " + service);
-                    services.get(rpn).put(skey, service);
-                    final Collection<ServiceBrowserListener> rlisteners = listeners.get(rpn);
-                    rlisteners.forEach(l -> l.serviceUp(service));
+                    if (alreadyResolved()) {
+                        LOGGER.fine(() -> "Ignoring already resolved " + service);
+                    } else {
+                        final String skey = toLowerCase(service.name());
+                        final boolean added = services.get(rpn).get(skey) == null;
+                        services.get(rpn).put(skey, service);
+                        final Collection<ServiceBrowserListener> rlisteners = listeners.get(rpn);
+                        if (added) {
+                            LOGGER.info(() -> "Resolved (added) " + service);
+                            rlisteners.forEach(l -> l.serviceAdded(service));
+                        } else {
+                            LOGGER.info(() -> "Resolved (updated) " + service);
+                            rlisteners.forEach(l -> l.serviceUpdated(service));
+                        }
+                    }
                 } else {
                     LOGGER.warning(() -> "Could not resolve " + service);
                 }
@@ -129,6 +137,25 @@ final class HaloServiceBrowser extends HaloBrowser {
                 LOGGER.log(Level.WARNING, "Interrupted while waiting for response", e);
                 Thread.currentThread().interrupt();
             }
+        }
+
+        /**
+         * Determines whether this service has already been resolved - the attribute of service other than
+         * name/registration type can be updated.
+         *
+         * @return true if already resolved.
+         */
+        private boolean alreadyResolved() {
+            final String skey = toLowerCase(service.name());
+            final ResolvableService existing = services.get(rpn).get(skey);
+            if (existing == null) {
+                return false;
+            }
+            return service.hostname().equals(existing.hostname())
+                && service.ipv4Address().equals(existing.ipv4Address())
+                && service.ipv6Address().equals(existing.ipv6Address())
+                && service.port() == existing.port()
+                && service.attributes().equals(existing.attributes());
         }
 
     }
@@ -147,11 +174,8 @@ final class HaloServiceBrowser extends HaloBrowser {
      */
     private final Map<String, Map<String, ResolvableService>> services;
 
-    /** resolver executor service. */
-    private final ExecutorService res;
-
-    /** futures representing resolving task indexed by service name in lower case. */
-    private final Map<String, Future<?>> rFutures;
+    /** single thread executor in which all requests are executed. */
+    private final ExecutorService executor;
 
     /**
      * Constructor.
@@ -163,8 +187,7 @@ final class HaloServiceBrowser extends HaloBrowser {
         halo = haloHelper;
         listeners = new ConcurrentHashMap<>();
         services = new ConcurrentHashMap<>();
-        res = Executors.newCachedThreadPool(new HaloThreadFactory("service-resolver"));
-        rFutures = new ConcurrentHashMap<>();
+        executor = Executors.newSingleThreadExecutor(new HaloThreadFactory("service-resolver"));
     }
 
     /**
@@ -179,9 +202,7 @@ final class HaloServiceBrowser extends HaloBrowser {
 
     @Override
     public final void responseReceived(final DnsMessage response, final HaloHelper haloHelper) {
-        LOGGER.fine(() -> "Handling " + response);
-        final Instant now = haloHelper.now();
-        pointers(response).forEach((rpn, ptr) -> handleResponse(rpn, ptr, now));
+        pointers(response).forEach((rpn, ptr) -> executor.execute(() -> handleResponse(rpn, ptr)));
     }
 
     /**
@@ -200,7 +221,7 @@ final class HaloServiceBrowser extends HaloBrowser {
                 listeners.computeIfAbsent(rpn, k -> new ConcurrentLinkedQueue<>());
         final Map<String, ResolvableService> resolved =
                 services.computeIfAbsent(rpn, k -> new ConcurrentHashMap<>());
-        resolved.values().forEach(listener::serviceUp);
+        resolved.values().forEach(listener::serviceAdded);
         rls.add(listener);
     }
 
@@ -226,8 +247,7 @@ final class HaloServiceBrowser extends HaloBrowser {
 
     @Override
     protected final void doClose() {
-        rFutures.values().forEach(f -> f.cancel(true));
-        res.shutdownNow();
+        executor.shutdownNow();
     }
 
     @Override
@@ -244,15 +264,11 @@ final class HaloServiceBrowser extends HaloBrowser {
      */
     private void handlePtrExpiry(final Map<String, ResolvableService> rservices,
             final Collection<ServiceBrowserListener> rlisteners, final String serviceName) {
-        LOGGER.info(() -> "Service [" + serviceName + "] is down");
         final String skey = toLowerCase(serviceName);
-        final Future<?> future = rFutures.remove(skey);
-        if (future != null) {
-            future.cancel(true);
-        }
         final ResolvableService service = rservices.remove(skey);
         if (service != null) {
-            rlisteners.forEach(l -> l.serviceDown(service));
+            LOGGER.info(() -> "Service [" + serviceName + "] has been removed");
+            rlisteners.forEach(l -> l.serviceRemoved(service));
         }
     }
 
@@ -261,17 +277,16 @@ final class HaloServiceBrowser extends HaloBrowser {
      *
      * @param rpn registration pointer name
      * @param pointers PTR records
-     * @param now current instant
      */
-    private void handleResponse(final String rpn, final Collection<PtrRecord> pointers, final Instant now) {
+    private void handleResponse(final String rpn, final Collection<PtrRecord> pointers) {
         final Map<String, ResolvableService> rservices = services.get(rpn);
         final Collection<ServiceBrowserListener> rlisteners = listeners.get(rpn);
+        final Instant now = halo.now();
         for (final PtrRecord ptr : pointers) {
             final String serviceName = ptr.target();
-            final String skey = toLowerCase(serviceName);
             if (ptr.isExpired(now)) {
                 handlePtrExpiry(rservices, rlisteners, serviceName);
-            } else if (!rservices.containsKey(skey) && !rFutures.containsKey(skey)) {
+            } else {
                 submitResolution(rpn, serviceName);
             }
         }
@@ -300,14 +315,12 @@ final class HaloServiceBrowser extends HaloBrowser {
      * @param serviceName service name
      */
     private void submitResolution(final String rpn, final String serviceName) {
-        /* only resolve if service has not already been resolved and no running resolving tasks exits. */
         final Optional<String> instanceName = ResolvableService.instanceNameOf(serviceName);
         final Optional<String> registrationType = ResolvableService.registrationTypeOf(serviceName);
         if (instanceName.isPresent() && registrationType.isPresent()) {
             LOGGER.fine(() -> "Discovered [" + serviceName + "]");
             final ResolvableService service = new ResolvableService(instanceName.get(), registrationType.get());
-            final Future<?> future = res.submit(new ResolveTask(rpn, service));
-            rFutures.put(toLowerCase(serviceName), future);
+            executor.execute(new ResolveTask(rpn, service));
         } else {
             LOGGER.warning(() -> "Could not decode service name [" + serviceName + "]");
         }

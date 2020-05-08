@@ -138,7 +138,7 @@ final class Announcer implements AutoCloseable {
         private final RegisterableService service;
 
         /** predicate to determine if a conflict service was found. */
-        private Predicate<? super DnsRecord> conflicting;
+        private final Predicate<? super DnsRecord> conflicting;
 
         /**
          * Constructor.

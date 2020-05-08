@@ -134,8 +134,6 @@ final class ResolvableService extends BaseService implements ResolvedService, Re
         return begin == -1 || end == -1 ? Optional.empty() : Optional.of(serviceName.substring(begin + 1, end));
     }
 
-    // FIXME read/write lock.
-
     @Override
     public final Attributes attributes() {
         return attributes;
@@ -220,20 +218,20 @@ final class ResolvableService extends BaseService implements ResolvedService, Re
         try {
             while (!resolved() && !delays.isEmpty()) {
                 final Optional<Instant> now = Optional.of(halo.now());
-                final DnsMessage.Builder b = DnsMessage.query();
-                b.addQuestion(new DnsQuestion(serviceName, TYPE_SRV, CLASS_IN));
-                cachedSrv.ifPresent(r -> b.addAnswer(r, now));
+                final DnsMessage.Builder builder = DnsMessage.query();
+                builder.addQuestion(new DnsQuestion(serviceName, TYPE_SRV, CLASS_IN));
+                cachedSrv.ifPresent(r -> builder.addAnswer(r, now));
 
-                b.addQuestion(new DnsQuestion(serviceName, TYPE_TXT, CLASS_IN));
-                cachedTxt.ifPresent(r -> b.addAnswer(r, now));
+                builder.addQuestion(new DnsQuestion(serviceName, TYPE_TXT, CLASS_IN));
+                cachedTxt.ifPresent(r -> builder.addAnswer(r, now));
 
                 if (hostname != null) {
-                    b.addQuestion(new DnsQuestion(hostname, TYPE_A, CLASS_IN));
-                    cachedIpV4.ifPresent(r -> b.addAnswer(r, now));
-                    b.addQuestion(new DnsQuestion(hostname, TYPE_AAAA, CLASS_IN));
-                    cachedIpV6.ifPresent(r -> b.addAnswer(r, now));
+                    builder.addQuestion(new DnsQuestion(hostname, TYPE_A, CLASS_IN));
+                    cachedIpV4.ifPresent(r -> builder.addAnswer(r, now));
+                    builder.addQuestion(new DnsQuestion(hostname, TYPE_AAAA, CLASS_IN));
+                    cachedIpV6.ifPresent(r -> builder.addAnswer(r, now));
                 }
-                halo.sendMessage(b.get());
+                halo.sendMessage(builder.get());
                 awaitResolution(delays.poll());
             }
         } finally {

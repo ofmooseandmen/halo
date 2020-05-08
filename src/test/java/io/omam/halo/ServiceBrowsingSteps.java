@@ -62,41 +62,46 @@ public final class ServiceBrowsingSteps {
 
     private static final class CollectingBrowserListener implements ServiceBrowserListener {
 
-        private final Collection<ResolvedService> ups;
+        private final Collection<ResolvedService> added;
 
-        private final Collection<ResolvedService> downs;
+        private final Collection<ResolvedService> removed;
 
         CollectingBrowserListener() {
-            ups = new ConcurrentLinkedQueue<>();
-            downs = new ConcurrentLinkedQueue<>();
+            added = new ConcurrentLinkedQueue<>();
+            removed = new ConcurrentLinkedQueue<>();
         }
 
         @Override
-        public final void serviceDown(final ResolvedService service) {
-            downs.add(service);
+        public final void serviceAdded(final ResolvedService service) {
+            added.add(service);
         }
 
         @Override
-        public final void serviceUp(final ResolvedService service) {
-            ups.add(service);
+        public final void serviceRemoved(final ResolvedService service) {
+            removed.add(service);
         }
 
-        final Collection<ResolvedService> downs() {
-            return downs;
+        @Override
+        public final void serviceUpdated(final ResolvedService service) {
+            // TODO: add test.
         }
 
-        final Collection<ResolvedService> ups() {
-            return ups;
+        final Collection<ResolvedService> added() {
+            return added;
+        }
+
+        final Collection<ResolvedService> removed() {
+            return removed;
         }
 
     }
 
     private static final class CollectingServiceListener implements ServiceListener {
 
-        private final Collection<ServiceInfo> ups;
+        private final Collection<ServiceInfo> added;
 
         CollectingServiceListener() {
-            ups = new ConcurrentLinkedQueue<>();
+            added = new ConcurrentLinkedQueue<>();
         }
 
         @Override
@@ -111,15 +116,11 @@ public final class ServiceBrowsingSteps {
 
         @Override
         public final void serviceResolved(final ServiceEvent event) {
-            /*
-             * Note, for some reason JmDNS sometimes notified several times for the same service with updated
-             * information.
-             */
-            ups.add(event.getInfo());
+            added.add(event.getInfo());
         }
 
-        final Collection<ServiceInfo> ups() {
-            return ups;
+        final Collection<ServiceInfo> added() {
+            return added;
         }
 
     }
@@ -167,18 +168,18 @@ public final class ServiceBrowsingSteps {
         /* sort expecteds and actuals by instance name. */
         final List<ServiceDetails> expecteds = new ArrayList<>(services);
         Collections.sort(expecteds, (s1, s2) -> s1.instanceName().compareTo(s2.instanceName()));
-        final boolean up = eventType.equals("up");
+        final boolean added = eventType.equals("added");
         /* Halo and JmDNS service resolution timeout is 6 seconds. */
         final Duration timeout = Duration.ofSeconds(services.size() * 6);
         if (browsedBy.equals("Halo")) {
             final CollectingBrowserListener l = hls.get(listener);
             await()
                 .atMost(timeout)
-                .untilAsserted(() -> assertContainsAllServices(expecteds, up ? l.ups() : l.downs()));
+                .untilAsserted(() -> assertContainsAllServices(expecteds, added ? l.added() : l.removed()));
         } else {
-            assertTrue(up);
+            assertTrue(added);
             final CollectingServiceListener l = jls.get(listener);
-            await().atMost(timeout).untilAsserted(() -> assertContainsAllServiceInfos(expecteds, l.ups()));
+            await().atMost(timeout).untilAsserted(() -> assertContainsAllServiceInfos(expecteds, l.added()));
         }
     }
 

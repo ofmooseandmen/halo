@@ -117,7 +117,7 @@ final class HaloRegistrationTypeBrowser extends HaloBrowser {
      */
     final void addListener(final RegistrationTypeBrowserListener listener) {
         Objects.requireNonNull(listener);
-        rts.forEach(listener::registrationTypeDiscovered);
+        rts.forEach(listener::registrationTypeAdded);
         listeners.add(listener);
     }
 
@@ -155,7 +155,7 @@ final class HaloRegistrationTypeBrowser extends HaloBrowser {
             if (!rts.contains(regType)) {
                 LOGGER.info(() -> "Discovered new registration type [" + record.target() + "]");
                 rts.add(regType);
-                listeners.forEach(l -> l.registrationTypeDiscovered(regType));
+                listeners.forEach(l -> l.registrationTypeAdded(regType));
             }
         }
     }

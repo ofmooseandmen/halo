@@ -36,17 +36,24 @@ package io.omam.halo;
 public interface ServiceBrowserListener {
 
     /**
-     * Invoked when a previously discovered named service of the target registration type has become unavailable.
-     *
-     * @param service the service
-     */
-    void serviceDown(final ResolvedService service);
-
-    /**
      * Invoked when a new named service of the target registration type has been discovered.
      *
-     * @param service the service
+     * @param service the added service
      */
-    void serviceUp(final ResolvedService service);
+    void serviceAdded(final ResolvedService service);
+
+    /**
+     * Invoked when a previously resolved named service of the target registration type has become unavailable.
+     *
+     * @param service the removed service
+     */
+    void serviceRemoved(final ResolvedService service);
+
+    /**
+     * Invoked when a previously resolved named service of the target registration type has been updated.
+     *
+     * @param service the updated service
+     */
+    void serviceUpdated(final ResolvedService service);
 
 }
