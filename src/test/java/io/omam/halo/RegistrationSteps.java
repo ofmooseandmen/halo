@@ -30,10 +30,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import static io.omam.halo.Assert.assertServiceEquals;
+import static io.omam.halo.Assert.assertServiceInfosEquals;
+import static io.omam.halo.Assert.assertServicesEquals;
 import static io.omam.halo.Engines.toHalo;
 import static io.omam.halo.Engines.toJmdns;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.IOException;
@@ -113,15 +113,9 @@ public final class RegistrationSteps {
         final List<ServiceDetails> services = Parser.parse(data, ServiceDetails::new);
         assertNotNull(registeredBy);
         if (registeredBy.equals("Halo")) {
-            assertEquals(services.size(), hss.size());
-            for (int i = 0; i < hss.size(); i++) {
-                assertServiceEquals(services.get(i), hss.get(i));
-            }
+            assertServicesEquals(services, hss);
         } else {
-            assertEquals(services.size(), jss.size());
-            for (int i = 0; i < jss.size(); i++) {
-                assertServiceEquals(services.get(i), jss.get(i));
-            }
+            assertServiceInfosEquals(services, jss);
         }
     }
 

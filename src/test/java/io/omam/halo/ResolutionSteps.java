@@ -30,9 +30,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
-import static io.omam.halo.Assert.assertServiceEquals;
+import static io.omam.halo.Assert.assertServiceInfosEquals;
+import static io.omam.halo.Assert.assertServicesEquals;
 import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -120,15 +120,9 @@ public final class ResolutionSteps {
         final List<ServiceDetails> services = Parser.parse(data, ServiceDetails::new);
         assertNotNull(resolvedBy);
         if (resolvedBy.equals("Halo")) {
-            assertEquals(services.size(), hss.size());
-            for (int i = 0; i < hss.size(); i++) {
-                assertServiceEquals(services.get(i), hss.get(i));
-            }
+            assertServicesEquals(services, hss);
         } else {
-            assertEquals(services.size(), jss.size());
-            for (int i = 0; i < jss.size(); i++) {
-                assertServiceEquals(services.get(i), jss.get(i));
-            }
+            assertServiceInfosEquals(services, jss);
         }
     }
 

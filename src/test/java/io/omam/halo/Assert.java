@@ -38,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.BiPredicate;
 
@@ -72,7 +73,7 @@ final class Assert {
 
     /**
      * Asserts that all expected services are present in the actual services.
-     * 
+     *
      * @param <T> type of the service
      * @param expecteds expected services
      * @param actuals actual services
@@ -168,29 +169,35 @@ final class Assert {
     }
 
     /**
-     * Asserts that given {@link ServiceDetails} equals Halo {@link Service}.
+     * Asserts expecteds and actuals services are equal (regardless of orders).
      *
-     * @param expected expected service
-     * @param actual actual service
+     * @param expecteds expected services
+     * @param actuals actual services
      */
-    static void assertServiceEquals(final ServiceDetails expected, final Service actual) {
-        assertEquals(expected.instanceName(), actual.instanceName());
-        assertEquals(expected.registrationType(), actual.registrationType());
-        assertEquals(expected.port(), actual.port());
-        assertAttributesEquals(toHalo(expected.text()), actual.attributes());
+    static void assertServiceInfosEquals(final List<ServiceDetails> expecteds, final List<ServiceInfo> actuals) {
+        expecteds.sort(Comparator.comparing(ServiceDetails::instanceName));
+        actuals.sort(Comparator.comparing(ServiceInfo::getName));
+        assertEquals(expecteds.size(), actuals.size());
+        for (int i = 0; i < expecteds.size(); i++) {
+            assertServiceEquals(expecteds.get(i), actuals.get(i));
+        }
     }
 
     /**
-     * Asserts that given {@link ServiceDetails} equals JmDNS {@link ServiceInfo}.
+     * Asserts expecteds and actuals services are equal (regardless of orders).
      *
-     * @param expected expected service
-     * @param actual actual service
+     * @param <T> service type
+     * @param expecteds expected services
+     * @param actuals actual services
      */
-    static void assertServiceEquals(final ServiceDetails expected, final ServiceInfo actual) {
-        assertEquals(expected.instanceName(), actual.getName());
-        assertEquals(expected.registrationType() + "local.", actual.getType());
-        assertEquals(expected.port(), actual.getPort());
-        assertEquals(toJmdns(expected.text()), attributes(actual));
+    static <T extends Service> void assertServicesEquals(final List<ServiceDetails> expecteds,
+            final List<T> actuals) {
+        expecteds.sort(Comparator.comparing(ServiceDetails::instanceName));
+        actuals.sort(Comparator.comparing(Service::instanceName));
+        assertEquals(expecteds.size(), actuals.size());
+        for (int i = 0; i < expecteds.size(); i++) {
+            assertServiceEquals(expecteds.get(i), actuals.get(i));
+        }
     }
 
     /**
@@ -204,6 +211,32 @@ final class Assert {
         for (final String key : expected.keys()) {
             assertEquals(expected.value(key), actual.value(key));
         }
+    }
+
+    /**
+     * Asserts that given {@link ServiceDetails} equals Halo {@link Service}.
+     *
+     * @param expected expected service
+     * @param actual actual service
+     */
+    private static void assertServiceEquals(final ServiceDetails expected, final Service actual) {
+        assertEquals(expected.instanceName(), actual.instanceName());
+        assertEquals(expected.registrationType(), actual.registrationType());
+        assertEquals(expected.port(), actual.port());
+        assertAttributesEquals(toHalo(expected.text()), actual.attributes());
+    }
+
+    /**
+     * Asserts that given {@link ServiceDetails} equals JmDNS {@link ServiceInfo}.
+     *
+     * @param expected expected service
+     * @param actual actual service
+     */
+    private static void assertServiceEquals(final ServiceDetails expected, final ServiceInfo actual) {
+        assertEquals(expected.instanceName(), actual.getName());
+        assertEquals(expected.registrationType() + "local.", actual.getType());
+        assertEquals(expected.port(), actual.getPort());
+        assertEquals(toJmdns(expected.text()), attributes(actual));
     }
 
     /**
