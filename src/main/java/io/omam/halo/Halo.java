@@ -114,14 +114,20 @@ import java.util.Optional;
  *     final ServiceBrowserListener l = new ServiceBrowserListener() {
  *
  *         &#64;Override
- *         public final void serviceDown(final ResolvedService service) {
- *             System.err.println(service + " is down!!!!!");
+ *         public final void serviceAdded(final ResolvedService service) {
+ *             System.err.println(service + " has been added to the network!!!!!");
  *         }
  *
  *         &#64;Override
- *         public final void serviceUp(final ResolvedService service) {
- *             System.err.println(service + " is up!!!!!");
+ *         public final void serviceRemoved(final ResolvedService service) {
+ *             System.err.println(service + " has been removed from the network!!!!!");
  *         }
+ *
+ *         &#64;Override
+ *         public final void serviceUpdated(final ResolvedService service) {
+ *             System.err.println(service + " has been updated!!!!!");
+ *         }
+ *
  *     };
  *
  *     final Browser browser = halo.browse("_http._udp.", l);
