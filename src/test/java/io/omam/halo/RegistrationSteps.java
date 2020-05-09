@@ -81,6 +81,11 @@ public final class RegistrationSteps {
         registeredBy = null;
     }
 
+    @Given("the attributes of the service {string} have been updated to {string}")
+    public final void givenAttributesUpdated(final String service, final String attributeKey) throws IOException {
+        whenAttributesUpdate(service, attributeKey);
+    }
+
     @Given("the following services have been registered with {string}:")
     public final void givenServicesRegistered(final String engine, final DataTable data) throws IOException {
         whenServicesRegistered(engine, data);
@@ -90,19 +95,11 @@ public final class RegistrationSteps {
     public final void thenDeregisterService(final String service) throws IOException {
         assertNotNull(registeredBy);
         if (registeredBy.equals("Halo")) {
-            final RegisteredService s = hss
-                .stream()
-                .filter(hs -> hs.name().equals(service + "local."))
-                .findFirst()
-                .orElseThrow(AssertionError::new);
+            final RegisteredService s = haloService(service);
             engines.halo().deregister(s);
             hss.remove(s);
         } else {
-            final ServiceInfo s = jss
-                .stream()
-                .filter(js -> js.getQualifiedName().equals(service + "local."))
-                .findFirst()
-                .orElseThrow(AssertionError::new);
+            final ServiceInfo s = jmdnsService(service);
             engines.jmdns().unregisterService(s);
             jss.remove(s);
         }
@@ -116,6 +113,22 @@ public final class RegistrationSteps {
             assertServicesEquals(services, hss);
         } else {
             assertServiceInfosEquals(services, jss);
+        }
+    }
+
+    @When("the attributes of the service {string} are updated to {string}")
+    public final void whenAttributesUpdate(final String service, final String attributeKey) throws IOException {
+        assertNotNull(registeredBy);
+        if (registeredBy.equals("Halo")) {
+            final RegisteredService s = haloService(service);
+            s.changeAttributes(toHalo(attributeKey));
+        } else {
+            final ServiceInfo s = jmdnsService(service);
+            s.setText(toJmdns(attributeKey));
+            /*
+             * ServiceInfo#setText returns before the service has been re-announced.
+             */
+            ((ServiceInfoImpl) s).waitForAnnounced(DNSConstants.SERVICE_INFO_TIMEOUT);
         }
     }
 
@@ -155,9 +168,7 @@ public final class RegistrationSteps {
                 final ServiceInfo serviceInfo = toJmdns(service);
                 engines.jmdns().registerService(serviceInfo);
                 /*
-                 * As of 3.5.5, JmDNS#registerService returns before the service has been announced, so need to
-                 * wait first for the service to be actually registered and then only for the listener to be
-                 * notified.
+                 * As of 3.5.5, JmDNS#registerService returns before the service has been announced.
                  */
                 ((ServiceInfoImpl) serviceInfo).waitForAnnounced(DNSConstants.SERVICE_INFO_TIMEOUT);
                 jss.add(serviceInfo);
@@ -166,6 +177,22 @@ public final class RegistrationSteps {
             throw new AssertionError("Unsupported engine " + engine);
         }
         registeredBy = engine;
+    }
+
+    private RegisteredService haloService(final String service) {
+        return hss
+            .stream()
+            .filter(hs -> hs.name().equals(service + "local."))
+            .findFirst()
+            .orElseThrow(AssertionError::new);
+    }
+
+    private ServiceInfo jmdnsService(final String service) {
+        return jss
+            .stream()
+            .filter(js -> js.getQualifiedName().equals(service + "local."))
+            .findFirst()
+            .orElseThrow(AssertionError::new);
     }
 
 }

@@ -78,10 +78,14 @@ public final class ResolutionSteps {
         resolvedBy = null;
     }
 
-    @Given("the service {string} has been resolved by \"Halo\"")
-    public final void givenServiceResolved(final String service) {
+    @Given("the service {string} has been resolved by {string}")
+    public final void givenServiceResolved(final String service, final String engine) {
         final String[] split = split(service);
-        assertNotNull(engines.halo().resolve(split[0], split[1]));
+        if (engine.equals("Halo")) {
+            assertNotNull(engines.halo().resolve(split[0], split[1]));
+        } else {
+            assertNotNull(engines.jmdns().getServiceInfo(split[1] + "local.", split[0]));
+        }
     }
 
     @Then("after at least {string}, the service {string} cannot resolved by {string}")

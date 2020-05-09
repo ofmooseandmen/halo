@@ -116,7 +116,11 @@ final class HaloServiceBrowser extends HaloBrowser {
                 final boolean resolved = service.resolve(halo, RESOLUTION_TIMEOUT);
                 if (resolved) {
                     if (alreadyResolved()) {
-                        LOGGER.fine(() -> "Ignoring already resolved " + service);
+                        LOGGER
+                            .fine(() -> "Ignoring already resolved "
+                                + service
+                                + " attributes: "
+                                + service.attributes());
                     } else {
                         final String skey = toLowerCase(service.name());
                         final boolean added = services.get(rpn).get(skey) == null;

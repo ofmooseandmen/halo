@@ -33,12 +33,12 @@ package io.omam.halo;
 import static io.omam.halo.Assert.assertContainsAllServiceInfos;
 import static io.omam.halo.Assert.assertContainsAllServices;
 import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,9 +66,12 @@ public final class ServiceBrowsingSteps {
 
         private final Collection<ResolvedService> removed;
 
+        private final Collection<ResolvedService> updated;
+
         CollectingBrowserListener() {
             added = new ConcurrentLinkedQueue<>();
             removed = new ConcurrentLinkedQueue<>();
+            updated = new ConcurrentLinkedQueue<>();
         }
 
         @Override
@@ -83,7 +86,7 @@ public final class ServiceBrowsingSteps {
 
         @Override
         public final void serviceUpdated(final ResolvedService service) {
-            // TODO: add test.
+            updated.add(service);
         }
 
         final Collection<ResolvedService> added() {
@@ -92,6 +95,10 @@ public final class ServiceBrowsingSteps {
 
         final Collection<ResolvedService> removed() {
             return removed;
+        }
+
+        final Collection<ResolvedService> updated() {
+            return updated;
         }
 
     }
@@ -157,6 +164,11 @@ public final class ServiceBrowsingSteps {
         hbs.remove(listener).close();
     }
 
+    @Given("the listener {string} has been notified of the following {string} services:")
+    public final void givenListenerNotified(final String listener, final String eventType, final DataTable data) {
+        thenListenerNotified(listener, eventType, data);
+    }
+
     @Given("the following registration types are being browsed with {string}:")
     public final void givenRegistrationTypesBrowsed(final String engine, final DataTable data) {
         whenRegistrationTypesBrowsed(engine, data);
@@ -167,17 +179,22 @@ public final class ServiceBrowsingSteps {
         final List<ServiceDetails> services = Parser.parse(data, ServiceDetails::new);
         /* sort expecteds and actuals by instance name. */
         final List<ServiceDetails> expecteds = new ArrayList<>(services);
-        Collections.sort(expecteds, (s1, s2) -> s1.instanceName().compareTo(s2.instanceName()));
-        final boolean added = eventType.equals("added");
+        expecteds.sort(Comparator.comparing(ServiceDetails::instanceName));
         /* Halo and JmDNS service resolution timeout is 6 seconds. */
         final Duration timeout = Duration.ofSeconds(services.size() * 6);
         if (browsedBy.equals("Halo")) {
             final CollectingBrowserListener l = hls.get(listener);
-            await()
-                .atMost(timeout)
-                .untilAsserted(() -> assertContainsAllServices(expecteds, added ? l.added() : l.removed()));
+            final Collection<ResolvedService> rservices;
+            if (eventType.equals("added")) {
+                rservices = l.added();
+            } else if (eventType.equals("removed")) {
+                rservices = l.removed();
+            } else {
+                rservices = l.updated();
+            }
+            await().atMost(timeout).untilAsserted(() -> assertContainsAllServices(expecteds, rservices));
         } else {
-            assertTrue(added);
+            assertEquals("added", eventType);
             final CollectingServiceListener l = jls.get(listener);
             await().atMost(timeout).untilAsserted(() -> assertContainsAllServiceInfos(expecteds, l.added()));
         }
