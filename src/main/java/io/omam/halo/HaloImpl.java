@@ -254,25 +254,27 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     }
 
     @Override
-    public final RegisteredService register(final RegisterableService service, final Duration ttl,
+    public final RegisteredService register(final RegisterableService registerable, final Duration ttl,
             final boolean allowNameChange) throws IOException {
-        LOGGER.fine(() -> "Registering " + service + ON_DOMAIN);
-        final RegisterableService toRegister = checkInstanceName(service, allowNameChange);
+
+        LOGGER.fine(() -> "Registering " + registerable + ON_DOMAIN);
+        final RegisterableService service = makeUnique(registerable, allowNameChange);
+
         final String serviceKey = toLowerCase(service.name());
         announcing.put(serviceKey, service);
         final String rpn = service.registrationPointerName();
         registrationPointerNames.add(rpn);
 
-        final boolean announced = announcer.announce(toRegister, ttl);
+        final boolean announced = announcer.announce(service, ttl);
         announcing.remove(serviceKey);
         if (!announced) {
             registrationPointerNames.remove(service.registrationPointerName());
-            final String msg = "Found conflicts while announcing " + toRegister + " on network";
+            final String msg = "Found conflicts while announcing " + service + " on network";
             LOGGER.warning(msg);
             throw new IOException(msg);
         }
-        LOGGER.info(() -> "Registered " + toRegister + ON_DOMAIN);
-        final RegisteredService rservice = new RegisteredServiceImpl(toRegister, this);
+        LOGGER.info(() -> "Registered " + service + ON_DOMAIN);
+        final RegisteredService rservice = new RegisteredServiceImpl(service, this);
         registered.put(serviceKey, rservice);
         return rservice;
     }
@@ -491,54 +493,6 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
     }
 
     /**
-     * Checks the network for a unique instance name, returning a new {@link Service} if it is not unique.
-     *
-     * @param service service to check
-     * @param allowNameChange whether the instance name can be changed if not unique
-     * @return the service with a unique instance name
-     * @throws IOException if service instance name cannot be made unique
-     */
-    private RegisterableService checkInstanceName(final RegisterableService service, final boolean allowNameChange)
-            throws IOException {
-        final String hostname = service.hostname();
-        final int port = service.port();
-        boolean collision = false;
-        RegisterableService result = service;
-        do {
-            collision = false;
-            final Instant now = now();
-
-            /* check own services. */
-            final Service own = announcingOrRegistered(result.name());
-            if (own != null) {
-                final String otherHostname = own.hostname();
-                collision = own.port() != port || !otherHostname.equals(hostname);
-                if (collision) {
-                    final String msg = "Own registered service collision: " + own;
-                    result = tryResolveCollision(result, allowNameChange, msg);
-                }
-            }
-
-            /* check cache. */
-            final Optional<SrvRecord> rec = cache
-                .entries(result.name())
-                .stream()
-                .filter(e -> e instanceof SrvRecord)
-                .filter(e -> !e.isExpired(now))
-                .map(e -> (SrvRecord) e)
-                .filter(e -> e.port() != port || !e.server().equals(hostname))
-                .findFirst();
-            if (rec.isPresent()) {
-                collision = true;
-                final String msg = "Cache collision: " + rec.get();
-                result = tryResolveCollision(result, allowNameChange, msg);
-            }
-
-        } while (collision);
-        return result;
-    }
-
-    /**
      * Handles the given query.
      *
      * @param query query
@@ -573,6 +527,53 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
         } else {
             rls.forEach(l -> l.responseReceived(response, this));
         }
+    }
+
+    /**
+     * Checks the network for a unique instance name, returning a possibly new {@link Service}.
+     *
+     * @param service service to check
+     * @param allowNameChange whether the instance name can be changed if not unique
+     * @return the service with a unique instance name
+     * @throws IOException if service instance name cannot be made unique
+     */
+    private RegisterableService makeUnique(final RegisterableService service, final boolean allowNameChange)
+            throws IOException {
+        final String hostname = service.hostname();
+        final int port = service.port();
+        boolean collision = false;
+        RegisterableService result = service;
+        do {
+            collision = false;
+            final Instant now = now();
+            /* check cache. */
+            final Optional<SrvRecord> record = cache
+                .entries(result.name())
+                .stream()
+                .filter(e -> e instanceof SrvRecord)
+                .filter(e -> !e.isExpired(now))
+                .map(e -> (SrvRecord) e)
+                .filter(e -> e.port() != port || !e.server().equals(hostname))
+                .findFirst();
+            if (record.isPresent()) {
+                collision = true;
+                final String msg = "Cache collision: " + record.get();
+                result = tryResolveCollision(result, allowNameChange, msg);
+            } else {
+                /* check own services. */
+                final Service own = announcingOrRegistered(result.name());
+                if (own != null) {
+                    final String otherHostname = own.hostname();
+                    collision = own.port() != port || !otherHostname.equals(hostname);
+                    if (collision) {
+                        final String msg = "Own registered service collision: " + own;
+                        result = tryResolveCollision(result, allowNameChange, msg);
+                    }
+                }
+            }
+
+        } while (collision);
+        return result;
     }
 
     /**
