@@ -546,32 +546,32 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
         do {
             collision = false;
             final Instant now = now();
-            /* check cache. */
-            final Optional<SrvRecord> record = cache
-                .entries(result.name())
-                .stream()
-                .filter(e -> e instanceof SrvRecord)
-                .filter(e -> !e.isExpired(now))
-                .map(e -> (SrvRecord) e)
-                .filter(e -> e.port() != port || !e.server().equals(hostname))
-                .findFirst();
-            if (record.isPresent()) {
-                collision = true;
-                final String msg = "Cache collision: " + record.get();
-                result = tryResolveCollision(result, allowNameChange, msg);
-            } else {
-                /* check own services. */
-                final Service own = announcingOrRegistered(result.name());
-                if (own != null) {
-                    final String otherHostname = own.hostname();
-                    collision = own.port() != port || !otherHostname.equals(hostname);
-                    if (collision) {
-                        final String msg = "Own registered service collision: " + own;
-                        result = tryResolveCollision(result, allowNameChange, msg);
-                    }
+            /* check own services. */
+            final Service own = announcingOrRegistered(result.name());
+            if (own != null) {
+                final String otherHostname = own.hostname();
+                collision = own.port() != port || !otherHostname.equals(hostname);
+                if (collision) {
+                    final String msg = "Own registered service collision: " + own;
+                    result = tryResolveCollision(result, allowNameChange, msg);
                 }
             }
-
+            if (!collision) {
+                /* check cache. */
+                final Optional<SrvRecord> record = cache
+                    .entries(result.name())
+                    .stream()
+                    .filter(e -> e instanceof SrvRecord)
+                    .filter(e -> !e.isExpired(now))
+                    .map(e -> (SrvRecord) e)
+                    .filter(e -> e.port() != port || !e.server().equals(hostname))
+                    .findFirst();
+                if (record.isPresent()) {
+                    collision = true;
+                    final String msg = "Cache collision: " + record.get();
+                    result = tryResolveCollision(result, allowNameChange, msg);
+                }
+            }
         } while (collision);
         return result;
     }
