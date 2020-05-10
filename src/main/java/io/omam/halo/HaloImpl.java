@@ -126,9 +126,10 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
      * @throws IOException in case of I/O error
      */
     HaloImpl(final Clock aClock, final Collection<NetworkInterface> nics) throws IOException {
-        announcer = new Announcer(this);
+        final SequentialBatchExecutor executor = new SequentialBatchExecutor("registration");
+        announcer = new Announcer(this, executor);
         cache = new Cache();
-        canceller = new Canceller(this);
+        canceller = new Canceller(this, executor);
         if (nics.isEmpty()) {
             channel = HaloChannel.allNetworkInterfaces(this, aClock);
         } else {

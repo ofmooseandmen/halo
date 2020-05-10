@@ -46,6 +46,13 @@ try (final Halo halo = Halo.allNetworkInterfaces(Clock.systemDefaultZone())) {
     ExecutorService es = Executors.newSingleThreadExecutor();
     Future<Registered> future =
             es.submit(() -> halo.register(RegisterableService.create("Future", "_http._udp.", 8009).get()));
+
+    // changing the attributes of a registered service.
+    Attributes newAttributes = Attributes.create().with("Changed").get();
+    service.changeAttributes(newAttributes);
+    // or
+    Future<Void> future = es.submit(() -> service.changeAttributes(newAttributes));
+
 }
 ```
 
@@ -126,6 +133,8 @@ The following parameters can be configured by system properties:
 | io.omam.halo.probing.timeout       | probing timeout in milliseconds                                       | 6000        |
 | io.omam.halo.probing.interval      | interval between probe messages in milliseconds                       | 250         |
 | io.omam.halo.probing.number        | number of probing messages before announcing a registered service     | 3           |
+| io.omam.halo.announcement.interval | interval between announcement messages in milliseconds                | 1000        |
+| io.omam.halo.announcement.number   | number of announcement messages to registered service                 | 2           |
 | io.omam.halo.querying.first        | delay before transmitting the first browsing query in milliseconds    | 50          |
 | io.omam.halo.querying.delay        | interval between consecutive browsing queries in milliseconds         | 1000        |
 | io.omam.halo.querying.increase     | increase factor between consecutive browsing queries                  | 2           |

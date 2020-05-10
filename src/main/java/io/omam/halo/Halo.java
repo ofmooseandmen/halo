@@ -46,6 +46,9 @@ import java.util.Optional;
  * A multicast DNS Service Discovery, supporting {@link Service named service} registration, resolution and
  * browsing.
  * <p>
+ * The following operations are blocking: registration, change of service attributes, de-registration, resolution.
+ * If this is not acceptable consider submitting a task to an executor as per the below examples.
+ * <p>
  * <strong>Registration</strong>
  *
  * <pre>
@@ -68,6 +71,13 @@ import java.util.Optional;
  *     ExecutorService es = Executors.newSingleThreadExecutor();
  *     Future&lt;Registered&gt; future =
  *             es.submit(() -&gt; halo.register(RegisterableService.create("Future", "_http._udp.", 8009).get()));
+ *
+ *     // changing the attributes of a registered service.
+ *     Attributes newAttributes = Attributes.create().with("Changed").get();
+ *     service.changeAttributes(newAttributes);
+ *     // or
+ *     Future&lt;Void&gt; future = es.submit(() -&gt; service.changeAttributes(newAttributes));
+ *
  * }
  * </code>
  * </pre>
@@ -233,8 +243,9 @@ public interface Halo extends AutoCloseable {
     /**
      * De-registers the given service.
      * <p>
-     * This method performs no function, nor does it throw an exception, if the given service was not previously
-     * registered or has already been de-registered.
+     * This methods blocks until the service has been de-registered - i.e. after the <strong>first</strong>
+     * cancellation has been sent, or an error occurs. This method performs no function, nor does it throw an
+     * exception, if the given service was not previously registered or has already been de-registered.
      * <p>
      * This method relies on the following <a href="#configuration">properties</a>:
      * <ul>
@@ -251,6 +262,8 @@ public interface Halo extends AutoCloseable {
     /**
      * De-registers all services.
      * <p>
+     * This methods blocks until all services has been {@link #deregister(RegisteredService) de-registered}.
+     * <p>
      * This method relies on the following <a href="#configuration">properties</a>:
      * <ul>
      * <li>{@code io.omam.halo.cancellation.interval}
@@ -265,15 +278,8 @@ public interface Halo extends AutoCloseable {
     /**
      * Registers the given service on the <strong>local</strong> domain with the default TTL.
      * <p>
-     * This methods blocks until the service has been registered (i.e. after configured number of probes and
-     * announcement) or an error occurs. if this is not acceptable, submit this method as a task to an executor:
-     *
-     * <pre>
-     * <code>
-     * ExecutorService es = Executors.newSingleThreadExecutor();
-     * Future&lt;RegisteredService&gt; future = es.submit(() -&gt; halo.register(service));
-     * </code>
-     * </pre>
+     * This methods blocks until the service has been registered - i.e. after configured number of probes and first
+     * announcement has been sent, or an error occurs.
      * <p>
      * The {@link RegisterableService#instanceName() instance name} of the service will be changed to be unique if
      * possible.
@@ -298,15 +304,8 @@ public interface Halo extends AutoCloseable {
     /**
      * Registers the given service on the <strong>local</strong> domain with the default TTL.
      * <p>
-     * This methods blocks until the service has been registered (i.e. after configured number of probes and
-     * announcement) or an error occurs. if this is not acceptable, submit this method as a task to an executor:
-     *
-     * <pre>
-     * <code>
-     * ExecutorService es = Executors.newSingleThreadExecutor();
-     * Future&lt;RegisteredService&gt; future = es.submit(() -&gt; halo.register(service, allowNameChange));
-     * </code>
-     * </pre>
+     * This methods blocks until the service has been registered - i.e. after configured number of probes and first
+     * announcement has been sent, or an error occurs.
      * <p>
      * If {@code allowNameChange} is {@code true} the {@link RegisterableService#instanceName() instance name} of
      * the service will be changed to be unique if possible.
@@ -334,15 +333,8 @@ public interface Halo extends AutoCloseable {
     /**
      * Registers the given service on the <strong>local</strong> domain with the given TTL.
      * <p>
-     * This methods blocks until the service has been registered (i.e. after configured number of probes and
-     * announcement) or an error occurs. if this is not acceptable, submit this method as a task to an executor:
-     *
-     * <pre>
-     * <code>
-     * ExecutorService es = Executors.newSingleThreadExecutor();
-     * Future&lt;RegisteredService&gt; future = es.submit(() -&gt; halo.register(service, ttl, allowNameChange));
-     * </code>
-     * </pre>
+     * This methods blocks until the service has been registered - i.e. after configured number of probes and first
+     * announcement has been sent, or an error occurs.
      * <p>
      * If {@code allowNameChange} is {@code true} the {@link RegisterableService#instanceName() instance name} of
      * the service will be changed to be unique if possible.
@@ -379,15 +371,7 @@ public interface Halo extends AutoCloseable {
      * Resolves a service of the <strong>local</strong> domain by its instance name and registration type to a
      * target host, port and text record if it exits.
      * <p>
-     * This methods blocks until the service has been resolved or an error occurs.if this is not acceptable, submit
-     * this method as a task to an executor:
-     *
-     * <pre>
-     * <code>
-     * ExecutorService es = Executors.newSingleThreadExecutor();
-     * Future&lt;Optional&lt;ResolvedService&gt;&gt; future = es.submit(() -&gt; halo.resolve(instanceName, registrationType));
-     * </code>
-     * </pre>
+     * This methods blocks until the service has been resolved or an error occurs.
      * <p>
      * This method relies on the following <a href="#configuration">properties</a>:
      * <ul>
@@ -407,15 +391,9 @@ public interface Halo extends AutoCloseable {
 
     /**
      * Resolves a service of the <strong>local</strong> domain by its instance name and registration type to a
-     * target host, port and text record if it exits. This methods blocks until the service has been resolved or an
-     * error occurs.if this is not acceptable, submit this method as a task to an executor:
-     *
-     * <pre>
-     * <code>
-     * ExecutorService es = Executors.newSingleThreadExecutor();
-     * Future&lt;Optional&lt;ResolvedService&gt;&gt; future = es.submit(() -&gt; halo.resolve(instanceName, registrationType, timeout));
-     * </code>
-     * </pre>
+     * target host, port and text record if it exits.
+     * <p>
+     * This methods blocks until the service has been resolved or an error occurs.
      * <p>
      * This method relies on the following <a href="#configuration">properties</a>:
      * <ul>

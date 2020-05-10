@@ -32,6 +32,7 @@ Feature: Service attributes update
       | instanceName        | registrationType | port | text         |
       | Living Room Speaker | _music._tcp.     | 9009 | Another Text |
 
+@wip
   Scenario: A service is re-announced when its attributes are updated
     Given a "Halo" instance has been created
     And a "JmDNS" instance has been created

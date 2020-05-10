@@ -31,8 +31,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package io.omam.halo;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -42,10 +40,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
- * A {@link Executors#newSingleThreadScheduledExecutor(java.util.concurrent.ThreadFactory) Single threqd scheduled
- * executor} for querying/probing the network by batches.
+ * A {@link Executors#newSingleThreadScheduledExecutor(java.util.concurrent.ThreadFactory) Single thread scheduled
+ * executor} for sending batches of messages on the network with an increasing delay between each consecutive
+ * message.
  */
-final class HaloScheduledExecutorService {
+final class IncreasingRateExecutor {
 
     /**
      * Tasks that is submitted an increasing rate.
@@ -159,28 +158,8 @@ final class HaloScheduledExecutorService {
      *
      * @param name thread name suffix
      */
-    HaloScheduledExecutorService(final String name) {
+    IncreasingRateExecutor(final String name) {
         ses = Executors.newSingleThreadScheduledExecutor(new HaloThreadFactory(name));
-    }
-
-    /**
-     * Schedules the {@code size} execution of the given task. The first execution will happen after the given
-     * delay, and every subsequent execution will be spaced by the given delay.
-     *
-     * @see ScheduledExecutorService#schedule(Callable, long, TimeUnit)
-     * @param task task to execute
-     * @param size number of time the task shall be executed
-     * @param delay delay before the first execution and between each subsequent execution(s)
-     * @return all scheduled futures
-     */
-    final Collection<ScheduledFuture<Void>> scheduleBatch(final Callable<Void> task, final int size,
-            final Duration delay) {
-        final Collection<ScheduledFuture<Void>> futures = new ArrayList<>();
-        for (int i = 0; i < size; i++) {
-            final long currentDelay = (i + 1) * delay.toMillis();
-            futures.add(ses.schedule(task, currentDelay, TimeUnit.MILLISECONDS));
-        }
-        return futures;
     }
 
     /**
@@ -208,18 +187,6 @@ final class HaloScheduledExecutorService {
      */
     final void shutdownNow() {
         ses.shutdownNow();
-    }
-
-    /**
-     * Submits the given task for execution.
-     *
-     * @param task the task to submit
-     * @param <T> the type of the task's result
-     * @return a Future representing pending completion of the task
-     * @see ScheduledExecutorService#submit(Callable)
-     */
-    final <T> Future<T> submit(final Callable<T> task) {
-        return ses.submit(task);
     }
 
 }

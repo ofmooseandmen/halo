@@ -30,6 +30,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package io.omam.halo;
 
+import static io.omam.halo.HaloProperties.ANNOUNCEMENT_INTERVAL;
+import static io.omam.halo.HaloProperties.ANNOUNCEMENT_NUM;
 import static io.omam.halo.HaloProperties.PROBE_NUM;
 import static io.omam.halo.HaloProperties.PROBING_INTERVAL;
 import static io.omam.halo.HaloProperties.PROBING_TIMEOUT;
@@ -43,11 +45,9 @@ import static io.omam.halo.MulticastDnsSd.uniqueClass;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
@@ -58,6 +58,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.omam.halo.DnsMessage.Builder;
+import io.omam.halo.SequentialBatchExecutor.FutureBatch;
 
 /**
  * Announces {@link Service}s on the network.
@@ -264,23 +265,24 @@ final class Announcer implements AutoCloseable {
     /** halo helper. */
     private final HaloHelper halo;
 
-    /** scheduled executor service. */
-    private final HaloScheduledExecutorService ses;
+    /** executor. */
+    private final SequentialBatchExecutor executor;
 
     /**
      *
      * Constructor.
      *
      * @param haloHelper halo helper
+     * @param anExecutor executor
      */
-    Announcer(final HaloHelper haloHelper) {
+    Announcer(final HaloHelper haloHelper, final SequentialBatchExecutor anExecutor) {
         halo = haloHelper;
-        ses = new HaloScheduledExecutorService("announcer");
+        executor = anExecutor;
     }
 
     @Override
     public final void close() {
-        ses.shutdownNow();
+        executor.shutdownNow();
     }
 
     /**
@@ -299,16 +301,18 @@ final class Announcer implements AutoCloseable {
         LOGGER.fine(() -> "Start probing for " + service);
         final ProbeListener listener = new ProbeListener(service);
         halo.addResponseListener(listener);
-        final ProbeTask task = new ProbeTask(service, halo);
+        final ProbeTask probe = new ProbeTask(service, halo);
+        final String name = service.name();
         try {
-            final Collection<ScheduledFuture<Void>> probes = ses.scheduleBatch(task, PROBE_NUM, PROBING_INTERVAL);
+            final FutureBatch probes = executor.scheduleBatch(name, probe, PROBE_NUM, PROBING_INTERVAL);
             final boolean conflictFree = !listener.await();
-            probes.forEach(p -> p.cancel(true));
+            probes.cancelAll();
             LOGGER.fine(() -> "Done probing for " + service + "; found conflicts? " + !conflictFree);
             if (conflictFree) {
                 /* announce */
                 LOGGER.fine(() -> "Announcing " + service);
-                ses.submit(new AnnounceTask(service, ttl, halo)).get();
+                final AnnounceTask announce = new AnnounceTask(service, ttl, halo);
+                executor.scheduleBatch(name, announce, ANNOUNCEMENT_NUM, ANNOUNCEMENT_INTERVAL).awaitFirst();
                 LOGGER.info(() -> "Announced " + service);
             }
             return conflictFree;
@@ -333,7 +337,8 @@ final class Announcer implements AutoCloseable {
     final void reannounce(final RegisteredService service, final Duration ttl) throws IOException {
         try {
             LOGGER.fine(() -> "Re-announcing " + service);
-            ses.submit(new AnnounceTask(service, ttl, halo)).get();
+            final AnnounceTask announce = new AnnounceTask(service, ttl, halo);
+            executor.scheduleBatch(service.name(), announce, ANNOUNCEMENT_NUM, ANNOUNCEMENT_INTERVAL).awaitFirst();
             LOGGER.info(() -> "Re-announced " + service);
         } catch (final ExecutionException e) {
             throw new IOException(e);

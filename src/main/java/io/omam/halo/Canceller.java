@@ -39,12 +39,9 @@ import static java.time.Duration.ZERO;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -113,23 +110,24 @@ final class Canceller implements AutoCloseable {
     /** halo helper. */
     private final HaloHelper halo;
 
-    /** scheduled executor service. */
-    private final HaloScheduledExecutorService ses;
+    /** executor. */
+    private final SequentialBatchExecutor executor;
 
     /**
      *
      * Constructor.
      *
      * @param haloHelper halo helper
+     * @param anExecutor executor
      */
-    Canceller(final HaloHelper haloHelper) {
+    Canceller(final HaloHelper haloHelper, final SequentialBatchExecutor anExecutor) {
         halo = haloHelper;
-        ses = new HaloScheduledExecutorService("canceller");
+        executor = anExecutor;
     }
 
     @Override
     public final void close() {
-        ses.shutdownNow();
+        executor.shutdownNow();
     }
 
     /**
@@ -144,11 +142,7 @@ final class Canceller implements AutoCloseable {
         LOGGER.fine(() -> "Cancelling " + service);
         try {
             final CancelTask task = new CancelTask(service, halo);
-            final Collection<ScheduledFuture<Void>> cancels =
-                    ses.scheduleBatch(task, CANCEL_NUM, CANCELLING_INTERVAL);
-            for (final Future<?> cancel : cancels) {
-                cancel.get();
-            }
+            executor.scheduleBatch(service.name(), task, CANCEL_NUM, CANCELLING_INTERVAL).awaitFirst();
             LOGGER.info(() -> "Cancelled " + service);
         } catch (final ExecutionException e) {
             throw new IOException(e);

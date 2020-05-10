@@ -38,7 +38,7 @@ import static io.omam.halo.HaloProperties.QUERYING_MAX;
 import java.util.concurrent.Callable;
 import java.util.logging.Logger;
 
-import io.omam.halo.HaloScheduledExecutorService.IncreasingRateTask;
+import io.omam.halo.IncreasingRateExecutor.IncreasingRateTask;
 
 /**
  * Base class for browsing.
@@ -55,7 +55,7 @@ abstract class HaloBrowser implements ResponseListener, AutoCloseable {
     private final String name;
 
     /** discoverer executor service. */
-    private final HaloScheduledExecutorService ses;
+    private final IncreasingRateExecutor ses;
 
     /** querying task. */
     private IncreasingRateTask task;
@@ -69,7 +69,7 @@ abstract class HaloBrowser implements ResponseListener, AutoCloseable {
     HaloBrowser(final String aName, final HaloHelper haloHelper) {
         name = aName;
         halo = haloHelper;
-        ses = new HaloScheduledExecutorService(aName);
+        ses = new IncreasingRateExecutor(aName);
         task = null;
     }
 

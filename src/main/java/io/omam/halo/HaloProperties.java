@@ -89,6 +89,16 @@ import java.util.Properties;
  * <td>3</td>
  * </tr>
  * <tr>
+ * <td>io.omam.halo.announcement.interval</td>
+ * <td>interval between announcement messages in milliseconds</td>
+ * <td>250</td>
+ * </tr>
+ * <tr>
+ * <td>io.omam.halo.announcement.number</td>
+ * <td>number of announcement messages to register</td>
+ * <td>2</td>
+ * </tr>
+ * <tr>
  * <td>io.omam.halo.querying.delay</td>
  * <td>delay before transmitting the first browsing query in milliseconds</td>
  * <td>120</td>
@@ -152,7 +162,7 @@ public final class HaloProperties {
     /** IPV6 socket address. */
     public static final InetSocketAddress IPV6_SOA;
 
-    /** interval between probe message. */
+    /** interval between probe messages. */
     public static final Duration PROBING_INTERVAL;
 
     /** probing timeout. */
@@ -160,6 +170,12 @@ public final class HaloProperties {
 
     /** number of probes before announcing a registered service. */
     public static final int PROBE_NUM;
+
+    /** interval between announcement messages. */
+    public static final Duration ANNOUNCEMENT_INTERVAL;
+
+    /** number of announcement messages to registered service. */
+    public static final int ANNOUNCEMENT_NUM;
 
     /** interval between goodbyes messages. */
     public static final Duration CANCELLING_INTERVAL;
@@ -210,7 +226,10 @@ public final class HaloProperties {
 
             PROBING_TIMEOUT = durationProp("io.omam.halo.probing.timeout", props);
             PROBING_INTERVAL = durationProp("io.omam.halo.probing.interval", props);
-            PROBE_NUM = intProp("io.omam.halo.probing.number", props);
+            PROBE_NUM = Math.max(1, intProp("io.omam.halo.probing.number", props));
+
+            ANNOUNCEMENT_INTERVAL = durationProp("io.omam.halo.announcement.interval", props);
+            ANNOUNCEMENT_NUM = Math.max(1, intProp("io.omam.halo.announcement.number", props));
 
             QUERYING_FIRST = durationProp("io.omam.halo.querying.first", props);
             QUERYING_DELAY = durationProp("io.omam.halo.querying.delay", props);
@@ -218,7 +237,7 @@ public final class HaloProperties {
             QUERYING_MAX = durationProp("io.omam.halo.querying.max", props);
 
             CANCELLING_INTERVAL = durationProp("io.omam.halo.cancellation.interval", props);
-            CANCEL_NUM = intProp("io.omam.halo.cancellation.number", props);
+            CANCEL_NUM = Math.max(1, intProp("io.omam.halo.cancellation.number", props));
 
             REAPING_INTERVAL = durationProp("io.omam.halo.reaper.interval", props);
 
