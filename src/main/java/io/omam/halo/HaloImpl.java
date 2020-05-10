@@ -169,7 +169,7 @@ final class HaloImpl extends HaloHelper implements Halo, Consumer<DnsMessage> {
         } else {
             result = instanceName + " (2)";
         }
-        LOGGER.fine(() -> "Change service instance name from: [" + instanceName + "] to [" + result + "]");
+        LOGGER.info(() -> "Change service instance name from: [" + instanceName + "] to [" + result + "]");
         return result;
     }
 
