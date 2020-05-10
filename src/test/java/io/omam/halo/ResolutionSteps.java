@@ -38,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
@@ -56,25 +57,51 @@ import io.cucumber.java.en.When;
 @SuppressWarnings("javadoc")
 public final class ResolutionSteps {
 
+    private static final class Resolutions<T> {
+
+        private final Collection<Callable<Optional<T>>> tasks;
+
+        Resolutions() {
+            tasks = new ArrayList<>();
+        }
+
+        final void add(final Callable<Optional<T>> task) {
+            tasks.add(task);
+        }
+
+        final void clear() {
+            tasks.clear();
+        }
+
+        final List<T> execute() throws Exception {
+            final List<T> res = new ArrayList<>();
+            for (final Callable<Optional<T>> task : tasks) {
+                task.call().ifPresent(res::add);
+            }
+            return res;
+        }
+
+    }
+
     private final Engines engines;
 
-    private final List<Service> hss;
+    private final Resolutions<ResolvedService> halo;
 
-    private final List<ServiceInfo> jss;
+    private final Resolutions<ServiceInfo> jmdns;
 
     private String resolvedBy;
 
     public ResolutionSteps(final Engines someEngines) {
         engines = someEngines;
-        hss = new ArrayList<>();
-        jss = new ArrayList<>();
+        halo = new Resolutions<>();
+        jmdns = new Resolutions<>();
         resolvedBy = null;
     }
 
     @After
     public final void after() {
-        hss.clear();
-        jss.clear();
+        halo.clear();
+        jmdns.clear();
         resolvedBy = null;
     }
 
@@ -104,12 +131,12 @@ public final class ResolutionSteps {
     }
 
     @Then("no resolved service shall be returned")
-    public final void thenServiceNotResolved() {
+    public final void thenServiceNotResolved() throws Exception {
         assertNotNull(resolvedBy);
         if (resolvedBy.equals("Halo")) {
-            assertTrue(hss.isEmpty());
+            assertTrue(halo.execute().isEmpty());
         } else {
-            assertTrue(jss.isEmpty());
+            assertTrue(halo.execute().isEmpty());
         }
     }
 
@@ -121,12 +148,13 @@ public final class ResolutionSteps {
 
     @Then("the following resolved services shall be returned:")
     public final void thenServiceReturned(final DataTable data) {
-        final List<ServiceDetails> services = Parser.parse(data, ServiceDetails::new);
+        final List<ServiceDetails> expecteds = Parser.parse(data, ServiceDetails::new);
         assertNotNull(resolvedBy);
+        final Duration timeout = Duration.ofSeconds(expecteds.size() * 6);
         if (resolvedBy.equals("Halo")) {
-            assertServicesEquals(services, hss);
+            await().atMost(timeout).untilAsserted(() -> assertServicesEquals(expecteds, halo.execute()));
         } else {
-            assertServiceInfosEquals(services, jss);
+            await().atMost(timeout).untilAsserted(() -> assertServiceInfosEquals(expecteds, jmdns.execute()));
         }
     }
 
@@ -136,11 +164,11 @@ public final class ResolutionSteps {
         final String instanceName = split[0];
         final String registrationType = split[1];
         if (engine.equals("Halo")) {
-            engines.halo().resolve(instanceName, registrationType).ifPresent(hss::add);
+            halo.add(() -> engines.halo().resolve(instanceName, registrationType));
         } else if (engine.equals("JmDNS")) {
-            Optional
-                .ofNullable(engines.jmdns().getServiceInfo(registrationType + "local.", instanceName))
-                .ifPresent(jss::add);
+            jmdns
+                .add(() -> Optional
+                    .ofNullable(engines.jmdns().getServiceInfo(registrationType + "local.", instanceName)));
         } else {
             throw new AssertionError("Unsupported engine " + engine);
         }
